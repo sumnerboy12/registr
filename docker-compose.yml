@@ -1,0 +1,17 @@
+services:
+  registr:
+    build: .
+    image: registr:latest
+    container_name: registr
+    restart: unless-stopped
+    ports:
+      - "4100:4100"
+    volumes:
+      - ./data:/app/server/data
+    # M365 (Entra ID) SSO is the only sign-in method — see server/.env.example.
+    environment:
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
+      - ALLOWED_EMAIL_DOMAIN=${ALLOWED_EMAIL_DOMAIN:-waymanroofing.co.nz}

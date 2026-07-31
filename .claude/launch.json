@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "runtimeExecutable": "C:\\Source\\registr\\server\\run-dev.cmd",
+      "runtimeArgs": [],
+      "port": 4100
+    },
+    {
+      "name": "client",
+      "runtimeExecutable": "C:\\Source\\registr\\client\\run-dev.cmd",
+      "runtimeArgs": [],
+      "port": 5174
+    }
+  ]
+}

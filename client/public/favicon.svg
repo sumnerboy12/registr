@@ -1,0 +1,7 @@
+<svg width="100%" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>registr app icon, filed card mark, transparent background</title>
+<desc>An abstract index-card mark on a transparent background: a white card outline with a teal filled tab, representing a single filed record.</desc>
+<rect x="96" y="86" width="320" height="340" rx="22" fill="none" stroke="#F5F3EE" stroke-width="30"/>
+<path d="M 96,164 L 416,164" stroke="#F5F3EE" stroke-width="26" stroke-linecap="round"/>
+<rect x="146" y="216" width="128" height="128" rx="14" fill="#2F8F7A"/>
+</svg>

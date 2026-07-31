@@ -1,0 +1,33 @@
+import db from '../db/index.js';
+
+// Loads the signed-in person plus their role for registr's own UI
+// (person_app_access where app = 'registr'). No password/local-account path
+// at all — session.personId is only ever set by the OIDC callback.
+export function requireAuth(req, res, next) {
+  const personId = req.session?.personId;
+  if (!personId) return res.status(401).json({ error: 'not authenticated' });
+
+  const person = db.prepare('SELECT * FROM people WHERE id = ?').get(personId);
+  if (!person || !person.active) {
+    return req.session.destroy(() => res.status(401).json({ error: 'not authenticated' }));
+  }
+
+  const access = db.prepare("SELECT role FROM person_app_access WHERE person_id = ? AND app = 'registr'").get(personId);
+  if (!access) {
+    return req.session.destroy(() => res.status(401).json({ error: 'not authenticated' }));
+  }
+
+  req.person = person;
+  req.registrRole = access.role;
+  next();
+}
+
+export function requireAdmin(req, res, next) {
+  if (req.registrRole !== 'admin') return res.status(403).json({ error: 'admin access required' });
+  next();
+}
+
+export function requireWrite(req, res, next) {
+  if (req.registrRole === 'readonly') return res.status(403).json({ error: 'read-only access' });
+  next();
+}

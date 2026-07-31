@@ -1,0 +1,105 @@
+export type AppName = 'registr' | 'rostr' | 'claimr' | 'costr';
+export type Role = 'admin' | 'editor' | 'readonly';
+
+export interface AppAccess {
+  app: AppName;
+  role: Role;
+}
+
+export const APP_LABELS: Record<AppName, string> = {
+  registr: 'registr',
+  rostr: 'rostr',
+  claimr: 'claimr',
+  costr: 'costr',
+};
+
+export interface Person {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  role_default: string | null;
+  available_for_scheduling: boolean;
+  active: boolean;
+  notes: string | null;
+  has_password: boolean;
+  app_access: AppAccess[];
+}
+
+export interface AuthPerson {
+  id: number;
+  name: string;
+  email: string;
+  role: Role;
+  must_change_password: boolean;
+  has_password: boolean;
+}
+
+export interface OidcStatus {
+  enabled: boolean;
+}
+
+export type ClientType = 'main_contractor' | 'direct' | 'residential';
+
+export const CLIENT_TYPE_LABELS: Record<ClientType, string> = {
+  main_contractor: 'Main Contractor',
+  direct: 'Direct',
+  residential: 'Residential',
+};
+
+export interface Client {
+  id: number;
+  name: string;
+  type: ClientType;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  accounts_email: string | null;
+  active: boolean;
+  notes: string | null;
+}
+
+export type ProjectType = 'contract' | 'minor_works';
+export type ProjectStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
+export type AssignmentRole = 'project_manager' | 'foreman' | 'estimator' | 'qs';
+
+export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+  contract: 'Contract',
+  minor_works: 'Minor Works',
+};
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  tendering: 'Tendering',
+  awarded: 'Awarded',
+  active: 'Active',
+  on_hold: 'On Hold',
+  practical_completion: 'Practical Completion',
+  closed: 'Closed',
+};
+
+export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {
+  project_manager: 'Project Manager',
+  foreman: 'Foreman',
+  estimator: 'Estimator',
+  qs: 'QS',
+};
+
+export interface ProjectAssignment {
+  id: number;
+  role: AssignmentRole;
+  person: { id: number; name: string; email: string };
+}
+
+export interface Project {
+  id: string;
+  code: string;
+  name: string;
+  client_id: number | null;
+  project_type: ProjectType;
+  status: ProjectStatus;
+  site_address: string | null;
+  contract_value: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  assignments?: ProjectAssignment[];
+}
