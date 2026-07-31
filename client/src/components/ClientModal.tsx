@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Client, ClientType } from '../types';
 import { CLIENT_TYPE_LABELS } from '../types';
+import { SWATCH_COLORS } from '../lib/colors';
+import ColorSwatchPicker from './ColorSwatchPicker';
 
 interface Props {
   client: Client | null;
@@ -19,6 +21,7 @@ export default function ClientModal({ client, onClose, onSave, readOnly }: Props
   const [contactPhone, setContactPhone] = useState(client?.contact_phone ?? '');
   const [accountsEmail, setAccountsEmail] = useState(client?.accounts_email ?? '');
   const [active, setActive] = useState(client?.active ?? true);
+  const [color, setColor] = useState(client?.color ?? SWATCH_COLORS[4]);
   const [notes, setNotes] = useState(client?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +42,7 @@ export default function ClientModal({ client, onClose, onSave, readOnly }: Props
         contact_phone: contactPhone || null,
         accounts_email: accountsEmail || null,
         active,
+        color,
         notes,
       });
       onClose();
@@ -91,6 +95,11 @@ export default function ClientModal({ client, onClose, onSave, readOnly }: Props
             <label>Accounts / payables email</label>
             <input value={accountsEmail ?? ''} onChange={(e) => setAccountsEmail(e.target.value)} disabled={readOnly} />
           </div>
+        </div>
+
+        <div className="field">
+          <label>Colour</label>
+          <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
         </div>
 
         <div className="field">

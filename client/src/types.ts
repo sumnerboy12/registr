@@ -19,8 +19,9 @@ export interface Person {
   email: string;
   phone: string | null;
   role_default: string | null;
-  available_for_scheduling: boolean;
+  billable: boolean;
   active: boolean;
+  color: string;
   notes: string | null;
   has_password: boolean;
   app_access: AppAccess[];
@@ -56,6 +57,7 @@ export interface Client {
   contact_phone: string | null;
   accounts_email: string | null;
   active: boolean;
+  color: string;
   notes: string | null;
 }
 

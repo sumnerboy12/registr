@@ -29,16 +29,25 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { name, type, contact_name, contact_email, contact_phone, accounts_email, notes } = req.body;
+  const { name, type, contact_name, contact_email, contact_phone, accounts_email, color, notes } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (type != null && !TYPES.includes(type)) return res.status(400).json({ error: 'Invalid type' });
 
   const result = db
     .prepare(
-      `INSERT INTO clients (name, type, contact_name, contact_email, contact_phone, accounts_email, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO clients (name, type, contact_name, contact_email, contact_phone, accounts_email, color, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(name.trim(), type || 'direct', contact_name || null, contact_email || null, contact_phone || null, accounts_email || null, notes || null);
+    .run(
+      name.trim(),
+      type || 'direct',
+      contact_name || null,
+      contact_email || null,
+      contact_phone || null,
+      accounts_email || null,
+      color || '#22c55e',
+      notes || null
+    );
 
   const row = db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(publicClient(row));
@@ -49,12 +58,12 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { name, type, contact_name, contact_email, contact_phone, accounts_email, active, notes } = req.body;
+  const { name, type, contact_name, contact_email, contact_phone, accounts_email, active, color, notes } = req.body;
   if (type != null && !TYPES.includes(type)) return res.status(400).json({ error: 'Invalid type' });
 
   db.prepare(
     `UPDATE clients SET
-       name = ?, type = ?, contact_name = ?, contact_email = ?, contact_phone = ?, accounts_email = ?, active = ?, notes = ?,
+       name = ?, type = ?, contact_name = ?, contact_email = ?, contact_phone = ?, accounts_email = ?, active = ?, color = ?, notes = ?,
        updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -65,6 +74,7 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     contact_phone !== undefined ? contact_phone : existing.contact_phone,
     accounts_email !== undefined ? accounts_email : existing.accounts_email,
     active != null ? (active ? 1 : 0) : existing.active,
+    color ?? existing.color,
     notes !== undefined ? notes : existing.notes,
     id
   );

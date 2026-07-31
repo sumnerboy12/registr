@@ -3,6 +3,8 @@ import type { AppName, Person, Role } from '../types';
 import { APP_LABELS } from '../types';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { SWATCH_COLORS } from '../lib/colors';
+import ColorSwatchPicker from './ColorSwatchPicker';
 
 interface Props {
   person: Person | null;
@@ -21,8 +23,9 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
   const [email, setEmail] = useState(person?.email ?? '');
   const [phone, setPhone] = useState(person?.phone ?? '');
   const [roleDefault, setRoleDefault] = useState(person?.role_default ?? '');
-  const [availableForScheduling, setAvailableForScheduling] = useState(person?.available_for_scheduling ?? true);
+  const [billable, setBillable] = useState(person?.billable ?? true);
   const [active, setActive] = useState(person?.active ?? true);
+  const [color, setColor] = useState(person?.color ?? SWATCH_COLORS[8]);
   const [notes, setNotes] = useState(person?.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +33,7 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
   const [newApp, setNewApp] = useState<AppName>('rostr');
   const [newRole, setNewRole] = useState<Role>('editor');
   const [accessBusy, setAccessBusy] = useState(false);
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   const [settingPassword, setSettingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -54,8 +58,9 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
         email,
         phone: phone || null,
         role_default: roleDefault || null,
-        available_for_scheduling: availableForScheduling,
+        billable,
         active,
+        color,
         notes,
       });
       onClose();
@@ -69,9 +74,12 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
   const grantAccess = async () => {
     if (!person) return;
     setAccessBusy(true);
+    setAccessError(null);
     try {
       await api.grantAppAccess(person.id, { app: newApp, role: newRole });
       onAccessChanged?.();
+    } catch (e) {
+      setAccessError(e instanceof Error ? e.message : 'Failed to grant access');
     } finally {
       setAccessBusy(false);
     }
@@ -142,26 +150,26 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
         </div>
 
         <div className="field">
+          <label>Colour</label>
+          <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
+        </div>
+
+        <div className="field">
           <label>Notes</label>
           <textarea rows={2} value={notes ?? ''} onChange={(e) => setNotes(e.target.value)} disabled={readOnly} />
         </div>
 
         <div style={{ display: 'flex', gap: 20, marginBottom: 12 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            <input
-              type="checkbox"
-              checked={availableForScheduling}
-              onChange={(e) => setAvailableForScheduling(e.target.checked)}
-              disabled={readOnly}
-            />
-            Available for scheduling (rostr)
-          </label>
           {person && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
               <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={readOnly} />
               Active
             </label>
           )}
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+            <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
+            Billable
+          </label>
         </div>
 
         {person && (
@@ -202,6 +210,7 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
                 </button>
               </div>
             )}
+            {accessError && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{accessError}</div>}
           </div>
         )}
 

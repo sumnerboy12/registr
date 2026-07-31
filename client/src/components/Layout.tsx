@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import ChangePasswordModal from './ChangePasswordModal';
+import UserMenu from './UserMenu';
 
 const navStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '10px 16px',
@@ -44,16 +45,13 @@ export default function Layout() {
             People
           </NavLink>
         </nav>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>{user?.name}</span>
-          {user?.has_password && (
-            <button className="btn" onClick={() => setChangingPassword(true)}>
-              Change password
-            </button>
-          )}
-          <button className="btn" onClick={() => logout()}>
-            Sign out
-          </button>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          <UserMenu
+            name={user?.name ?? ''}
+            showChangePassword={!!user?.has_password}
+            onChangePassword={() => setChangingPassword(true)}
+            onLogout={() => logout()}
+          />
         </div>
       </header>
       <main style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>

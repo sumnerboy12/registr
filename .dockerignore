@@ -4,3 +4,4 @@ server/data
 **/*.log
 .git
 .claude
+**/.env

@@ -6,20 +6,25 @@
 CREATE TABLE IF NOT EXISTS people (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  -- The identity SSO logs in with — also the join key every consuming app's
-  -- OIDC callback uses to ask registr "is this email allowed in, and as what
-  -- role?" (see routes/auth.js's /check). Enforced to ALLOWED_EMAIL_DOMAIN
-  -- at the API layer, since only that domain can complete M365 SSO anyway.
+  -- The identity SSO logs in with when this person has app access — also the
+  -- join key every consuming app's OIDC callback uses to ask registr "is this
+  -- email allowed in, and as what role?" (see routes/auth.js's /check). Can
+  -- be any domain (people.js's POST/PATCH don't restrict it) — only granting
+  -- app_access itself is restricted to ALLOWED_EMAIL_DOMAIN, since that's the
+  -- only domain that can complete M365 SSO anyway.
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
   phone TEXT,
   -- Free-text default job title (e.g. "Foreman", "Estimator") — distinct
   -- from project_assignments.role, which is per-project.
   role_default TEXT,
-  -- Whether rostr should offer this person for crew scheduling. A registr-
-  -- owned property of the person, not project data, so it lives here rather
-  -- than duplicated in rostr.
-  available_for_scheduling INTEGER NOT NULL DEFAULT 1,
+  -- Whether this person's time is chargeable — rostr uses this to decide
+  -- whether to offer them for crew scheduling. A registr-owned property of
+  -- the person, not project data, so it lives here rather than duplicated
+  -- in rostr.
+  billable INTEGER NOT NULL DEFAULT 1,
   active INTEGER NOT NULL DEFAULT 1,
+  -- Swatch colour rostr uses to identify this person on the Schedule.
+  color TEXT NOT NULL DEFAULT '#3b82f6',
   -- Optional local login, alongside SSO — null means this person can only
   -- sign in via M365. Exists for a break-glass/bootstrap admin path when SSO
   -- isn't configured yet or is unavailable, same as rostr's password login.
@@ -53,6 +58,8 @@ CREATE TABLE IF NOT EXISTS clients (
   contact_phone TEXT,
   accounts_email TEXT,
   active INTEGER NOT NULL DEFAULT 1,
+  -- Swatch colour rostr uses to identify this client's jobs on the Schedule.
+  color TEXT NOT NULL DEFAULT '#22c55e',
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

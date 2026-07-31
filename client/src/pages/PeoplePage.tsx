@@ -4,6 +4,14 @@ import type { Person } from '../types';
 import { APP_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
+import ImportModal, { type ImportField } from '../components/ImportModal';
+
+const PEOPLE_IMPORT_FIELDS: ImportField[] = [
+  { key: 'name', label: 'Name', required: true, aliases: ['name', 'person', 'full name', 'employee', 'employee name'] },
+  { key: 'email', label: 'Email', required: true, aliases: ['email', 'email address', 'e-mail'] },
+  { key: 'phone', label: 'Phone', aliases: ['phone', 'mobile', 'cell', 'phone number', 'contact number'] },
+  { key: 'role_default', label: 'Default role', aliases: ['role', 'default role', 'position', 'title', 'job title'] },
+];
 
 export default function PeoplePage() {
   const { isReadOnly } = useAuth();
@@ -12,18 +20,26 @@ export default function PeoplePage() {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Person | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const load = () => {
     api.getPeople().then((data) => {
       setPeople(data);
       setLoading(false);
+      // Keep an open edit modal in sync — otherwise granting/revoking app
+      // access there leaves it showing the stale access list, since `editing`
+      // is a snapshot from before this reload.
+      setEditing((current) => (current ? (data.find((p) => p.id === current.id) ?? current) : current));
     });
   };
 
   useEffect(load, []);
 
   const filtered = people.filter(
-    (p) => p.name.toLowerCase().includes(q.toLowerCase()) || p.email.toLowerCase().includes(q.toLowerCase())
+    (p) =>
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      p.email.toLowerCase().includes(q.toLowerCase()) ||
+      (p.role_default ?? '').toLowerCase().includes(q.toLowerCase())
   );
 
   return (
@@ -31,9 +47,14 @@ export default function PeoplePage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>People</h1>
         {!isReadOnly && (
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-            + Add Person
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button className="btn" onClick={() => setShowImport(true)}>
+              Import
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+              + Add Person
+            </button>
+          </div>
         )}
       </div>
 
@@ -46,6 +67,7 @@ export default function PeoplePage() {
           <table>
             <thead>
               <tr>
+                <th></th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -56,7 +78,10 @@ export default function PeoplePage() {
             </thead>
             <tbody>
               {filtered.map((person) => (
-                <tr key={person.id}>
+                <tr key={person.id} style={{ opacity: person.active ? 1 : 0.5 }}>
+                  <td>
+                    <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: person.color }} />
+                  </td>
                   <td>{person.name}</td>
                   <td>{person.email}</td>
                   <td>{person.role_default || '—'}</td>
@@ -69,7 +94,7 @@ export default function PeoplePage() {
                           </span>
                         ))}
                   </td>
-                  <td>{person.active ? 'Active' : 'Archived'}</td>
+                  <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td>
                     <button className="btn" onClick={() => setEditing(person)}>
                       {isReadOnly ? 'View' : 'Edit'}
@@ -79,7 +104,7 @@ export default function PeoplePage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No people found.
                   </td>
                 </tr>
@@ -109,6 +134,22 @@ export default function PeoplePage() {
           }}
           onAccessChanged={load}
           readOnly={isReadOnly}
+        />
+      )}
+      {showImport && (
+        <ImportModal
+          title="Import People"
+          fields={PEOPLE_IMPORT_FIELDS}
+          onClose={() => setShowImport(false)}
+          onImportRow={async (values) => {
+            await api.createPerson({
+              name: values.name,
+              email: values.email,
+              phone: values.phone || null,
+              role_default: values.role_default || null,
+            });
+          }}
+          onDone={load}
         />
       )}
     </div>

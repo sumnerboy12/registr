@@ -18,8 +18,9 @@ function withAccess(person) {
     email: person.email,
     phone: person.phone,
     role_default: person.role_default,
-    available_for_scheduling: !!person.available_for_scheduling,
+    billable: !!person.billable,
     active: !!person.active,
+    color: person.color,
     notes: person.notes,
     // Never the hash itself — just whether a local password login exists,
     // so the UI can offer "set/reset password" vs. "change password".
@@ -48,23 +49,20 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { name, email, phone, role_default, available_for_scheduling, notes } = req.body;
+  const { name, email, phone, role_default, billable, color, notes } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   const nextEmail = email?.trim();
   if (!nextEmail) return res.status(400).json({ error: 'email is required' });
-  if (!isAllowedEmailDomain(nextEmail)) {
-    return res.status(400).json({ error: `email must be on ${allowedEmailDomainList()}` });
-  }
 
   const existing = db.prepare('SELECT id FROM people WHERE email = ? COLLATE NOCASE').get(nextEmail);
   if (existing) return res.status(400).json({ error: 'That email is already registered' });
 
   const result = db
     .prepare(
-      `INSERT INTO people (name, email, phone, role_default, available_for_scheduling, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO people (name, email, phone, role_default, billable, color, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(name.trim(), nextEmail, phone || null, role_default || null, available_for_scheduling === false ? 0 : 1, notes || null);
+    .run(name.trim(), nextEmail, phone || null, role_default || null, billable === false ? 0 : 1, color || '#3b82f6', notes || null);
 
   const row = db.prepare('SELECT * FROM people WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json(withAccess(row));
@@ -75,21 +73,18 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM people WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { name, email, phone, role_default, available_for_scheduling, active, notes } = req.body;
+  const { name, email, phone, role_default, billable, active, color, notes } = req.body;
   let nextEmail = existing.email;
   if (email !== undefined) {
     nextEmail = email?.trim();
     if (!nextEmail) return res.status(400).json({ error: 'email is required' });
-    if (!isAllowedEmailDomain(nextEmail)) {
-      return res.status(400).json({ error: `email must be on ${allowedEmailDomainList()}` });
-    }
     const clash = db.prepare('SELECT id FROM people WHERE email = ? COLLATE NOCASE AND id != ?').get(nextEmail, id);
     if (clash) return res.status(400).json({ error: 'That email is already registered' });
   }
 
   db.prepare(
     `UPDATE people SET
-       name = ?, email = ?, phone = ?, role_default = ?, available_for_scheduling = ?, active = ?, notes = ?,
+       name = ?, email = ?, phone = ?, role_default = ?, billable = ?, active = ?, color = ?, notes = ?,
        updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -97,8 +92,9 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     nextEmail,
     phone !== undefined ? phone : existing.phone,
     role_default !== undefined ? role_default : existing.role_default,
-    available_for_scheduling != null ? (available_for_scheduling ? 1 : 0) : existing.available_for_scheduling,
+    billable != null ? (billable ? 1 : 0) : existing.billable,
     active != null ? (active ? 1 : 0) : existing.active,
+    color ?? existing.color,
     notes !== undefined ? notes : existing.notes,
     id
   );
@@ -126,11 +122,17 @@ router.post('/:id/set-password', requireAuth, requireAdmin, (req, res) => {
 });
 
 // App access is admin-only: granting sign-in rights to rostr/claimr/costr/
-// registr itself is a higher bar than editing someone's phone number.
+// registr itself is a higher bar than editing someone's phone number. People
+// can carry any email (subcontractors, clients' own staff, etc.), but only a
+// waymanroofing address can ever be granted login rights — SSO itself
+// wouldn't let anyone else complete the flow anyway.
 router.post('/:id/app-access', requireAuth, requireAdmin, (req, res) => {
   const personId = Number(req.params.id);
-  const person = db.prepare('SELECT id FROM people WHERE id = ?').get(personId);
+  const person = db.prepare('SELECT id, email FROM people WHERE id = ?').get(personId);
   if (!person) return res.status(404).json({ error: 'not found' });
+  if (!isAllowedEmailDomain(person.email)) {
+    return res.status(400).json({ error: `Only an email on ${allowedEmailDomainList()} can be granted app access` });
+  }
 
   const { app, role } = req.body;
   if (!APPS.includes(app)) return res.status(400).json({ error: 'Invalid app' });
