@@ -185,7 +185,7 @@ router.post('/:id/app-access', requireAuth, requireAdmin, (req, res) => {
   // outright — only an admin can reach this endpoint, so once you're not one
   // there's no way back in for yourself.
   if (personId === req.person.id && app === 'registr' && role !== 'admin') {
-    return res.status(400).json({ error: "You can't demote your own registr access" });
+    return res.status(400).json({ error: "You can't demote your own Registr access" });
   }
 
   db.prepare(
@@ -202,7 +202,7 @@ router.post('/:id/app-access', requireAuth, requireAdmin, (req, res) => {
 router.delete('/:id/app-access/:app', requireAuth, requireAdmin, (req, res) => {
   const personId = Number(req.params.id);
   if (personId === req.person.id && req.params.app === 'registr') {
-    return res.status(400).json({ error: "You can't revoke your own registr access" });
+    return res.status(400).json({ error: "You can't revoke your own Registr access" });
   }
   db.prepare('DELETE FROM person_app_access WHERE person_id = ? AND app = ?').run(personId, req.params.app);
   res.status(204).end();

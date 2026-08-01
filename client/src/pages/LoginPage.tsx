@@ -5,9 +5,9 @@ import { api } from '../api/client';
 
 const OIDC_ERROR_MESSAGES: Record<string, string> = {
   oidc_expired: 'Sign-in took too long — please try again.',
-  oidc_no_email: "Your identity provider didn't share an email address, so registr can't match your account.",
-  oidc_no_account: 'No registr person record matches your email. Ask an admin to add you under People.',
-  oidc_no_access: "Your account exists but hasn't been granted access to registr. Ask an admin to grant it.",
+  oidc_no_email: "Your identity provider didn't share an email address, so Registr can't match your account.",
+  oidc_no_account: 'No Registr person record matches your email. Ask an admin to add you under People.',
+  oidc_no_access: "Your account exists but hasn't been granted access to Registr. Ask an admin to grant it.",
   oidc_failed: 'Sign-in failed. Please try again.',
 };
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
       <div className="card" style={{ width: 340, padding: 24 }}>
         <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18, marginTop: 0, marginBottom: 20 }}>
           <img src="/favicon.svg" alt="" width={24} height={24} style={{ borderRadius: 5 }} />
-          registr
+          Registr
         </h1>
         {oidcEnabled && (
           <>

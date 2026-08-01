@@ -31,7 +31,7 @@ router.post('/login', (req, res) => {
   if (!verifyPassword(password, person.password_hash)) return res.status(401).json({ error: 'Invalid username or password' });
 
   const access = db.prepare("SELECT role FROM person_app_access WHERE person_id = ? AND app = 'registr'").get(person.id);
-  if (!access) return res.status(401).json({ error: 'This account has not been granted access to registr' });
+  if (!access) return res.status(401).json({ error: 'This account has not been granted access to Registr' });
 
   req.session.regenerate((err) => {
     if (err) return res.status(500).json({ error: 'login failed' });

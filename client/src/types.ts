@@ -7,7 +7,7 @@ export interface AppAccess {
 }
 
 export const APP_LABELS: Record<AppName, string> = {
-  registr: 'registr',
+  registr: 'Registr',
   rostr: 'rostr',
   claimr: 'claimr',
   costr: 'costr',

@@ -57,7 +57,7 @@ export default function AppAccessModal({ person, onClose, onChanged }: Props) {
                   value={roleFor(app)}
                   onChange={(e) => handleChange(app, e.target.value as Selection)}
                   disabled={busyApp === app || lockSelf}
-                  title={lockSelf ? "You can't change your own registr access" : undefined}
+                  title={lockSelf ? "You can't change your own Registr access" : undefined}
                   style={{ flex: 1 }}
                 >
                   <option value="none">No access</option>
@@ -73,7 +73,7 @@ export default function AppAccessModal({ person, onClose, onChanged }: Props) {
         </div>
         {isSelf && apps.includes('registr') && (
           <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 8 }}>
-            Your own registr access is locked here — have another admin change it if needed.
+            Your own Registr access is locked here — have another admin change it if needed.
           </div>
         )}
         {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{error}</div>}

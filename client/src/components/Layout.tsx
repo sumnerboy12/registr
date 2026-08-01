@@ -32,7 +32,7 @@ export default function Layout() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5 }} />
-          <strong style={{ fontSize: 16 }}>registr</strong>
+          <strong style={{ fontSize: 16 }}>Registr</strong>
         </div>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
           <NavLink to="/" end style={navStyle}>
