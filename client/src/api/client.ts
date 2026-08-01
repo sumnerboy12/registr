@@ -1,4 +1,16 @@
-import type { AppAccess, AuthPerson, Client, OidcStatus, Person, Project, ProjectAssignment, ProjectStatus, ProjectType } from '../types';
+import type {
+  ApiKey,
+  AppAccess,
+  AuthPerson,
+  Client,
+  ConsumingApp,
+  OidcStatus,
+  Person,
+  Project,
+  ProjectAssignment,
+  ProjectStatus,
+  ProjectType,
+} from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -72,4 +84,11 @@ export const api = {
     request<ProjectAssignment[]>(`/v1/projects/${projectId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
   removeAssignment: (projectId: string, assignmentId: number) =>
     request<void>(`/v1/projects/${projectId}/assignments/${assignmentId}`, { method: 'DELETE' }),
+
+  getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
+  // key is only ever present in this one response — never returned again.
+  createApiKey: (app: ConsumingApp, label?: string) =>
+    request<ApiKey & { key: string }>('/v1/api-keys', { method: 'POST', body: JSON.stringify({ app, label: label || null }) }),
+  setApiKeyActive: (id: number, active: boolean) =>
+    request<ApiKey>(`/v1/api-keys/${id}`, { method: 'PATCH', body: JSON.stringify({ active }) }),
 };

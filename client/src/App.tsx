@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ClientsPage from './pages/ClientsPage';
 import PeoplePage from './pages/PeoplePage';
+import ApiKeysPage from './pages/ApiKeysPage';
 import ChangePasswordModal from './components/ChangePasswordModal';
 
 function Gate() {
@@ -27,6 +28,7 @@ function Gate() {
         <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="people" element={<PeoplePage />} />
+        {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
       </Route>
     </Routes>
   );

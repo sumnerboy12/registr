@@ -58,6 +58,11 @@ export default function Layout() {
           <NavLink to="/people" style={navStyle}>
             People
           </NavLink>
+          {user?.role === 'admin' && (
+            <NavLink to="/api-keys" style={navStyle}>
+              API Keys
+            </NavLink>
+          )}
         </nav>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <UserMenu

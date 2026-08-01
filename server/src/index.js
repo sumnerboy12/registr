@@ -14,6 +14,7 @@ import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
 import clientsRouter from './routes/clients.js';
 import projectsRouter from './routes/projects.js';
+import apiKeysRouter from './routes/apiKeys.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -40,6 +41,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/v1/people', peopleRouter);
 app.use('/api/v1/clients', clientsRouter);
 app.use('/api/v1/projects', projectsRouter);
+app.use('/api/v1/api-keys', apiKeysRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, commit: process.env.GIT_COMMIT || null }));
 
