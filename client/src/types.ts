@@ -8,9 +8,9 @@ export interface AppAccess {
 
 export const APP_LABELS: Record<AppName, string> = {
   registr: 'Registr',
-  rostr: 'rostr',
-  claimr: 'claimr',
-  costr: 'costr',
+  rostr: 'Rostr',
+  claimr: 'Claimr',
+  costr: 'Costr',
 };
 
 // A person signs in one way, the other, or not at all — local login is
