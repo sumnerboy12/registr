@@ -78,7 +78,7 @@ export default function LoginPage() {
               className="btn"
               style={{ width: '100%', display: 'block', textAlign: 'center', boxSizing: 'border-box', textDecoration: 'none' }}
             >
-              Sign in with Microsoft
+              Sign in with SSO
             </a>
           </>
         )}
