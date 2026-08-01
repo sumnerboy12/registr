@@ -91,7 +91,6 @@ CREATE TABLE IF NOT EXISTS api_keys (
   app TEXT NOT NULL CHECK (app IN ('rostr', 'claimr', 'costr')),
   label TEXT,
   key_hash TEXT NOT NULL UNIQUE,
-  active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   last_used_at TEXT
 );

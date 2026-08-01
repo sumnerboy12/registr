@@ -19,10 +19,11 @@ export default function ApiKeysPage() {
 
   useEffect(load, []);
 
-  const toggleActive = async (key: ApiKey) => {
+  const revoke = async (key: ApiKey) => {
+    if (!confirm(`Revoke the ${APP_LABELS[key.app]} key${key.label ? ` "${key.label}"` : ''}? This can't be undone.`)) return;
     setBusyId(key.id);
     try {
-      await api.setApiKeyActive(key.id, !key.active);
+      await api.deleteApiKey(key.id);
       load();
     } finally {
       setBusyId(null);
@@ -40,7 +41,7 @@ export default function ApiKeysPage() {
 
       <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 0 }}>
         Server-to-server credentials for rostr, claimr, and costr to check registr access. Each key's plaintext is shown
-        once, at creation.
+        once, at creation. Revoking deletes the key permanently — generate a new one if it's needed again.
       </p>
 
       <div className="card">
@@ -52,7 +53,6 @@ export default function ApiKeysPage() {
               <tr>
                 <th>App</th>
                 <th>Label</th>
-                <th>Status</th>
                 <th>Created</th>
                 <th>Last used</th>
                 <th></th>
@@ -60,26 +60,21 @@ export default function ApiKeysPage() {
             </thead>
             <tbody>
               {keys.map((key) => (
-                <tr key={key.id} style={{ opacity: key.active ? 1 : 0.5 }}>
+                <tr key={key.id}>
                   <td>{APP_LABELS[key.app]}</td>
                   <td>{key.label || '—'}</td>
-                  <td>{key.active ? 'Active' : 'Revoked'}</td>
                   <td>{key.created_at}</td>
                   <td>{key.last_used_at || 'Never'}</td>
                   <td>
-                    <button
-                      className={key.active ? 'btn btn-danger' : 'btn'}
-                      onClick={() => toggleActive(key)}
-                      disabled={busyId === key.id}
-                    >
-                      {key.active ? 'Revoke' : 'Reactivate'}
+                    <button className="btn btn-danger" onClick={() => revoke(key)} disabled={busyId === key.id}>
+                      Revoke
                     </button>
                   </td>
                 </tr>
               ))}
               {keys.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No API keys yet.
                   </td>
                 </tr>

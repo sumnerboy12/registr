@@ -13,7 +13,6 @@ function publicKey(row) {
     id: row.id,
     app: row.app,
     label: row.label,
-    active: !!row.active,
     created_at: row.created_at,
     last_used_at: row.last_used_at,
   };
@@ -36,16 +35,10 @@ router.post('/', (req, res) => {
   res.status(201).json({ ...publicKey(row), key });
 });
 
-router.patch('/:id', (req, res) => {
-  const id = Number(req.params.id);
-  const existing = db.prepare('SELECT * FROM api_keys WHERE id = ?').get(id);
-  if (!existing) return res.status(404).json({ error: 'not found' });
-
-  const { active } = req.body;
-  db.prepare('UPDATE api_keys SET active = ? WHERE id = ?').run(active ? 1 : 0, id);
-
-  const row = db.prepare('SELECT * FROM api_keys WHERE id = ?').get(id);
-  res.json(publicKey(row));
+// Revoking hard-deletes — there's no "reactivate" path, generate a new key instead.
+router.delete('/:id', (req, res) => {
+  db.prepare('DELETE FROM api_keys WHERE id = ?').run(Number(req.params.id));
+  res.status(204).end();
 });
 
 export default router;

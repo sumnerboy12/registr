@@ -10,7 +10,7 @@ export function requireApiKey(req, res, next) {
   if (!key) return res.status(401).json({ error: 'missing API key' });
 
   const row = db.prepare('SELECT * FROM api_keys WHERE key_hash = ?').get(hashApiKey(key));
-  if (!row || !row.active) return res.status(401).json({ error: 'invalid API key' });
+  if (!row) return res.status(401).json({ error: 'invalid API key' });
 
   db.prepare("UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?").run(row.id);
   req.consumingApp = row.app;

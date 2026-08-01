@@ -89,6 +89,5 @@ export const api = {
   // key is only ever present in this one response — never returned again.
   createApiKey: (app: ConsumingApp, label?: string) =>
     request<ApiKey & { key: string }>('/v1/api-keys', { method: 'POST', body: JSON.stringify({ app, label: label || null }) }),
-  setApiKeyActive: (id: number, active: boolean) =>
-    request<ApiKey>(`/v1/api-keys/${id}`, { method: 'PATCH', body: JSON.stringify({ active }) }),
+  deleteApiKey: (id: number) => request<void>(`/v1/api-keys/${id}`, { method: 'DELETE' }),
 };
