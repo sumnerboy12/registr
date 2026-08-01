@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { api } from '../api/client';
 import ChangePasswordModal from './ChangePasswordModal';
 import UserMenu from './UserMenu';
+
+const REPO_URL = 'https://github.com/sumnerboy12/registr';
 
 const navStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '10px 16px',
@@ -17,6 +20,11 @@ const navStyle = ({ isActive }: { isActive: boolean }) => ({
 export default function Layout() {
   const { user, logout, refresh } = useAuth();
   const [changingPassword, setChangingPassword] = useState(false);
+  const [commit, setCommit] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.getHealth().then((h) => setCommit(h.commit)).catch(() => {});
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -31,7 +39,13 @@ export default function Layout() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5 }} />
+          {commit ? (
+            <a href={`${REPO_URL}/commit/${commit}`} target="_blank" rel="noopener noreferrer" title={`build ${commit}`}>
+              <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5, display: 'block' }} />
+            </a>
+          ) : (
+            <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5 }} />
+          )}
           <strong style={{ fontSize: 16 }}>Registr</strong>
         </div>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
