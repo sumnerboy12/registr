@@ -1,28 +1,27 @@
 import { useState } from 'react';
-import type { AppName, Person, Role } from '../types';
-import { APP_LABELS } from '../types';
-import { api } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
+import type { LoginType, Person } from '../types';
 import { SWATCH_COLORS } from '../lib/colors';
 import ColorSwatchPicker from './ColorSwatchPicker';
+import { useAuth } from '../auth/AuthContext';
 
 interface Props {
   person: Person | null;
   onClose: () => void;
   onSave: (data: Partial<Person>) => Promise<void>;
-  onAccessChanged?: () => void;
   readOnly?: boolean;
 }
 
-const APPS: AppName[] = ['registr', 'rostr', 'claimr', 'costr'];
-const ROLES: Role[] = ['admin', 'editor', 'readonly'];
-
-export default function PersonModal({ person, onClose, onSave, onAccessChanged, readOnly }: Props) {
-  const { isAdmin } = useAuth();
+export default function PersonModal({ person, onClose, onSave, readOnly }: Props) {
+  const { user } = useAuth();
+  const isSelf = !!person && person.id === user?.id;
   const [name, setName] = useState(person?.name ?? '');
+  const [loginType, setLoginType] = useState<LoginType>(person?.login_type ?? 'sso');
   const [email, setEmail] = useState(person?.email ?? '');
+  const [username, setUsername] = useState(person?.username ?? '');
   const [phone, setPhone] = useState(person?.phone ?? '');
-  const [roleDefault, setRoleDefault] = useState(person?.role_default ?? '');
+  const [dateOfBirth, setDateOfBirth] = useState(person?.date_of_birth ?? '');
+  const [employmentStartDate, setEmploymentStartDate] = useState(person?.employment_start_date ?? '');
+  const [role, setRole] = useState(person?.role ?? '');
   const [billable, setBillable] = useState(person?.billable ?? true);
   const [active, setActive] = useState(person?.active ?? true);
   const [color, setColor] = useState(person?.color ?? SWATCH_COLORS[8]);
@@ -30,23 +29,12 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [newApp, setNewApp] = useState<AppName>('rostr');
-  const [newRole, setNewRole] = useState<Role>('editor');
-  const [accessBusy, setAccessBusy] = useState(false);
-  const [accessError, setAccessError] = useState<string | null>(null);
-
-  const [settingPassword, setSettingPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [passwordBusy, setPasswordBusy] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordSet, setPasswordSet] = useState(false);
-
   const handleSave = async () => {
     if (!name.trim()) {
       setError('Name is required');
       return;
     }
-    if (!email.trim()) {
+    if (loginType !== 'local' && !email.trim()) {
       setError('Email is required');
       return;
     }
@@ -55,10 +43,14 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
     try {
       await onSave({
         name,
-        email,
+        login_type: loginType,
+        email: loginType !== 'local' ? email || null : null,
+        username: loginType === 'local' ? username || null : null,
         phone: phone || null,
-        role_default: roleDefault || null,
-        billable,
+        date_of_birth: dateOfBirth || null,
+        employment_start_date: employmentStartDate || null,
+        role: role || null,
+        billable: loginType === 'local' ? false : billable,
         active,
         color,
         notes,
@@ -68,52 +60,6 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
       setError(e instanceof Error ? e.message : 'Failed to save');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const grantAccess = async () => {
-    if (!person) return;
-    setAccessBusy(true);
-    setAccessError(null);
-    try {
-      await api.grantAppAccess(person.id, { app: newApp, role: newRole });
-      onAccessChanged?.();
-    } catch (e) {
-      setAccessError(e instanceof Error ? e.message : 'Failed to grant access');
-    } finally {
-      setAccessBusy(false);
-    }
-  };
-
-  const revokeAccess = async (app: AppName) => {
-    if (!person) return;
-    setAccessBusy(true);
-    try {
-      await api.revokeAppAccess(person.id, app);
-      onAccessChanged?.();
-    } finally {
-      setAccessBusy(false);
-    }
-  };
-
-  const setPassword = async () => {
-    if (!person) return;
-    if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
-      return;
-    }
-    setPasswordBusy(true);
-    setPasswordError(null);
-    try {
-      await api.setPersonPassword(person.id, newPassword);
-      setNewPassword('');
-      setSettingPassword(false);
-      setPasswordSet(true);
-      onAccessChanged?.();
-    } catch (e) {
-      setPasswordError(e instanceof Error ? e.message : 'Failed to set password');
-    } finally {
-      setPasswordBusy(false);
     }
   };
 
@@ -128,126 +74,114 @@ export default function PersonModal({ person, onClose, onSave, onAccessChanged, 
             <input value={name} onChange={(e) => setName(e.target.value)} autoFocus disabled={readOnly} />
           </div>
           <div className="field">
-            <label>Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
-          </div>
-        </div>
-
-        <div className="row">
-          <div className="field">
-            <label>Phone</label>
-            <input value={phone ?? ''} onChange={(e) => setPhone(e.target.value)} disabled={readOnly} />
-          </div>
-          <div className="field">
-            <label>Default role</label>
+            <label>Role</label>
             <input
-              value={roleDefault ?? ''}
-              onChange={(e) => setRoleDefault(e.target.value)}
+              value={role ?? ''}
+              onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Foreman, Estimator"
               disabled={readOnly}
             />
           </div>
         </div>
 
-        <div className="field">
-          <label>Colour</label>
-          <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
+        <div className="row">
+          <div className="field">
+            <label>Login type</label>
+            <select value={loginType} onChange={(e) => setLoginType(e.target.value as LoginType)} disabled={readOnly}>
+              <option value="sso">SSO</option>
+              <option value="local">Local</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+          {loginType === 'local' ? (
+            <div className="field">
+              <label>Username</label>
+              <input value={username ?? ''} onChange={(e) => setUsername(e.target.value)} disabled={readOnly} />
+            </div>
+          ) : (
+            <div className="field">
+              <label>Email</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
+            </div>
+          )}
+        </div>
+
+        {loginType === 'sso' && (
+          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8, marginBottom: 12 }}>
+            Email address must match the email their identity provider signs them in with.
+          </div>
+        )}
+
+        {loginType === 'local' && (
+          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8, marginBottom: 12 }}>
+            {!person
+              ? 'No password set yet — save first, then set one from the People list.'
+              : person.has_password
+                ? 'This person has a local password set.'
+                : 'No password set yet — this person can\'t sign in. Set one from the People list.'}
+          </div>
+        )}
+
+        {loginType === 'none' && (
+          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8, marginBottom: 12 }}>
+            No sign-in — email is still used for sending schedules and other notifications.
+          </div>
+        )}
+
+        <div className="row" style={{ marginBottom: 12 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Phone</label>
+              <input value={phone ?? ''} onChange={(e) => setPhone(e.target.value)} disabled={readOnly} />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Date of birth</label>
+              <input type="date" value={dateOfBirth ?? ''} onChange={(e) => setDateOfBirth(e.target.value)} disabled={readOnly} />
+            </div>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Employment start date</label>
+              <input
+                type="date"
+                value={employmentStartDate ?? ''}
+                onChange={(e) => setEmploymentStartDate(e.target.value)}
+                disabled={readOnly}
+              />
+            </div>
+          </div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <label>Colour</label>
+              <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20, height: 32 }}>
+              {person && (
+                <label
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}
+                  title={isSelf ? "You can't make your own account inactive" : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    onChange={(e) => setActive(e.target.checked)}
+                    disabled={readOnly || isSelf}
+                  />
+                  Active
+                </label>
+              )}
+              {loginType !== 'local' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                  <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
+                  Billable
+                </label>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="field">
           <label>Notes</label>
           <textarea rows={2} value={notes ?? ''} onChange={(e) => setNotes(e.target.value)} disabled={readOnly} />
         </div>
-
-        <div style={{ display: 'flex', gap: 20, marginBottom: 12 }}>
-          {person && (
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-              <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={readOnly} />
-              Active
-            </label>
-          )}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-            <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
-            Billable
-          </label>
-        </div>
-
-        {person && (
-          <div className="field">
-            <label>App access</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: isAdmin && !readOnly ? 10 : 0 }}>
-              {person.app_access.length === 0 && <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>No app access granted.</div>}
-              {person.app_access.map((a) => (
-                <div key={a.app} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                  <span style={{ width: 70 }}>{APP_LABELS[a.app]}</span>
-                  <span className="badge">{a.role}</span>
-                  {isAdmin && !readOnly && (
-                    <button className="btn btn-danger" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => revokeAccess(a.app)} disabled={accessBusy}>
-                      Revoke
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {isAdmin && !readOnly && (
-              <div className="row">
-                <select value={newApp} onChange={(e) => setNewApp(e.target.value as AppName)} style={{ flex: 1 }}>
-                  {APPS.map((a) => (
-                    <option key={a} value={a}>
-                      {APP_LABELS[a]}
-                    </option>
-                  ))}
-                </select>
-                <select value={newRole} onChange={(e) => setNewRole(e.target.value as Role)} style={{ flex: 1 }}>
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-                <button className="btn" onClick={grantAccess} disabled={accessBusy}>
-                  Grant
-                </button>
-              </div>
-            )}
-            {accessError && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{accessError}</div>}
-          </div>
-        )}
-
-        {person && isAdmin && (
-          <div className="field">
-            <label>Local login (break-glass, alongside SSO)</label>
-            <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: settingPassword ? 8 : 0 }}>
-              {passwordSet
-                ? 'A temporary password was set — they must change it on next login.'
-                : person.has_password
-                  ? 'This person has a local password set.'
-                  : 'No local password — this person can only sign in via SSO.'}
-            </div>
-            {!settingPassword ? (
-              <button className="btn" onClick={() => setSettingPassword(true)}>
-                {person.has_password ? 'Reset password' : 'Set password'}
-              </button>
-            ) : (
-              <div className="row" style={{ alignItems: 'flex-start' }}>
-                <input
-                  type="password"
-                  placeholder="New temporary password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <button className="btn btn-primary" onClick={setPassword} disabled={passwordBusy}>
-                  Save
-                </button>
-                <button className="btn" onClick={() => { setSettingPassword(false); setNewPassword(''); setPasswordError(null); }}>
-                  Cancel
-                </button>
-              </div>
-            )}
-            {passwordError && <div style={{ color: 'var(--danger)', marginTop: 8 }}>{passwordError}</div>}
-          </div>
-        )}
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 

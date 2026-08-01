@@ -14,7 +14,7 @@ const OIDC_ERROR_MESSAGES: Record<string, string> = {
 export default function LoginPage() {
   const { login } = useAuth();
   const [searchParams] = useSearchParams();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -30,11 +30,11 @@ export default function LoginPage() {
   }, [searchParams]);
 
   const handleSubmit = async () => {
-    if (!email || !password) return;
+    if (!username || !password) return;
     setSubmitting(true);
     setError(null);
     try {
-      await login(email, password);
+      await login(username, password);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Login failed');
     } finally {
@@ -67,8 +67,8 @@ export default function LoginPage() {
           </>
         )}
         <div className="field">
-          <label>Email</label>
-          <input value={email} onChange={(e) => setEmail(e.target.value)} autoFocus={!oidcEnabled} />
+          <label>Username</label>
+          <input value={username} onChange={(e) => setUsername(e.target.value)} autoFocus={!oidcEnabled} />
         </div>
         <div className="field">
           <label>Password</label>

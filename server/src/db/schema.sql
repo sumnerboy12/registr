@@ -1,33 +1,27 @@
 -- registr is the system of record for project identity, plus the people and
--- clients that hang off it. Every downstream app (rostr, claimr, costr)
--- stores only a project_id/person_id/client_id foreign reference — no
--- duplicated project code, name, client, or staff data anywhere else.
+-- clients that hang off it. Downstream apps store only a foreign reference.
 
 CREATE TABLE IF NOT EXISTS people (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  -- The identity SSO logs in with when this person has app access — also the
-  -- join key every consuming app's OIDC callback uses to ask registr "is this
-  -- email allowed in, and as what role?" (see routes/auth.js's /check). Can
-  -- be any domain (people.js's POST/PATCH don't restrict it) — only granting
-  -- app_access itself is restricted to ALLOWED_EMAIL_DOMAIN, since that's the
-  -- only domain that can complete M365 SSO anyway.
-  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  -- 'sso'/'local'/'none' — explicit, since email can't imply it: a 'none'
+  -- person still carries an email (for schedules/notifications), same as 'sso'.
+  login_type TEXT NOT NULL DEFAULT 'sso' CHECK (login_type IN ('sso', 'local', 'none')),
+  -- SSO identity + cross-app lookup key (see routes/auth.js's /check). Nullable for local-only accounts.
+  email TEXT UNIQUE COLLATE NOCASE,
+  -- Local login identity, independent of email. Nullable — most people only use SSO.
+  username TEXT UNIQUE COLLATE NOCASE,
   phone TEXT,
-  -- Free-text default job title (e.g. "Foreman", "Estimator") — distinct
-  -- from project_assignments.role, which is per-project.
-  role_default TEXT,
-  -- Whether this person's time is chargeable — rostr uses this to decide
-  -- whether to offer them for crew scheduling. A registr-owned property of
-  -- the person, not project data, so it lives here rather than duplicated
-  -- in rostr.
+  date_of_birth TEXT,
+  employment_start_date TEXT,
+  -- Free-text job title, distinct from project_assignments.role (per-project).
+  role TEXT,
+  -- Whether this person's time is chargeable (rostr scheduling).
   billable INTEGER NOT NULL DEFAULT 1,
   active INTEGER NOT NULL DEFAULT 1,
   -- Swatch colour rostr uses to identify this person on the Schedule.
   color TEXT NOT NULL DEFAULT '#3b82f6',
-  -- Optional local login, alongside SSO — null means this person can only
-  -- sign in via M365. Exists for a break-glass/bootstrap admin path when SSO
-  -- isn't configured yet or is unavailable, same as rostr's password login.
+  -- Local password login alongside SSO. Requires username too — login looks accounts up by username.
   password_hash TEXT,
   must_change_password INTEGER NOT NULL DEFAULT 0,
   notes TEXT,
@@ -35,10 +29,7 @@ CREATE TABLE IF NOT EXISTS people (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Which apps a person can sign into, and their role once in. All app access
--- control is decided here — each app does its own SSO handshake, then asks
--- registr's /api/v1/auth/check whether the signed-in email is allowed and
--- with what role, rather than keeping its own separate user list.
+-- Which apps a person can sign into, and their role — see /api/v1/auth/check.
 CREATE TABLE IF NOT EXISTS person_app_access (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
@@ -65,13 +56,10 @@ CREATE TABLE IF NOT EXISTS clients (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- TEXT (UUID) primary key, not an autoincrement int — this is the one thing
--- every downstream app stores, so it must stay stable even if the project is
--- renumbered, and must not leak sequential/guessable ids across apps.
+-- TEXT (UUID) primary key — stays stable across renumbering, unguessable across apps.
 CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
-  -- Human code (e.g. "24-118"). Editable, unique, but never the join key —
-  -- always join on id; code is for humans only.
+  -- Human code (e.g. "24-118"). Never the join key — always join on id.
   code TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
@@ -87,10 +75,7 @@ CREATE TABLE IF NOT EXISTS projects (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Join table rather than columns on projects, so roles can grow without
--- migrations. One person can hold several roles; one role can have several
--- people — "exactly one active PM" is an app-layer concern, not a constraint
--- here.
+-- Join table so roles can grow without migrations; not a "one PM" constraint.
 CREATE TABLE IF NOT EXISTS project_assignments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -100,10 +85,7 @@ CREATE TABLE IF NOT EXISTS project_assignments (
   UNIQUE(project_id, person_id, role)
 );
 
--- One row per server-to-server credential, one per consuming app (rostr,
--- claimr, costr). Read-only by design — see middleware/apiKey.js — registr's
--- own UI is the only writer. Only the hash is stored; the plaintext key is
--- shown once at creation time (see db/createApiKey.js).
+-- Server-to-server credentials, one per consuming app. Only the hash is stored.
 CREATE TABLE IF NOT EXISTS api_keys (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   app TEXT NOT NULL CHECK (app IN ('rostr', 'claimr', 'costr')),

@@ -19,8 +19,8 @@ export const api = {
   getHealth: () => request<{ ok: boolean; commit: string | null }>('/health'),
 
   getMe: () => request<AuthPerson>('/auth/me'),
-  login: (email: string, password: string) =>
-    request<AuthPerson>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  login: (username: string, password: string) =>
+    request<AuthPerson>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
   changePassword: (current_password: string, new_password: string) =>
     request<void>('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),

@@ -5,6 +5,7 @@ import { CLIENT_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ClientModal from '../components/ClientModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
+import { downloadCsv } from '../lib/csv';
 
 const CLIENT_IMPORT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'client', 'client name', 'company', 'company name'] },
@@ -34,20 +35,42 @@ export default function ClientsPage() {
 
   const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
 
+  const exportCsv = () => {
+    downloadCsv(
+      'clients.csv',
+      ['Name', 'Type', 'Contact name', 'Contact email', 'Contact phone', 'Accounts email', 'Active', 'Notes'],
+      filtered.map((c) => [
+        c.name,
+        CLIENT_TYPE_LABELS[c.type],
+        c.contact_name ?? '',
+        c.contact_email ?? '',
+        c.contact_phone ?? '',
+        c.accounts_email ?? '',
+        c.active ? 'Yes' : 'No',
+        c.notes ?? '',
+      ])
+    );
+  };
+
   return (
     <div style={{ padding: 20, maxWidth: 1000, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>Clients</h1>
-        {!isReadOnly && (
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button className="btn" onClick={() => setShowImport(true)}>
-              Import
-            </button>
-            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-              + Add Client
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn" onClick={exportCsv}>
+            Export
+          </button>
+          {!isReadOnly && (
+            <>
+              <button className="btn" onClick={() => setShowImport(true)}>
+                Import
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+                + Add Client
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <input placeholder="Search clients…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280, marginBottom: 12 }} />

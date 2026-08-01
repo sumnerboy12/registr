@@ -1,8 +1,8 @@
 import db from '../db/index.js';
 
 // Loads the signed-in person plus their role for registr's own UI
-// (person_app_access where app = 'registr'). No password/local-account path
-// at all — session.personId is only ever set by the OIDC callback.
+// (person_app_access where app = 'registr'). session.personId is set either
+// by the OIDC callback or by /auth/login's local username/password path.
 export function requireAuth(req, res, next) {
   const personId = req.session?.personId;
   if (!personId) return res.status(401).json({ error: 'not authenticated' });

@@ -13,12 +13,26 @@ export const APP_LABELS: Record<AppName, string> = {
   costr: 'costr',
 };
 
+// A person signs in one way, the other, or not at all — local login is
+// registr-only anyway, so mixing SSO and local doesn't buy anything.
+export type LoginType = 'sso' | 'local' | 'none';
+
+export const LOGIN_TYPE_LABELS: Record<LoginType, string> = {
+  sso: 'SSO',
+  local: 'Local',
+  none: 'None',
+};
+
 export interface Person {
   id: number;
   name: string;
-  email: string;
+  login_type: LoginType;
+  email: string | null;
+  username: string | null;
   phone: string | null;
-  role_default: string | null;
+  date_of_birth: string | null;
+  employment_start_date: string | null;
+  role: string | null;
   billable: boolean;
   active: boolean;
   color: string;
@@ -30,7 +44,8 @@ export interface Person {
 export interface AuthPerson {
   id: number;
   name: string;
-  email: string;
+  email: string | null;
+  username: string | null;
   role: Role;
   must_change_password: boolean;
   has_password: boolean;
@@ -89,7 +104,7 @@ export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {
 export interface ProjectAssignment {
   id: number;
   role: AssignmentRole;
-  person: { id: number; name: string; email: string };
+  person: { id: number; name: string; email: string | null };
 }
 
 export interface Project {

@@ -12,22 +12,23 @@ function publicPerson(person, role) {
     id: person.id,
     name: person.name,
     email: person.email,
+    username: person.username,
     role,
     must_change_password: !!person.must_change_password,
     has_password: !!person.password_hash,
   };
 }
 
-// Local email+password login — the break-glass/bootstrap path alongside SSO
-// (see people.password_hash). Only works for a person an admin has
-// explicitly set a password for; everyone else must use SSO.
+// Local username+password login, alongside SSO (see people.password_hash).
+// Only works for a person an admin has explicitly set a username and
+// password for; everyone else must use SSO.
 router.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'username and password are required' });
 
-  const person = db.prepare('SELECT * FROM people WHERE email = ? COLLATE NOCASE').get(String(email).trim());
-  if (!person || !person.active || !person.password_hash) return res.status(401).json({ error: 'Invalid email or password' });
-  if (!verifyPassword(password, person.password_hash)) return res.status(401).json({ error: 'Invalid email or password' });
+  const person = db.prepare('SELECT * FROM people WHERE username = ? COLLATE NOCASE').get(String(username).trim());
+  if (!person || !person.active || !person.password_hash) return res.status(401).json({ error: 'Invalid username or password' });
+  if (!verifyPassword(password, person.password_hash)) return res.status(401).json({ error: 'Invalid username or password' });
 
   const access = db.prepare("SELECT role FROM person_app_access WHERE person_id = ? AND app = 'registr'").get(person.id);
   if (!access) return res.status(401).json({ error: 'This account has not been granted access to registr' });
