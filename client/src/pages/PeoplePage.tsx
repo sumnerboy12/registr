@@ -117,7 +117,9 @@ export default function PeoplePage() {
                   <td>{LOGIN_TYPE_LABELS[person.login_type]}</td>
                   <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    {isAdmin && person.id !== user?.id && person.login_type !== 'none' && (
+                    {isAdmin &&
+                      person.login_type !== 'none' &&
+                      (person.id !== user?.id || person.login_type === 'sso') && (
                       <button className="btn" onClick={() => setManagingAccessFor(person)}>
                         Access
                       </button>
