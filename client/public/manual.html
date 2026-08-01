@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Registr — User Manual</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="/favicon.svg" />
+<style>
+  :root {
+    --bg: #eef1f2;
+    --bg-raised: #ffffff;
+    --ink: #1d2630;
+    --ink-dim: #55626d;
+    --border: #d7dce0;
+    --accent: #2f5d8a;
+    --accent-ink: #ffffff;
+    --accent-soft: #dfe9f2;
+    --amber: #c97a26;
+    --amber-soft: #f7e9d8;
+    --patina: #3f7a5c;
+    --patina-soft: #e0eee7;
+    --brick: #b4483a;
+    --brick-soft: #f6e2df;
+    --code-bg: #e4e9eb;
+    --shadow: 0 1px 2px rgba(29,38,48,0.06), 0 8px 24px rgba(29,38,48,0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181c;
+      --bg-raised: #1c2126;
+      --ink: #e7ecef;
+      --ink-dim: #9aa7b0;
+      --border: #2a3138;
+      --accent: #6fa8d8;
+      --accent-ink: #0f1720;
+      --accent-soft: #223447;
+      --amber: #e2a354;
+      --amber-soft: #3a2e1c;
+      --patina: #6fb08c;
+      --patina-soft: #1e2f27;
+      --brick: #d97361;
+      --brick-soft: #362320;
+      --code-bg: #22282e;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  h1, h2, h3 {
+    font-family: Iowan Old Style, Palatino Linotype, Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  code, .kbd, .field-name {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, "SFMono-Regular", monospace;
+  }
+
+  a { color: var(--accent); }
+
+  .shell {
+    display: flex;
+    max-width: 1180px;
+    margin: 0 auto;
+    align-items: flex-start;
+  }
+
+  /* ---- Sidebar / TOC ---- */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 250px;
+    flex: 0 0 250px;
+    padding: 40px 20px 40px 32px;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+  .toc-brand {
+    font-family: Iowan Old Style, Palatino Linotype, Georgia, serif;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin-bottom: 2px;
+  }
+  .toc-brand .roof {
+    color: var(--accent);
+  }
+  .toc-sub {
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    margin-bottom: 28px;
+    letter-spacing: 0.02em;
+  }
+  .toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: chapter;
+  }
+  .toc li { counter-increment: chapter; margin-bottom: 2px; }
+  .toc a {
+    display: flex;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink-dim);
+    font-size: 13.5px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .toc a:hover { background: var(--accent-soft); color: var(--ink); }
+  .toc a::before {
+    content: counter(chapter, decimal-leading-zero);
+    color: var(--accent);
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    flex: 0 0 auto;
+    padding-top: 1px;
+  }
+  .toc-foot {
+    margin-top: 28px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--ink-dim);
+  }
+
+  /* ---- Main content ---- */
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 56px 48px 120px;
+  }
+  .cover {
+    margin-bottom: 64px;
+  }
+  .cover .eyebrow {
+    font-size: 12.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .cover h1 {
+    font-size: 40px;
+    margin: 0 0 14px;
+    line-height: 1.12;
+  }
+  .cover p.lede {
+    max-width: 62ch;
+    font-size: 17px;
+    color: var(--ink-dim);
+    margin: 0;
+  }
+
+  section.chapter {
+    max-width: 700px;
+    margin-bottom: 68px;
+    scroll-margin-top: 24px;
+  }
+  section.chapter > .chapter-num {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  section.chapter h2 {
+    font-size: 26px;
+    margin: 0 0 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  section.chapter h3 {
+    font-size: 17px;
+    margin: 32px 0 10px;
+  }
+  section.chapter p { margin: 0 0 14px; color: var(--ink); }
+  section.chapter p.dim { color: var(--ink-dim); }
+  section.chapter ul, section.chapter ol.steps {
+    margin: 0 0 16px;
+    padding-left: 22px;
+  }
+  section.chapter li { margin-bottom: 8px; }
+  section.chapter ol.steps { padding-left: 0; list-style: none; counter-reset: step; }
+  section.chapter ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 34px;
+    margin-bottom: 14px;
+  }
+  section.chapter ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 0;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+
+  .kbd {
+    display: inline-block;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 7px;
+    font-size: 12.5px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  code.path {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 13.5px;
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 18px 0;
+    font-size: 14.5px;
+  }
+  .callout.warn { border-color: var(--amber); background: var(--amber-soft); }
+  .callout.danger { border-color: var(--brick); background: var(--brick-soft); }
+  .callout .label {
+    display: block;
+    font-weight: 700;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    color: var(--ink);
+  }
+  .callout.warn .label { color: var(--amber); }
+  .callout.danger .label { color: var(--brick); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  table.field-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 20px;
+    font-size: 14px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.field-table th, table.field-table td {
+    text-align: left;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.field-table th {
+    background: var(--code-bg);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-dim);
+    font-weight: 600;
+  }
+  table.field-table tr:last-child td { border-bottom: none; }
+  table.field-table td.name { font-weight: 600; white-space: nowrap; }
+
+  .status-pills {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 20px;
+  }
+  .status-pill {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    padding: 4px 11px; border-radius: 999px; color: var(--ink); border: 1px solid var(--border);
+    background: var(--bg-raised);
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 18px 0 22px;
+  }
+  .mini-card {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .mini-card h4 {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+  }
+  .mini-card p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+
+  .cheat-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px 18px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    font-size: 14px;
+  }
+  .cheat-grid .action { color: var(--ink-dim); }
+
+  footer.doc-foot {
+    max-width: 700px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+
+  @media (max-width: 880px) {
+    nav.toc { display: none; }
+    main { padding: 40px 20px 100px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-brand"><span class="roof">Registr</span></div>
+    <div class="toc-sub">User Manual</div>
+    <ol>
+      <li><a href="#signing-in">Signing in</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#clients">Clients</a></li>
+      <li><a href="#people">People</a></li>
+      <li><a href="#login-access">Login type &amp; app access</a></li>
+      <li><a href="#api-keys">API keys</a></li>
+      <li><a href="#importing">Importing &amp; exporting</a></li>
+      <li><a href="#data">Your data</a></li>
+      <li><a href="#reference">Quick reference</a></li>
+    </ol>
+    <div class="toc-foot">Covers every screen in the main toolbar as they work today.</div>
+  </nav>
+
+  <main>
+    <div class="cover">
+      <div class="eyebrow">Internal tool · Wayman Roofing</div>
+      <h1>Registr</h1>
+      <p class="lede">
+        Registr is the system of record for project identity, plus the people and clients
+        that hang off it. Every other internal app — rostr, claimr, costr — stores only a
+        project, person or client reference back to Registr, rather than keeping its own
+        copy of that data. Registr is also where sign-in access to all of those apps is
+        granted, from one place. This manual covers every screen on the main toolbar.
+      </p>
+    </div>
+
+    <section class="chapter" id="signing-in">
+      <div class="chapter-num">01</div>
+      <h2>Signing in</h2>
+      <p>
+        Open Registr in a browser and you'll land on the login screen, which offers a
+        username/password form and, if your organisation's Microsoft 365 identity provider
+        is connected, a <strong>Sign in with SSO</strong> button below it.
+      </p>
+      <p>
+        The very first time Registr is ever started, it creates one admin login
+        automatically and prints its username and a temporary password to the server's
+        console output — whoever set up the server should have that. You'll be forced to
+        set a real password the first time you log in with it.
+      </p>
+      <p class="dim">
+        Once you're in, your name in the top-right corner of the toolbar is itself a menu —
+        click it for <strong>Change password</strong> (only shown if you have a local
+        password to change) and <strong>Log out</strong>.
+      </p>
+      <div class="callout">
+        <span class="label">Every login after that</span>
+        <p>
+          Once the initial admin exists, everyone else is added from the
+          <strong>People</strong> screen (see <a href="#people">chapter 4</a>) and given
+          sign-in rights from there — see <a href="#login-access">chapter 5</a>. You don't
+          sign yourself up.
+        </p>
+      </div>
+      <div class="callout warn">
+        <span class="label">You can't lock yourself out</span>
+        <p>
+          Registr won't let you revoke or demote your own admin access to Registr itself, or
+          mark your own account inactive — one of those actions has to come from another
+          admin.
+        </p>
+      </div>
+    </section>
+
+    <section class="chapter" id="projects">
+      <div class="chapter-num">02</div>
+      <h2>Projects</h2>
+      <p>
+        Every job Registr tracks lives here, identified by a human <strong>code</strong>
+        (e.g. "24-118") — the code is what other apps and people use to refer to a project,
+        though the underlying link is always a stable internal ID, so renaming a code later
+        doesn't break anything already pointing at it.
+      </p>
+
+      <h3>Type and status</h3>
+      <p>
+        Every project is either a <strong>Contract</strong> or <strong>Minor Works</strong>,
+        and carries one status:
+      </p>
+      <div class="status-pills">
+        <span class="status-pill">Tendering</span>
+        <span class="status-pill">Awarded</span>
+        <span class="status-pill">Active</span>
+        <span class="status-pill">On Hold</span>
+        <span class="status-pill">Practical Completion</span>
+        <span class="status-pill">Closed</span>
+      </div>
+      <p class="dim">
+        Registr never hard-deletes a project — <strong>Closed</strong> is how one is
+        archived. Closed projects drop out of the default list and search, but aren't gone;
+        tick <span class="kbd">All statuses</span> off the status filter, or ask for
+        archived ones specifically, to see them again.
+      </p>
+
+      <h3>Working with a project</h3>
+      <ol class="steps">
+        <li>Click <span class="kbd">+ New Project</span> — code and name are the only fields
+          required up front. Client, site address, contract value and start/end dates stay
+          optional.</li>
+        <li>Click any project in the list to open its detail page and edit any of those
+          fields, including re-linking its client or changing its status.</li>
+        <li><strong>Contract value</strong> is free-form — leave it blank for tendering work
+          or minor works where there isn't one fixed figure yet.</li>
+      </ol>
+
+      <h3>Assignments</h3>
+      <p>
+        A project's detail page also lists who's assigned to it and in what role —
+        <strong>Project Manager</strong>, <strong>Foreman</strong>, <strong>Estimator</strong>
+        or <strong>QS</strong>. Pick a person (from active People) and a role and click
+        <span class="kbd">Add</span>; the same person can hold more than one role on the same
+        project, but not the same role twice. <span class="kbd">Remove</span> next to any row
+        takes them off that role.
+      </p>
+      <p class="dim">
+        Search filters by code or name; the status and type dropdowns narrow the list
+        further. The list is always sorted by code.
+      </p>
+    </section>
+
+    <section class="chapter" id="clients">
+      <div class="chapter-num">03</div>
+      <h2>Clients</h2>
+      <p>
+        The organisations projects are done for or through. Every client carries a
+        <strong>type</strong> — <strong>Main Contractor</strong>, <strong>Direct</strong> or
+        <strong>Residential</strong> — plus optional contact details and a colour.
+      </p>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Name</td><td>The only required field.</td></tr>
+          <tr><td class="name">Type</td><td>Main Contractor, Direct or Residential.</td></tr>
+          <tr><td class="name">Contact name / phone / email</td><td>Optional, for the person
+            you'd actually deal with day to day.</td></tr>
+          <tr><td class="name">Accounts / payables email</td><td>Optional — kept separate
+            from the main contact, since invoicing often goes to a different address or
+            inbox.</td></tr>
+          <tr><td class="name">Colour</td><td>Picked from an 18-colour swatch, shown as a dot
+            next to the client's name in lists.</td></tr>
+          <tr><td class="name">Active</td><td>Turn off instead of deleting when a client's
+            no longer current — projects linked to it are unaffected either way.</td></tr>
+        </tbody>
+      </table>
+      <p class="dim">
+        <span class="kbd">Import</span> pastes a client list in from a spreadsheet,
+        <span class="kbd">Export</span> downloads whatever's currently listed and searched —
+        see <a href="#importing">chapter 7</a>.
+      </p>
+    </section>
+
+    <section class="chapter" id="people">
+      <div class="chapter-num">04</div>
+      <h2>People</h2>
+      <p>
+        Registr's directory — everyone who might need to be assigned to a project, appear in
+        another app, or sign in anywhere. Not everyone in People needs to sign in at all; see
+        <a href="#login-access">chapter 5</a> for how that's decided per person.
+      </p>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Name</td><td>The only field required regardless of login
+            type.</td></tr>
+          <tr><td class="name">Role</td><td>Free text, e.g. Foreman, Estimator — distinct
+            from a project's own assignment roles (chapter 2).</td></tr>
+          <tr><td class="name">Phone</td><td>Optional.</td></tr>
+          <tr><td class="name">Date of birth / Employment start date</td><td>Optional
+            record-keeping fields.</td></tr>
+          <tr><td class="name">Colour</td><td>Picked from the same 18-colour swatch as
+            clients — used by rostr to identify this person on its Schedule.</td></tr>
+          <tr><td class="name">Billable</td><td>Whether this person's time is chargeable —
+            used by rostr's scheduling. Hidden and forced off for Local-login people (see
+            below), since those are typically break-glass or system accounts, not scheduled
+            staff.</td></tr>
+          <tr><td class="name">Active</td><td>Turn off instead of deleting when someone
+            leaves — they disappear from pickers elsewhere, but their history is kept. You
+            can't mark your own account inactive.</td></tr>
+        </tbody>
+      </table>
+      <p class="dim">
+        By default the list only shows what you've searched for by name, email or role.
+        <span class="kbd">Import</span> and <span class="kbd">Export</span> work the same way
+        as on Clients — see <a href="#importing">chapter 7</a>. Imported people default to
+        the <strong>None</strong> login type (see next chapter), since a bulk import is
+        usually a contact list, not a batch of new logins.
+      </p>
+    </section>
+
+    <section class="chapter" id="login-access">
+      <div class="chapter-num">05</div>
+      <h2>Login type &amp; app access</h2>
+      <p>
+        Every person has exactly one <strong>login type</strong>, set on their own record —
+        it decides whether, and how, they can sign in anywhere.
+      </p>
+      <div class="card-grid">
+        <div class="mini-card">
+          <h4>SSO</h4>
+          <p>Signs in via Microsoft 365. Carries an <strong>email</strong>, which must match
+            exactly what their identity provider signs them in with.</p>
+        </div>
+        <div class="mini-card">
+          <h4>Local</h4>
+          <p>Signs in with a <strong>username</strong> and password, set separately (see
+            below) — for people without an M365 account, or a break-glass path into Registr
+            itself if SSO is ever unavailable. Local login only ever unlocks Registr, never
+            the other apps.</p>
+        </div>
+        <div class="mini-card">
+          <h4>None</h4>
+          <p>Can't sign in anywhere. Still carries an email if you give it one — used for
+            sending schedules and other notifications, not for login.</p>
+        </div>
+      </div>
+
+      <h3>Setting a local password</h3>
+      <p>
+        For a Local-login person, an admin sets their password from the
+        <span class="kbd">Set password</span> / <span class="kbd">Reset password</span>
+        button on the People list — it isn't part of the main edit form. This forces a
+        change on their next login, same as the initial admin bootstrap.
+      </p>
+
+      <h3>Granting app access</h3>
+      <p>
+        The <span class="kbd">Access</span> button on the People list (admin only) opens a
+        picker with one row per app — Registr, rostr, claimr, costr, or just Registr for a
+        Local-login person — each with a role dropdown: <strong>No access</strong>,
+        <strong>admin</strong>, <strong>editor</strong> or <strong>readonly</strong>.
+        Changing a row takes effect immediately, no separate save step.
+      </p>
+      <div class="callout warn">
+        <span class="label">Your own Registr row is locked</span>
+        <p>
+          You can grant yourself access to other apps this way, but your own Registr row is
+          always disabled here — matching the sign-in protection in chapter 1. Have another
+          admin change it if it's ever genuinely needed.
+        </p>
+      </div>
+      <p class="dim">
+        <strong>admin</strong>, <strong>editor</strong> and <strong>readonly</strong> mean
+        the same thing in every app: admin can do everything editor can plus manage
+        access/users for that app; editor can view and edit; readonly can view but not
+        change anything.
+      </p>
+    </section>
+
+    <section class="chapter" id="api-keys">
+      <div class="chapter-num">06</div>
+      <h2>API keys</h2>
+      <p>
+        rostr, claimr and costr each ask Registr, server-to-server, whether a signed-in
+        email is allowed into <em>that</em> app and with what role — the same access decided
+        in chapter 5. Each app needs its own credential to do that, managed from the
+        <strong>API Keys</strong> screen (admin only).
+      </p>
+      <ol class="steps">
+        <li>Click <span class="kbd">+ Generate Key</span>, pick the app, and an optional
+          label to tell keys apart later (e.g. "production").</li>
+        <li>The plaintext key is shown <strong>once</strong>, right after creating it — copy
+          it into that app's server config immediately. Only its hash is stored in Registr,
+          so it can't be shown again.</li>
+        <li><span class="kbd">Revoke</span> deletes a key permanently — there's no
+          deactivate-and-reactivate step. Generate a new one if an app needs a key again.</li>
+      </ol>
+      <p class="dim">
+        The list shows each key's app, label, when it was created, and when it was last
+        used — handy for spotting one that's gone stale.
+      </p>
+    </section>
+
+    <section class="chapter" id="importing">
+      <div class="chapter-num">07</div>
+      <h2>Importing &amp; exporting</h2>
+      <p>
+        The People and Clients screens each have <span class="kbd">Import</span> and
+        <span class="kbd">Export</span> buttons for working with a spreadsheet you already
+        keep, instead of retyping everything by hand.
+      </p>
+      <ol class="steps">
+        <li>Select and copy the rows in Excel or Google Sheets — <strong>include the header
+          row</strong> — and paste the whole block into the box.</li>
+        <li>Registr detects your columns and tries to auto-match them to the right fields;
+          adjust any dropdown that guessed wrong, or set it to
+          <em>— Don't import —</em> to skip a column.</li>
+        <li>Check the preview of the first few rows, then click <span class="kbd">Import</span>.
+          Only the name is required — everything else can be left unmapped.</li>
+      </ol>
+      <p class="dim">
+        Rows that fail (e.g. a duplicate email) are listed with the reason afterwards;
+        everything else still imports, so a bad row won't block the rest of the batch.
+      </p>
+      <p class="dim">
+        <span class="kbd">Export</span> downloads a CSV of whatever's currently listed and
+        searched — not necessarily everything, if you've filtered the list first.
+      </p>
+    </section>
+
+    <section class="chapter" id="data">
+      <div class="chapter-num">08</div>
+      <h2>Your data</h2>
+      <p>
+        Every project, person, client and API key lives in one SQLite database file on
+        whichever machine hosts Registr — there's no cloud copy behind it.
+      </p>
+      <div class="callout danger">
+        <span class="label">Back it up</span>
+        <p>
+          Ask whoever manages the server to back up that database file periodically. If
+          the host machine is lost without a backup, the data goes with it — this is worth
+          confirming with them rather than assuming it's automatic.
+        </p>
+      </div>
+      <p class="dim">
+        The Registr icon in the top-left corner of the toolbar links to the exact commit
+        currently running, if you ever need to check whether an update has actually gone
+        live — handy to know when reporting something that seems fixed already, or
+        confirming a fix has actually landed.
+      </p>
+    </section>
+
+    <section class="chapter" id="reference">
+      <div class="chapter-num">09</div>
+      <h2>Quick reference</h2>
+      <div class="cheat-grid">
+        <span class="kbd">Access</span><span class="action">People list button (admin only) — grant or revoke sign-in to Registr and every other app, per person</span>
+        <span class="kbd">Set/Reset password</span><span class="action">People list button (admin only, Local-login people only) — set a temporary local password</span>
+        <span class="kbd">SSO</span><span class="action">login type — signs in via M365, matched by email</span>
+        <span class="kbd">Local</span><span class="action">login type — signs in via username + password, Registr only</span>
+        <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email (if set) is for notifications only</span>
+        <span class="kbd">Closed</span><span class="action">project status — how a project is archived; never hard-deleted</span>
+      </div>
+    </section>
+
+    <footer class="doc-foot">
+      Registr — internal system of record, Wayman Roofing.
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

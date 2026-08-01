@@ -6,6 +6,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 import UserMenu from './UserMenu';
 
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
+const MANUAL_URL = '/manual.html';
 
 const navStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '10px 16px',
@@ -64,7 +65,29 @@ export default function Layout() {
             </NavLink>
           )}
         </nav>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <a
+            href={MANUAL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="User manual"
+            aria-label="User manual"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              border: '1px solid var(--border)',
+              color: 'var(--text-dim)',
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+            }}
+          >
+            ?
+          </a>
           <UserMenu
             name={user?.name ?? ''}
             showChangePassword={!!user?.has_password}
