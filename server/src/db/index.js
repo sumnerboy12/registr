@@ -15,10 +15,10 @@ db.exec('PRAGMA foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
-// Schema-evolution migrations (retrofitting columns/tables onto an existing
-// database file) go here once registr is actually deployed, guarded by
-// PRAGMA table_info checks — same pattern as rostr's db/index.js. Not
-// needed yet: pre-launch, schema.sql itself is the source of truth.
+// registr is in production — every schema.sql change from here needs a
+// matching migration below, guarded by PRAGMA table_info checks, same
+// pattern as rostr's db/index.js. CREATE TABLE IF NOT EXISTS above is a
+// no-op on an existing file, so new/renamed/dropped columns need this.
 
 export { dataDir };
 export default db;
