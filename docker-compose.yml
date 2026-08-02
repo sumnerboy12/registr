@@ -15,6 +15,15 @@ services:
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      # Optional — lets registr relay email for rostr/claimr/costr. See server/.env.example.
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-}
+      - SMTP_REPLY_TO=${SMTP_REPLY_TO:-}
 
 # Shared with rostr/claimr/costr's own docker-compose.yml so they can reach
 # registr by container name (e.g. REGISTR_URL=http://registr:4100) instead

@@ -14,6 +14,7 @@ import peopleRouter from './routes/people.js';
 import clientsRouter from './routes/clients.js';
 import projectsRouter from './routes/projects.js';
 import apiKeysRouter from './routes/apiKeys.js';
+import emailRouter from './routes/email.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -41,6 +42,7 @@ app.use('/api/v1/people', peopleRouter);
 app.use('/api/v1/clients', clientsRouter);
 app.use('/api/v1/projects', projectsRouter);
 app.use('/api/v1/api-keys', apiKeysRouter);
+app.use('/api/v1/email', emailRouter);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, commit: process.env.GIT_COMMIT || null }));
 

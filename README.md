@@ -186,6 +186,12 @@ fallback if the identity provider is ever unreachable.
    `Authorization: Bearer <key>` after its own SSO handshake, and uses the
    returned `{ authorized, role, person }` to decide access — see
    `server/src/routes/auth.js`.
+4. The same key also grants access to `POST /api/v1/email/send` (body
+   `{ to, subject, text, html }`) and `GET /api/v1/email/status` (→
+   `{ configured }`) — registr relays email through its own SMTP account
+   (see `SMTP_*` in `server/.env.example`) so consuming apps don't need
+   their own. `503` if registr's SMTP isn't configured, `502` if the send
+   itself fails — see `server/src/routes/email.js`.
 
 ## Development mode
 
