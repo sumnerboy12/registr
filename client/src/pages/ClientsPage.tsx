@@ -20,6 +20,7 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState<Client | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -33,7 +34,7 @@ export default function ClientsPage() {
 
   useEffect(load, []);
 
-  const filtered = clients.filter((c) => c.name.toLowerCase().includes(q.toLowerCase()));
+  const filtered = clients.filter((c) => (showInactive || c.active) && c.name.toLowerCase().includes(q.toLowerCase()));
 
   const exportCsv = () => {
     downloadCsv(
@@ -73,7 +74,13 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <input placeholder="Search clients…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280, marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+        <input placeholder="Search clients…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
+          Show inactive
+        </label>
+      </div>
 
       <div className="card">
         {loading ? (

@@ -20,6 +20,7 @@ export default function PeoplePage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState<Person | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -39,9 +40,10 @@ export default function PeoplePage() {
 
   const filtered = people.filter(
     (p) =>
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      (p.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
-      (p.role ?? '').toLowerCase().includes(q.toLowerCase())
+      (showInactive || p.active) &&
+      (p.name.toLowerCase().includes(q.toLowerCase()) ||
+        (p.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
+        (p.role ?? '').toLowerCase().includes(q.toLowerCase()))
   );
 
   const exportCsv = () => {
@@ -84,7 +86,13 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280, marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+        <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
+          Show inactive
+        </label>
+      </div>
 
       <div className="card">
         {loading ? (
