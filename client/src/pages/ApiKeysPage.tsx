@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import type { ApiKey } from '../types';
 import { APP_LABELS } from '../types';
 import CreateApiKeyModal from '../components/CreateApiKeyModal';
+import { formatDateTime } from '../lib/formatDate';
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -63,8 +64,8 @@ export default function ApiKeysPage() {
                 <tr key={key.id}>
                   <td>{APP_LABELS[key.app]}</td>
                   <td>{key.label || '—'}</td>
-                  <td>{key.created_at}</td>
-                  <td>{key.last_used_at || 'Never'}</td>
+                  <td>{formatDateTime(key.created_at)}</td>
+                  <td>{key.last_used_at ? formatDateTime(key.last_used_at) : 'Never'}</td>
                   <td>
                     <button className="btn btn-danger" onClick={() => revoke(key)} disabled={busyId === key.id}>
                       Revoke
