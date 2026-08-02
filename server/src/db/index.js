@@ -22,12 +22,14 @@ db.exec(schema);
 
 // Local login removed — replaced by a single hardcoded break-glass admin
 // login (ADMIN_PASSWORD env var), not a per-person account. Existing 'local'
-// people become 'none' (grant them SSO instead if they need to sign in).
+// people are deleted outright (cascades to their app access grants and
+// project assignments) — they had no email-based way back in, so 'none'
+// would just leave dead accounts nobody could ever sign in as again.
 // username carries an inline UNIQUE constraint, which SQLite refuses to drop
 // via plain ALTER TABLE DROP COLUMN — needs the full rebuild-table procedure.
 const peopleColumns = db.prepare('PRAGMA table_info(people)').all().map((c) => c.name);
 if (peopleColumns.includes('username') || peopleColumns.includes('password_hash') || peopleColumns.includes('must_change_password')) {
-  db.exec("UPDATE people SET login_type = 'none' WHERE login_type = 'local'");
+  db.exec("DELETE FROM people WHERE login_type = 'local'");
   db.exec('PRAGMA foreign_keys = OFF');
   db.exec(`
     CREATE TABLE people_new (
