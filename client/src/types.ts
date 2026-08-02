@@ -13,13 +13,13 @@ export const APP_LABELS: Record<AppName, string> = {
   costr: 'Costr',
 };
 
-// A person signs in one way, the other, or not at all — local login is
-// registr-only anyway, so mixing SSO and local doesn't buy anything.
-export type LoginType = 'sso' | 'local' | 'none';
+// A person either signs in via SSO or doesn't sign in at all — the only
+// other way into registr is the single hardcoded break-glass admin login,
+// which isn't a person record.
+export type LoginType = 'sso' | 'none';
 
 export const LOGIN_TYPE_LABELS: Record<LoginType, string> = {
   sso: 'SSO',
-  local: 'Local',
   none: 'None',
 };
 
@@ -28,7 +28,6 @@ export interface Person {
   name: string;
   login_type: LoginType;
   email: string | null;
-  username: string | null;
   phone: string | null;
   date_of_birth: string | null;
   employment_start_date: string | null;
@@ -37,7 +36,6 @@ export interface Person {
   active: boolean;
   color: string;
   notes: string | null;
-  has_password: boolean;
   app_access: AppAccess[];
 }
 
@@ -45,10 +43,7 @@ export interface AuthPerson {
   id: number;
   name: string;
   email: string | null;
-  username: string | null;
   role: Role;
-  must_change_password: boolean;
-  has_password: boolean;
 }
 
 export interface OidcStatus {

@@ -34,8 +34,6 @@ export const api = {
   login: (username: string, password: string) =>
     request<AuthPerson>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  changePassword: (current_password: string, new_password: string) =>
-    request<void>('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
   getOidcStatus: () => request<OidcStatus>('/auth/oidc/status'),
 
   getClients: (params?: { active?: boolean; q?: string }) => {
@@ -63,8 +61,6 @@ export const api = {
     request<AppAccess[]>(`/v1/people/${personId}/app-access`, { method: 'POST', body: JSON.stringify(data) }),
   revokeAppAccess: (personId: number, app: string) =>
     request<void>(`/v1/people/${personId}/app-access/${app}`, { method: 'DELETE' }),
-  setPersonPassword: (personId: number, password: string) =>
-    request<void>(`/v1/people/${personId}/set-password`, { method: 'POST', body: JSON.stringify({ password }) }),
 
   getProjects: (params?: { status?: ProjectStatus; type?: ProjectType; client_id?: number; q?: string; archived?: boolean }) => {
     const qs = new URLSearchParams();

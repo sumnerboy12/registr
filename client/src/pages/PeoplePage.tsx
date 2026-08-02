@@ -5,7 +5,6 @@ import { LOGIN_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
-import SetPersonPasswordModal from '../components/SetPersonPasswordModal';
 import AppAccessModal from '../components/AppAccessModal';
 import { downloadCsv } from '../lib/csv';
 
@@ -17,14 +16,13 @@ const PEOPLE_IMPORT_FIELDS: ImportField[] = [
 ];
 
 export default function PeoplePage() {
-  const { user, isReadOnly, isAdmin } = useAuth();
+  const { isReadOnly, isAdmin } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Person | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [settingPasswordFor, setSettingPasswordFor] = useState<Person | null>(null);
   const [managingAccessFor, setManagingAccessFor] = useState<Person | null>(null);
 
   const load = () => {
@@ -49,12 +47,11 @@ export default function PeoplePage() {
   const exportCsv = () => {
     downloadCsv(
       'people.csv',
-      ['Name', 'Login type', 'Email', 'Username', 'Phone', 'Role', 'Date of birth', 'Employment start date', 'Billable', 'Active', 'Notes'],
+      ['Name', 'Login type', 'Email', 'Phone', 'Role', 'Date of birth', 'Employment start date', 'Billable', 'Active', 'Notes'],
       filtered.map((p) => [
         p.name,
         LOGIN_TYPE_LABELS[p.login_type],
         p.email ?? '',
-        p.username ?? '',
         p.phone ?? '',
         p.role ?? '',
         p.date_of_birth ?? '',
@@ -117,16 +114,9 @@ export default function PeoplePage() {
                   <td>{LOGIN_TYPE_LABELS[person.login_type]}</td>
                   <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    {isAdmin &&
-                      person.login_type !== 'none' &&
-                      (person.id !== user?.id || person.login_type === 'sso') && (
+                    {isAdmin && person.login_type === 'sso' && (
                       <button className="btn" onClick={() => setManagingAccessFor(person)}>
                         Access
-                      </button>
-                    )}
-                    {isAdmin && person.username && (
-                      <button className="btn" onClick={() => setSettingPasswordFor(person)}>
-                        {person.has_password ? 'Reset password' : 'Set password'}
                       </button>
                     )}
                     <button className="btn" onClick={() => setEditing(person)}>
@@ -183,16 +173,6 @@ export default function PeoplePage() {
             });
           }}
           onDone={load}
-        />
-      )}
-      {settingPasswordFor && (
-        <SetPersonPasswordModal
-          person={settingPasswordFor}
-          onClose={() => setSettingPasswordFor(null)}
-          onDone={() => {
-            setSettingPasswordFor(null);
-            load();
-          }}
         />
       )}
       {managingAccessFor && (

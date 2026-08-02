@@ -2,12 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 
 interface Props {
   name: string;
-  showChangePassword: boolean;
-  onChangePassword: () => void;
   onLogout: () => void;
 }
 
-export default function UserMenu({ name, showChangePassword, onChangePassword, onLogout }: Props) {
+export default function UserMenu({ name, onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -57,19 +55,6 @@ export default function UserMenu({ name, showChangePassword, onChangePassword, o
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)',
           }}
         >
-          {showChangePassword && (
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setOpen(false);
-                onChangePassword();
-              }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'transparent' }}
-            >
-              Change password
-            </button>
-          )}
           <button
             type="button"
             className="btn"

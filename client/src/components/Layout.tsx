@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
-import ChangePasswordModal from './ChangePasswordModal';
 import UserMenu from './UserMenu';
 
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
@@ -19,8 +18,7 @@ const navStyle = ({ isActive }: { isActive: boolean }) => ({
 });
 
 export default function Layout() {
-  const { user, logout, refresh } = useAuth();
-  const [changingPassword, setChangingPassword] = useState(false);
+  const { user, logout } = useAuth();
   const [commit, setCommit] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,26 +86,12 @@ export default function Layout() {
           >
             ?
           </a>
-          <UserMenu
-            name={user?.name ?? ''}
-            showChangePassword={!!user?.has_password}
-            onChangePassword={() => setChangingPassword(true)}
-            onLogout={() => logout()}
-          />
+          <UserMenu name={user?.name ?? ''} onLogout={() => logout()} />
         </div>
       </header>
       <main style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <Outlet />
       </main>
-      {changingPassword && (
-        <ChangePasswordModal
-          onClose={() => setChangingPassword(false)}
-          onChanged={() => {
-            setChangingPassword(false);
-            refresh();
-          }}
-        />
-      )}
     </div>
   );
 }

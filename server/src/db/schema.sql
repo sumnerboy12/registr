@@ -4,13 +4,11 @@
 CREATE TABLE IF NOT EXISTS people (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  -- 'sso'/'local'/'none' — explicit, since email can't imply it: a 'none'
-  -- person still carries an email (for schedules/notifications), same as 'sso'.
-  login_type TEXT NOT NULL DEFAULT 'sso' CHECK (login_type IN ('sso', 'local', 'none')),
-  -- SSO identity + cross-app lookup key (see routes/auth.js's /check). Nullable for local-only accounts.
+  -- 'sso'/'none' — explicit, since email can't imply it: a 'none' person
+  -- still carries an email (for schedules/notifications), same as 'sso'.
+  login_type TEXT NOT NULL DEFAULT 'sso' CHECK (login_type IN ('sso', 'none')),
+  -- SSO identity + cross-app lookup key (see routes/auth.js's /check).
   email TEXT UNIQUE COLLATE NOCASE,
-  -- Local login identity, independent of email. Nullable — most people only use SSO.
-  username TEXT UNIQUE COLLATE NOCASE,
   phone TEXT,
   date_of_birth TEXT,
   employment_start_date TEXT,
@@ -21,9 +19,6 @@ CREATE TABLE IF NOT EXISTS people (
   active INTEGER NOT NULL DEFAULT 1,
   -- Swatch colour rostr uses to identify this person on the Schedule.
   color TEXT NOT NULL DEFAULT '#3b82f6',
-  -- Local password login alongside SSO. Requires username too — login looks accounts up by username.
-  password_hash TEXT,
-  must_change_password INTEGER NOT NULL DEFAULT 0,
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

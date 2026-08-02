@@ -1,9 +1,8 @@
 import crypto from 'node:crypto';
 
-// API keys are high-entropy random tokens, not user passwords, so a plain
-// salted-free SHA-256 hash (compared in constant time) is standard practice
-// here — unlike hashPassword's scrypt, there's no low-entropy input to
-// defend against brute-forcing offline.
+// API keys are high-entropy random tokens, so a plain salt-free SHA-256 hash
+// (compared in constant time) is standard practice here — no low-entropy
+// input to defend against brute-forcing offline.
 export function generateApiKey() {
   return `regk_${crypto.randomBytes(32).toString('base64url')}`;
 }

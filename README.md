@@ -90,24 +90,25 @@ docker compose down
 
 ## Logging in
 
-The app requires a login. The first time it starts with an empty database, it
-creates an initial admin login and prints its username and a random
-temporary password to the server's console/log output — look there (the
-`start.cmd` window, or `docker compose logs`) right after the first run.
-You'll be asked to set a real password on first login.
+The app requires a login. There's no zero-config first-run account — before
+the very first login, set `ADMIN_PASSWORD` in `server/.env` (see
+`server/.env.example`) and restart the app. Sign in with username `admin`
+and that password.
 
-From **People** (visible to everyone, but access management is admin-only)
-you add more people and, from the **Access** button on each row, grant or
-revoke sign-in to Registr and every other app. See "How it works" below for
-the three login types a person can have.
+This break-glass login isn't tied to any person record, so it's unaffected
+by anything you do under People — it's always there as a fallback, on top
+of SSO once that's configured (see below). Once you're in, add real people
+and, from the **Access** button on each SSO person's row, grant or revoke
+sign-in to Registr and every other app.
 
 Note: sessions are kept in the server's memory, not the database, so
 restarting the app (a rebuild/redeploy, or a Windows reboot) signs everyone
 out and they'll need to log in again — nothing else is lost.
 
-You can't lock yourself out — Registr won't let you revoke or demote your
-own Registr admin access, or mark your own account inactive. One of those
-actions has to come from another admin.
+You can't lock yourself out of a real person's SSO access — Registr won't
+let you revoke or demote your own Registr admin access, or mark your own
+account inactive. One of those actions has to come from another admin (or
+the break-glass login).
 
 ## How it works
 
@@ -130,12 +131,13 @@ actions has to come from another admin.
   they're **billable** (used by rostr's scheduling). **Import**/**Export**
   work here too; imported people default to the **None** login type, since a
   bulk import is usually a contact list, not a batch of new logins.
-- **Login type & app access** — every person is **SSO** (signs in via M365,
-  matched by email), **Local** (username + password, Registr only — for
-  people without an M365 account, or a break-glass path into Registr itself)
-  or **None** (can't sign in anywhere; an email, if set, is only used for
-  notifications). The **Access** button on the People list (admin only)
-  grants or revokes each app's role — admin/editor/readonly — per person.
+- **Login type & app access** — every person is either **SSO** (signs in via
+  M365, matched by email) or **None** (can't sign in anywhere; an email, if
+  set, is only used for notifications). The **Access** button on an SSO
+  person's row (admin only) grants or revokes each app's role —
+  admin/editor/readonly. The only non-SSO way in is the single break-glass
+  admin login (see "Logging in", above) — there's no per-person local
+  password.
 - **API Keys** (admin only) — the server-to-server credentials rostr, claimr
   and costr use to ask Registr whether a signed-in email is allowed into
   that app. Generate one per app; the plaintext is shown once, at creation.
@@ -146,7 +148,7 @@ actions has to come from another admin.
 The login screen can show a "Sign in with SSO" button backed by any OpenID
 Connect provider — Microsoft Entra ID (Azure AD) is a natural fit if your
 team already has Microsoft 365 accounts. Without this configured, only the
-username/password login shows.
+break-glass admin login shows.
 
 SSO does **not** create people on its own: a matching person must already
 exist under **People** with a matching **email** and have been granted
@@ -165,7 +167,7 @@ To set it up:
 3. Set each person's **email** under People to match their provider account,
    and grant them Registr access.
 
-Local username/password logins keep working alongside SSO — useful as a
+The break-glass admin login keeps working alongside SSO — useful as a
 fallback if the identity provider is ever unreachable.
 
 ## Integrating another app (rostr, claimr, costr)

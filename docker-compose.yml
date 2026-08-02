@@ -8,9 +8,10 @@ services:
       - "4100:4100"
     volumes:
       - ./data:/app/server/data
-    # M365 (Entra ID) SSO, or local username/password — see server/.env.example.
+    # M365 (Entra ID) SSO, or the break-glass admin login — see server/.env.example.
     environment:
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}

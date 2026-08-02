@@ -17,7 +17,6 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
   const [name, setName] = useState(person?.name ?? '');
   const [loginType, setLoginType] = useState<LoginType>(person?.login_type ?? 'sso');
   const [email, setEmail] = useState(person?.email ?? '');
-  const [username, setUsername] = useState(person?.username ?? '');
   const [phone, setPhone] = useState(person?.phone ?? '');
   const [dateOfBirth, setDateOfBirth] = useState(person?.date_of_birth ?? '');
   const [employmentStartDate, setEmploymentStartDate] = useState(person?.employment_start_date ?? '');
@@ -34,7 +33,7 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
       setError('Name is required');
       return;
     }
-    if (loginType !== 'local' && !email.trim()) {
+    if (!email.trim()) {
       setError('Email is required');
       return;
     }
@@ -44,13 +43,12 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
       await onSave({
         name,
         login_type: loginType,
-        email: loginType !== 'local' ? email || null : null,
-        username: loginType === 'local' ? username || null : null,
+        email: email || null,
         phone: phone || null,
         date_of_birth: dateOfBirth || null,
         employment_start_date: employmentStartDate || null,
         role: role || null,
-        billable: loginType === 'local' ? false : billable,
+        billable,
         active,
         color,
         notes,
@@ -89,36 +87,18 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
             <label>Login type</label>
             <select value={loginType} onChange={(e) => setLoginType(e.target.value as LoginType)} disabled={readOnly}>
               <option value="sso">SSO</option>
-              <option value="local">Local</option>
               <option value="none">None</option>
             </select>
           </div>
-          {loginType === 'local' ? (
-            <div className="field">
-              <label>Username</label>
-              <input value={username ?? ''} onChange={(e) => setUsername(e.target.value)} disabled={readOnly} />
-            </div>
-          ) : (
-            <div className="field">
-              <label>Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
-            </div>
-          )}
+          <div className="field">
+            <label>Email</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
+          </div>
         </div>
 
         {loginType === 'sso' && (
           <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8, marginBottom: 12 }}>
             Email address must match the email their identity provider signs them in with.
-          </div>
-        )}
-
-        {loginType === 'local' && (
-          <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8, marginBottom: 12 }}>
-            {!person
-              ? 'No password set yet — save first, then set one from the People list.'
-              : person.has_password
-                ? 'This person has a local password set.'
-                : 'No password set yet — this person can\'t sign in. Set one from the People list.'}
           </div>
         )}
 
@@ -168,12 +148,10 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
                   Active
                 </label>
               )}
-              {loginType !== 'local' && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                  <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
-                  Billable
-                </label>
-              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
+                Billable
+              </label>
             </div>
           </div>
         </div>

@@ -8,7 +8,6 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { dataDir } from './db/index.js';
-import './db/seedAdmin.js';
 
 import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
