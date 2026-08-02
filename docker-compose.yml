@@ -15,3 +15,12 @@ services:
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+
+# Shared with rostr/claimr/costr's own docker-compose.yml so they can reach
+# registr by container name (e.g. REGISTR_URL=http://registr:4100) instead
+# of localhost, which inside a container means itself. Create it once with
+# `docker network create wayman-apps` before the first `docker compose up`.
+networks:
+  default:
+    name: wayman-apps
+    external: true

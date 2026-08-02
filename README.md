@@ -47,7 +47,11 @@ The whole app (API + web client) runs as a single container on port 4100.
 
 1. Copy this whole project folder onto the NAS (e.g. via the NAS's file
    share/SMB, `scp`, or `git clone` if it's in a repo).
-2. SSH into the NAS, `cd` into the project folder, and run:
+2. If rostr/claimr/costr also run in Docker on this same host, create the
+   shared network once — `docker network create wayman-apps` — so those
+   containers can reach registr by name (e.g. `http://registr:4100`)
+   instead of `localhost`, which inside a container means itself.
+3. SSH into the NAS, `cd` into the project folder, and run:
 
    ```
    docker compose up -d --build
@@ -56,7 +60,7 @@ The whole app (API + web client) runs as a single container on port 4100.
    This builds the image directly on the NAS (so it always matches the NAS's
    CPU architecture — x86_64, ARM, whatever it is) and starts the container
    in the background.
-3. Open `http://<nas-ip>:4100` from any computer on the network.
+4. Open `http://<nas-ip>:4100` from any computer on the network.
 
 If port 4100 is already used by something else on the NAS, edit the `ports:`
 line in `docker-compose.yml` (e.g. `"8080:4100"`) before running the command
