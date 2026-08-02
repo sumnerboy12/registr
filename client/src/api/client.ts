@@ -28,7 +28,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getHealth: () => request<{ ok: boolean; commit: string | null }>('/health'),
+  getHealth: () => request<{ ok: boolean; commit: string | null; env: string }>('/health'),
 
   getMe: () => request<AuthPerson>('/auth/me'),
   login: (password: string) =>

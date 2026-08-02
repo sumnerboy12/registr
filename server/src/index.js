@@ -44,7 +44,12 @@ app.use('/api/v1/projects', projectsRouter);
 app.use('/api/v1/api-keys', apiKeysRouter);
 app.use('/api/v1/email', emailRouter);
 
-app.get('/api/health', (req, res) => res.json({ ok: true, commit: process.env.GIT_COMMIT || null }));
+// Defaults to "production" so a deployment only shows the dev/test banner
+// (see client/src/components/EnvBadge.tsx) if someone deliberately opts in
+// — the real deployment shouldn't have to set anything to stay quiet.
+const APP_ENV = (process.env.APP_ENV || 'production').toLowerCase();
+
+app.get('/api/health', (req, res) => res.json({ ok: true, commit: process.env.GIT_COMMIT || null, env: APP_ENV }));
 
 // Serve the built client (production) if it exists, so the whole app can run
 // from a single Node process on one machine.

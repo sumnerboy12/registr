@@ -10,6 +10,9 @@ services:
       - ./data:/app/server/data
     # M365 (Entra ID) SSO, or the break-glass admin login — see server/.env.example.
     environment:
+      # Leave unset on the real deployment — set to "development" or "test"
+      # on any other one so the UI shows a badge. See server/.env.example.
+      - APP_ENV=${APP_ENV:-}
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}

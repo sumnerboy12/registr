@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
 import type { AuthStatus } from '../types';
+import EnvBadge from '../components/EnvBadge';
 
 const OIDC_ERROR_MESSAGES: Record<string, string> = {
   oidc_expired: 'Sign-in took too long — please try again.',
@@ -20,12 +21,17 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<AuthStatus | null>(null);
   const [showAdminForm, setShowAdminForm] = useState(false);
+  const [env, setEnv] = useState<string | null>(null);
 
   useEffect(() => {
     api
       .getAuthStatus()
       .then(setStatus)
       .catch(() => setStatus({ oidcEnabled: false, adminLoginEnabled: false }));
+  }, []);
+
+  useEffect(() => {
+    api.getHealth().then((h) => setEnv(h.env)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -60,6 +66,7 @@ export default function LoginPage() {
         <h1 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18, marginTop: 0, marginBottom: 20 }}>
           <img src="/favicon.svg" alt="" width={24} height={24} style={{ borderRadius: 5 }} />
           Registr
+          {env && <EnvBadge env={env} />}
         </h1>
 
         {!status.oidcEnabled && !status.adminLoginEnabled && (

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
 import UserMenu from './UserMenu';
+import EnvBadge from './EnvBadge';
 
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
 const MANUAL_URL = '/manual.html';
@@ -20,9 +21,16 @@ const navStyle = ({ isActive }: { isActive: boolean }) => ({
 export default function Layout() {
   const { user, logout } = useAuth();
   const [commit, setCommit] = useState<string | null>(null);
+  const [env, setEnv] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getHealth().then((h) => setCommit(h.commit)).catch(() => {});
+    api
+      .getHealth()
+      .then((h) => {
+        setCommit(h.commit);
+        setEnv(h.env);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -46,6 +54,7 @@ export default function Layout() {
             <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5 }} />
           )}
           <strong style={{ fontSize: 16 }}>Registr</strong>
+          {env && <EnvBadge env={env} />}
         </div>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
           <NavLink to="/" end style={navStyle}>
