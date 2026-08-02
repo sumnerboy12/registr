@@ -18,16 +18,15 @@ function safeCompare(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-// The only non-SSO way in: a single hardcoded "admin" login, password set by
-// ADMIN_PASSWORD — not a person record, so it's unaffected by anything that
-// happens in People. Disabled entirely if ADMIN_PASSWORD isn't set.
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'username and password are required' });
+// The only non-SSO way in: a single hardcoded break-glass admin login,
+// password set by ADMIN_PASSWORD — not a person record, so it's unaffected
+// by anything that happens in People. Disabled entirely if unset.
+router.post('/admin-login', (req, res) => {
+  if (!process.env.ADMIN_PASSWORD) return res.status(503).json({ error: 'Admin login is not configured on this server' });
 
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword || username !== 'admin' || !safeCompare(password, adminPassword)) {
-    return res.status(401).json({ error: 'Invalid username or password' });
+  const { password } = req.body;
+  if (!password || !safeCompare(password, process.env.ADMIN_PASSWORD)) {
+    return res.status(401).json({ error: 'Invalid password' });
   }
 
   req.session.regenerate((err) => {
@@ -37,8 +36,8 @@ router.post('/login', (req, res) => {
   });
 });
 
-router.get('/oidc/status', (req, res) => {
-  res.json({ enabled: isOidcConfigured() });
+router.get('/status', (req, res) => {
+  res.json({ oidcEnabled: isOidcConfigured(), adminLoginEnabled: Boolean(process.env.ADMIN_PASSWORD) });
 });
 
 router.get('/oidc/login', async (req, res) => {

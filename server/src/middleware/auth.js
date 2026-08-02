@@ -2,7 +2,7 @@ import db from '../db/index.js';
 
 // Loads the signed-in person plus their role for registr's own UI
 // (person_app_access where app = 'registr'). session.personId is set by the
-// OIDC callback; session.breakGlassAdmin is set by /auth/login's hardcoded
+// OIDC callback; session.breakGlassAdmin is set by /auth/admin-login's hardcoded
 // admin path — that one isn't a person record, so it's synthesized here.
 export function requireAuth(req, res, next) {
   if (req.session?.breakGlassAdmin) {

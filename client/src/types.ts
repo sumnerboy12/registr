@@ -46,8 +46,9 @@ export interface AuthPerson {
   role: Role;
 }
 
-export interface OidcStatus {
-  enabled: boolean;
+export interface AuthStatus {
+  oidcEnabled: boolean;
+  adminLoginEnabled: boolean;
 }
 
 export type ConsumingApp = 'rostr' | 'claimr' | 'costr';

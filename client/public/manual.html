@@ -379,16 +379,18 @@
       <div class="chapter-num">01</div>
       <h2>Signing in</h2>
       <p>
-        Open Registr in a browser and you'll land on the login screen, which offers a
-        username/password form and, if your organisation's Microsoft 365 identity provider
-        is connected, a <strong>Sign in with SSO</strong> button below it.
+        Open Registr in a browser and you'll land on the login screen. If your
+        organisation's Microsoft 365 identity provider is connected, a
+        <strong>Sign in with SSO</strong> button leads — that's the everyday path. Below it,
+        a <strong>Sign in as admin instead</strong> link reveals a password field for the
+        break-glass login. If SSO isn't connected, that password field shows directly.
       </p>
       <p>
-        There's no self-service first account. The username/password form is a single
-        hardcoded break-glass login — username <span class="kbd">admin</span>, password set
-        by whoever deployed Registr (the <span class="kbd">ADMIN_PASSWORD</span> server
-        setting). It isn't tied to any person record, so nothing you do under People can
-        ever affect it, and it keeps working alongside SSO as a permanent fallback.
+        There's no self-service first account. The password field is a single hardcoded
+        break-glass login — no username, just the password set by whoever deployed Registr
+        (the <span class="kbd">ADMIN_PASSWORD</span> server setting). It isn't tied to any
+        person record, so nothing you do under People can ever affect it, and it keeps
+        working alongside SSO as a permanent fallback.
       </p>
       <p class="dim">
         Once you're in, your name in the top-right corner of the toolbar is itself a menu —
@@ -664,7 +666,7 @@
         <span class="kbd">Access</span><span class="action">SSO people list button (admin only) — grant or revoke sign-in to Registr and every other app, per person</span>
         <span class="kbd">SSO</span><span class="action">login type — signs in via M365, matched by email</span>
         <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email (if set) is for notifications only</span>
-        <span class="kbd">admin</span><span class="action">break-glass login, username "admin" — password set by the server's ADMIN_PASSWORD, not tied to any person</span>
+        <span class="kbd">admin</span><span class="action">break-glass login — password only, set by the server's ADMIN_PASSWORD, not tied to any person</span>
         <span class="kbd">Closed</span><span class="action">project status — how a project is archived; never hard-deleted</span>
       </div>
     </section>

@@ -7,7 +7,7 @@ interface AuthContextValue {
   loading: boolean;
   isReadOnly: boolean;
   isAdmin: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -25,8 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const login = async (username: string, password: string) => {
-    const loggedInUser = await api.login(username, password);
+  const login = async (password: string) => {
+    const loggedInUser = await api.login(password);
     setUser(loggedInUser);
   };
 

@@ -92,12 +92,15 @@ docker compose down
 
 The app requires a login. There's no zero-config first-run account — before
 the very first login, set `ADMIN_PASSWORD` in `server/.env` (see
-`server/.env.example`) and restart the app. Sign in with username `admin`
-and that password.
+`server/.env.example`) and restart the app. Enter that password on the
+login screen (no username — it's a single account).
 
 This break-glass login isn't tied to any person record, so it's unaffected
 by anything you do under People — it's always there as a fallback, on top
-of SSO once that's configured (see below). Once you're in, add real people
+of SSO once that's configured (see below). Once SSO is set up, the login
+screen leads with "Sign in with SSO" and tucks the admin password form
+behind a "Sign in as admin instead" link, so the break-glass path stays out
+of the way of routine day-to-day sign-in. Once you're in, add real people
 and, from the **Access** button on each SSO person's row, grant or revoke
 sign-in to Registr and every other app.
 

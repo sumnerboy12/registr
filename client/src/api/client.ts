@@ -2,9 +2,9 @@ import type {
   ApiKey,
   AppAccess,
   AuthPerson,
+  AuthStatus,
   Client,
   ConsumingApp,
-  OidcStatus,
   Person,
   Project,
   ProjectAssignment,
@@ -31,10 +31,10 @@ export const api = {
   getHealth: () => request<{ ok: boolean; commit: string | null }>('/health'),
 
   getMe: () => request<AuthPerson>('/auth/me'),
-  login: (username: string, password: string) =>
-    request<AuthPerson>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  login: (password: string) =>
+    request<AuthPerson>('/auth/admin-login', { method: 'POST', body: JSON.stringify({ password }) }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  getOidcStatus: () => request<OidcStatus>('/auth/oidc/status'),
+  getAuthStatus: () => request<AuthStatus>('/auth/status'),
 
   getClients: (params?: { active?: boolean; q?: string }) => {
     const qs = new URLSearchParams();
