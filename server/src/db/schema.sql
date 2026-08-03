@@ -12,10 +12,13 @@ CREATE TABLE IF NOT EXISTS people (
   phone TEXT,
   date_of_birth TEXT,
   employment_start_date TEXT,
+  employment_end_date TEXT,
   -- Free-text job title, distinct from project_assignments.role (per-project).
   role TEXT,
-  -- Whether this person's time is chargeable (rostr scheduling).
-  billable INTEGER NOT NULL DEFAULT 1,
+  -- Employment classification — registr is just the master list of WRS
+  -- employees; whether someone actually shows up in rostr's job scheduling
+  -- is rostr's own local call (see rostr's people.in_scheduling), not this.
+  employment_type TEXT NOT NULL DEFAULT 'wage' CHECK (employment_type IN ('wage', 'temp', 'salary')),
   active INTEGER NOT NULL DEFAULT 1,
   -- Swatch colour rostr uses to identify this person on the Schedule.
   color TEXT NOT NULL DEFAULT '#3b82f6',

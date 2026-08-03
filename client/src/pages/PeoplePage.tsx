@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Person } from '../types';
-import { LOGIN_TYPE_LABELS } from '../types';
+import type { EmploymentType, Person } from '../types';
+import { EMPLOYMENT_TYPE_LABELS, LOGIN_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
@@ -21,6 +21,7 @@ export default function PeoplePage() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [showInactive, setShowInactive] = useState(false);
+  const [employmentType, setEmploymentType] = useState<EmploymentType | ''>('');
   const [editing, setEditing] = useState<Person | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -41,6 +42,7 @@ export default function PeoplePage() {
   const filtered = people.filter(
     (p) =>
       (showInactive || p.active) &&
+      (!employmentType || p.employment_type === employmentType) &&
       (p.name.toLowerCase().includes(q.toLowerCase()) ||
         (p.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
         (p.role ?? '').toLowerCase().includes(q.toLowerCase()))
@@ -49,7 +51,19 @@ export default function PeoplePage() {
   const exportCsv = () => {
     downloadCsv(
       'people.csv',
-      ['Name', 'Login type', 'Email', 'Phone', 'Role', 'Date of birth', 'Employment start date', 'Billable', 'Active', 'Notes'],
+      [
+        'Name',
+        'Login type',
+        'Email',
+        'Phone',
+        'Role',
+        'Date of birth',
+        'Employment start date',
+        'Employment end date',
+        'Employment type',
+        'Active',
+        'Notes',
+      ],
       filtered.map((p) => [
         p.name,
         LOGIN_TYPE_LABELS[p.login_type],
@@ -58,7 +72,8 @@ export default function PeoplePage() {
         p.role ?? '',
         p.date_of_birth ?? '',
         p.employment_start_date ?? '',
-        p.billable ? 'Yes' : 'No',
+        p.employment_end_date ?? '',
+        EMPLOYMENT_TYPE_LABELS[p.employment_type],
         p.active ? 'Yes' : 'No',
         p.notes ?? '',
       ])
@@ -88,6 +103,14 @@ export default function PeoplePage() {
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
         <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType | '')}>
+          <option value="">All employment types</option>
+          {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
         <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
           Show inactive
@@ -105,6 +128,7 @@ export default function PeoplePage() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Type</th>
                 <th>Login type</th>
                 <th>Status</th>
                 <th></th>
@@ -119,6 +143,7 @@ export default function PeoplePage() {
                   <td>{person.name}</td>
                   <td>{person.email || '—'}</td>
                   <td>{person.role || '—'}</td>
+                  <td>{EMPLOYMENT_TYPE_LABELS[person.employment_type]}</td>
                   <td>{LOGIN_TYPE_LABELS[person.login_type]}</td>
                   <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -135,7 +160,7 @@ export default function PeoplePage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No people found.
                   </td>
                 </tr>

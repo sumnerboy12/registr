@@ -23,6 +23,17 @@ export const LOGIN_TYPE_LABELS: Record<LoginType, string> = {
   none: 'None',
 };
 
+// Employment classification — registr is just the master list of WRS
+// employees; whether someone shows up in rostr's job scheduling is rostr's
+// own local flag, not this.
+export type EmploymentType = 'wage' | 'temp' | 'salary';
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  wage: 'Wage',
+  temp: 'Temp',
+  salary: 'Salary',
+};
+
 export interface Person {
   id: number;
   name: string;
@@ -31,8 +42,9 @@ export interface Person {
   phone: string | null;
   date_of_birth: string | null;
   employment_start_date: string | null;
+  employment_end_date: string | null;
   role: string | null;
-  billable: boolean;
+  employment_type: EmploymentType;
   active: boolean;
   color: string;
   notes: string | null;

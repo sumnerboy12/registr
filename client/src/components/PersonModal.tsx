@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { LoginType, Person } from '../types';
+import type { EmploymentType, LoginType, Person } from '../types';
+import { EMPLOYMENT_TYPE_LABELS } from '../types';
 import { SWATCH_COLORS } from '../lib/colors';
 import ColorSwatchPicker from './ColorSwatchPicker';
 import { useAuth } from '../auth/AuthContext';
@@ -20,8 +21,9 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
   const [phone, setPhone] = useState(person?.phone ?? '');
   const [dateOfBirth, setDateOfBirth] = useState(person?.date_of_birth ?? '');
   const [employmentStartDate, setEmploymentStartDate] = useState(person?.employment_start_date ?? '');
+  const [employmentEndDate, setEmploymentEndDate] = useState(person?.employment_end_date ?? '');
   const [role, setRole] = useState(person?.role ?? '');
-  const [billable, setBillable] = useState(person?.billable ?? true);
+  const [employmentType, setEmploymentType] = useState<EmploymentType>(person?.employment_type ?? 'wage');
   const [active, setActive] = useState(person?.active ?? true);
   const [color, setColor] = useState(person?.color ?? SWATCH_COLORS[8]);
   const [notes, setNotes] = useState(person?.notes ?? '');
@@ -47,8 +49,9 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
         phone: phone || null,
         date_of_birth: dateOfBirth || null,
         employment_start_date: employmentStartDate || null,
+        employment_end_date: employmentEndDate || null,
         role: role || null,
-        billable,
+        employment_type: employmentType,
         active,
         color,
         notes,
@@ -84,16 +87,24 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
 
         <div className="row">
           <div className="field">
+            <label>Email</label>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
+          </div>
+          <div className="field">
+            <label>Phone</label>
+            <input value={phone ?? ''} onChange={(e) => setPhone(e.target.value)} disabled={readOnly} />
+          </div>
+        </div>
+
+        <div className="row">
+          <div className="field">
             <label>Login type</label>
             <select value={loginType} onChange={(e) => setLoginType(e.target.value as LoginType)} disabled={readOnly}>
               <option value="sso">SSO</option>
               <option value="none">None</option>
             </select>
           </div>
-          <div className="field">
-            <label>Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly} />
-          </div>
+          <div style={{ flex: 1 }} />
         </div>
 
         {loginType === 'sso' && (
@@ -108,58 +119,63 @@ export default function PersonModal({ person, onClose, onSave, readOnly }: Props
           </div>
         )}
 
-        <div className="row" style={{ marginBottom: 12 }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Phone</label>
-              <input value={phone ?? ''} onChange={(e) => setPhone(e.target.value)} disabled={readOnly} />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Date of birth</label>
-              <input type="date" value={dateOfBirth ?? ''} onChange={(e) => setDateOfBirth(e.target.value)} disabled={readOnly} />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Employment start date</label>
-              <input
-                type="date"
-                value={employmentStartDate ?? ''}
-                onChange={(e) => setEmploymentStartDate(e.target.value)}
-                disabled={readOnly}
-              />
-            </div>
+        <div className="row">
+          <div className="field">
+            <label>Employment type</label>
+            <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType)} disabled={readOnly}>
+              {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label>Colour</label>
-              <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, height: 32 }}>
-              {person && (
-                <label
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}
-                  title={isSelf ? "You can't make your own account inactive" : undefined}
-                >
-                  <input
-                    type="checkbox"
-                    checked={active}
-                    onChange={(e) => setActive(e.target.checked)}
-                    disabled={readOnly || isSelf}
-                  />
-                  Active
-                </label>
-              )}
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                <input type="checkbox" checked={billable} onChange={(e) => setBillable(e.target.checked)} disabled={readOnly} />
-                Billable
-              </label>
-            </div>
+          <div className="field">
+            <label>Employment start date</label>
+            <input
+              type="date"
+              value={employmentStartDate ?? ''}
+              onChange={(e) => setEmploymentStartDate(e.target.value)}
+              disabled={readOnly}
+            />
           </div>
+        </div>
+
+        <div className="row">
+          <div className="field">
+            <label>Date of birth</label>
+            <input type="date" value={dateOfBirth ?? ''} onChange={(e) => setDateOfBirth(e.target.value)} disabled={readOnly} />
+          </div>
+          <div className="field">
+            <label>Employment end date</label>
+            <input
+              type="date"
+              value={employmentEndDate ?? ''}
+              onChange={(e) => setEmploymentEndDate(e.target.value)}
+              disabled={readOnly}
+            />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Colour</label>
+          <ColorSwatchPicker value={color} onChange={setColor} disabled={readOnly} />
         </div>
 
         <div className="field">
           <label>Notes</label>
           <textarea rows={2} value={notes ?? ''} onChange={(e) => setNotes(e.target.value)} disabled={readOnly} />
         </div>
+
+        {person && (
+          <label
+            style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, marginBottom: 12 }}
+            title={isSelf ? "You can't make your own account inactive" : undefined}
+          >
+            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} disabled={readOnly || isSelf} />
+            Active
+          </label>
+        )}
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 

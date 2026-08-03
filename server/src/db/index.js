@@ -58,5 +58,26 @@ if (peopleColumns.includes('username') || peopleColumns.includes('password_hash'
   db.exec('PRAGMA foreign_keys = ON');
 }
 
+// billable → employment_type: registr is just the master list of WRS
+// employees now — whether someone counts toward rostr's job scheduling is
+// rostr's own local call (see rostr's people.in_scheduling), not something
+// registr tracks. Existing rows all become 'wage' regardless of their old
+// billable value — that flag meant "shows up in rostr", not "wage vs
+// temp vs salary", so there's no reliable mapping from one to the other;
+// re-classify manually as needed.
+const peopleColumnsForEmploymentType = db.prepare('PRAGMA table_info(people)').all().map((c) => c.name);
+if (peopleColumnsForEmploymentType.includes('billable') && !peopleColumnsForEmploymentType.includes('employment_type')) {
+  db.exec(
+    "ALTER TABLE people ADD COLUMN employment_type TEXT NOT NULL DEFAULT 'wage' CHECK (employment_type IN ('wage', 'temp', 'salary'))"
+  );
+  db.exec('ALTER TABLE people DROP COLUMN billable');
+}
+
+// New optional field alongside employment_start_date.
+const peopleColumnsForEmploymentEnd = db.prepare('PRAGMA table_info(people)').all().map((c) => c.name);
+if (!peopleColumnsForEmploymentEnd.includes('employment_end_date')) {
+  db.exec('ALTER TABLE people ADD COLUMN employment_end_date TEXT');
+}
+
 export { dataDir };
 export default db;

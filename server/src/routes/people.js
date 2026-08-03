@@ -8,6 +8,7 @@ const router = Router();
 const APPS = ['registr', 'rostr', 'claimr', 'costr'];
 const ROLES = ['admin', 'editor', 'readonly'];
 const LOGIN_TYPES = ['sso', 'none'];
+const EMPLOYMENT_TYPES = ['wage', 'temp', 'salary'];
 
 function withAccess(person) {
   const access = db.prepare('SELECT app, role FROM person_app_access WHERE person_id = ? ORDER BY app').all(person.id);
@@ -19,8 +20,9 @@ function withAccess(person) {
     phone: person.phone,
     date_of_birth: person.date_of_birth,
     employment_start_date: person.employment_start_date,
+    employment_end_date: person.employment_end_date,
     role: person.role,
-    billable: !!person.billable,
+    employment_type: person.employment_type,
     active: !!person.active,
     color: person.color,
     notes: person.notes,
@@ -48,9 +50,13 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { name, login_type, email, phone, date_of_birth, employment_start_date, role, billable, color, notes } = req.body;
+  const { name, login_type, email, phone, date_of_birth, employment_start_date, employment_end_date, role, employment_type, color, notes } =
+    req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (login_type != null && !LOGIN_TYPES.includes(login_type)) return res.status(400).json({ error: 'Invalid login_type' });
+  if (employment_type != null && !EMPLOYMENT_TYPES.includes(employment_type)) {
+    return res.status(400).json({ error: 'Invalid employment_type' });
+  }
 
   const nextEmail = email?.trim() || null;
   if (nextEmail) {
@@ -60,8 +66,8 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
 
   const result = db
     .prepare(
-      `INSERT INTO people (name, login_type, email, phone, date_of_birth, employment_start_date, role, billable, color, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO people (name, login_type, email, phone, date_of_birth, employment_start_date, employment_end_date, role, employment_type, color, notes)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       name.trim(),
@@ -70,8 +76,9 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
       phone || null,
       date_of_birth || null,
       employment_start_date || null,
+      employment_end_date || null,
       role || null,
-      billable === false ? 0 : 1,
+      employment_type || 'wage',
       color || '#3b82f6',
       notes || null
     );
@@ -85,8 +92,24 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM people WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { name, login_type, email, phone, date_of_birth, employment_start_date, role, billable, active, color, notes } = req.body;
+  const {
+    name,
+    login_type,
+    email,
+    phone,
+    date_of_birth,
+    employment_start_date,
+    employment_end_date,
+    role,
+    employment_type,
+    active,
+    color,
+    notes,
+  } = req.body;
   if (login_type != null && !LOGIN_TYPES.includes(login_type)) return res.status(400).json({ error: 'Invalid login_type' });
+  if (employment_type != null && !EMPLOYMENT_TYPES.includes(employment_type)) {
+    return res.status(400).json({ error: 'Invalid employment_type' });
+  }
   // requireAuth checks active on every request — marking yourself inactive
   // would kill your own session with no way to undo it.
   if (id === req.person.id && active === false) {
@@ -104,7 +127,7 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
 
   db.prepare(
     `UPDATE people SET
-       name = ?, login_type = ?, email = ?, phone = ?, date_of_birth = ?, employment_start_date = ?, role = ?, billable = ?, active = ?, color = ?, notes = ?,
+       name = ?, login_type = ?, email = ?, phone = ?, date_of_birth = ?, employment_start_date = ?, employment_end_date = ?, role = ?, employment_type = ?, active = ?, color = ?, notes = ?,
        updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -114,8 +137,9 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     phone !== undefined ? phone : existing.phone,
     date_of_birth !== undefined ? date_of_birth : existing.date_of_birth,
     employment_start_date !== undefined ? employment_start_date : existing.employment_start_date,
+    employment_end_date !== undefined ? employment_end_date : existing.employment_end_date,
     role !== undefined ? role : existing.role,
-    billable != null ? (billable ? 1 : 0) : existing.billable,
+    employment_type ?? existing.employment_type,
     active != null ? (active ? 1 : 0) : existing.active,
     color ?? existing.color,
     notes !== undefined ? notes : existing.notes,
