@@ -4,6 +4,21 @@ import { api } from '../api/client';
 import type { Client, Job, JobStatus, JobType } from '../types';
 import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
+import ImportModal, { type ImportField } from '../components/ImportModal';
+import { downloadCsv, labelToKey } from '../lib/csv';
+
+// Covers every field in the Export CSV below, so exporting and re-importing
+// the same file round-trips a job exactly — this doubles as backup/restore.
+const JOB_IMPORT_FIELDS: ImportField[] = [
+  { key: 'code', label: 'Code', aliases: ['code', 'job code', 'job #', 'job number', 'reference', 'ref'] },
+  { key: 'name', label: 'Name', required: true, aliases: ['name', 'job', 'job name', 'project', 'project name', 'title'] },
+  { key: 'client', label: 'Client', aliases: ['client', 'client name', 'customer', 'customer name'] },
+  { key: 'type', label: 'Type', aliases: ['type', 'job type'] },
+  { key: 'status', label: 'Status', aliases: ['status', 'stage'] },
+  { key: 'site_address', label: 'Site address', aliases: ['site address', 'address', 'location'] },
+  { key: 'value', label: 'Value', aliases: ['value', 'job value', 'contract value'] },
+  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+];
 
 export default function JobsPage() {
   const { isReadOnly } = useAuth();
@@ -14,32 +29,69 @@ export default function JobsPage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<JobStatus | ''>('');
   const [type, setType] = useState<JobType | ''>('');
+  const [showImport, setShowImport] = useState(false);
 
-  useEffect(() => {
-    api.getClients().then(setClients);
-  }, []);
-
-  useEffect(() => {
+  const loadClients = () => api.getClients().then(setClients);
+  const loadJobs = () => {
     setLoading(true);
-    api
+    return api
       .getJobs({ status: status || undefined, type: type || undefined, q: q || undefined })
       .then((data) => {
         setJobs([...data].sort((a, b) => a.code.localeCompare(b.code)));
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    loadClients();
+  }, []);
+  useEffect(() => {
+    loadJobs();
   }, [status, type, q]);
 
   const clientName = (id: number | null) => clients.find((c) => c.id === id)?.name ?? '—';
+  const resolveClientId = (rawName: string | undefined): number | null => {
+    const name = rawName?.trim();
+    if (!name) return null;
+    return clients.find((c) => c.name.trim().toLowerCase() === name.toLowerCase())?.id ?? null;
+  };
+
+  const exportCsv = () => {
+    downloadCsv(
+      'jobs.csv',
+      ['Code', 'Name', 'Client', 'Type', 'Status', 'Site address', 'Value', 'Notes'],
+      jobs.map((j) => [
+        j.code,
+        j.name,
+        (j.client_id != null ? clients.find((c) => c.id === j.client_id)?.name : undefined) ?? '',
+        JOB_TYPE_LABELS[j.job_type],
+        JOB_STATUS_LABELS[j.status],
+        j.site_address ?? '',
+        j.value ?? '',
+        j.notes ?? '',
+      ])
+    );
+  };
 
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>Jobs</h1>
-        {!isReadOnly && (
-          <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
-            + New Job
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn" onClick={exportCsv}>
+            Export
           </button>
-        )}
+          {!isReadOnly && (
+            <>
+              <button className="btn" onClick={() => setShowImport(true)}>
+                Import
+              </button>
+              <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
+                + Add Job
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
@@ -105,6 +157,35 @@ export default function JobsPage() {
           </table>
         )}
       </div>
+
+      {showImport && (
+        <ImportModal
+          title="Import Jobs"
+          fields={JOB_IMPORT_FIELDS}
+          existingKeys={new Set(jobs.filter((j) => j.code).map((j) => j.code.trim().toLowerCase()))}
+          // Rows with no code mapped (or left blank, e.g. for auto-generation) are
+          // never treated as duplicates of each other.
+          getKey={(values) => values.code.trim().toLowerCase()}
+          onClose={() => setShowImport(false)}
+          onImportRow={async (values) => {
+            const value = values.value.replace(/[^0-9.-]/g, '');
+            await api.createJob({
+              code: values.code || undefined,
+              name: values.name,
+              client_id: resolveClientId(values.client),
+              job_type: labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract',
+              status: labelToKey(JOB_STATUS_LABELS, values.status),
+              site_address: values.site_address || null,
+              value: value ? Number(value) : null,
+              notes: values.notes || null,
+            });
+          }}
+          onDone={() => {
+            loadJobs();
+            loadClients();
+          }}
+        />
+      )}
     </div>
   );
 }
