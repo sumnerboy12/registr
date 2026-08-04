@@ -21,6 +21,16 @@ const JOB_IMPORT_FIELDS: ImportField[] = [
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
 ];
 
+// Common spreadsheet synonyms that don't match JOB_STATUS_LABELS' own
+// wording — Pipeline/Quoted predate this app's Tendering stage, and
+// Confirmed is a plain-English stand-in for Awarded. ("In progress" needs
+// no entry here — it's now Active's own label.)
+const STATUS_SYNONYMS: Record<string, JobStatus> = {
+  pipeline: 'tendering',
+  quoted: 'tendering',
+  confirmed: 'awarded',
+};
+
 export default function JobsPage() {
   const { isReadOnly } = useAuth();
   const navigate = useNavigate();
@@ -143,8 +153,8 @@ export default function JobsPage() {
                         display: 'inline-block',
                         padding: '3px 10px',
                         borderRadius: 999,
-                        fontSize: 11,
-                        fontWeight: 600,
+                        fontSize: 10,
+                        fontWeight: 400,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
                         background: client?.color ?? NO_CLIENT_COLOR,
@@ -154,9 +164,37 @@ export default function JobsPage() {
                       {client?.name ?? 'No client'}
                     </span>
                   </td>
-                  <td>{JOB_TYPE_LABELS[job.job_type]}</td>
                   <td>
-                    <span className="badge" style={{ fontSize: 11 }}>{JOB_STATUS_LABELS[job.status]}</span>
+                    <span
+                      className="badge"
+                      style={{
+                        display: 'inline-block',
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontWeight: 400,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {JOB_TYPE_LABELS[job.job_type]}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      className="badge"
+                      style={{
+                        display: 'inline-block',
+                        padding: '3px 10px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontWeight: 400,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {JOB_STATUS_LABELS[job.status]}
+                    </span>
                   </td>
                   <td>
                     <button className="btn" onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}>
@@ -195,12 +233,13 @@ export default function JobsPage() {
             const jobType = values.code.trim().toLowerCase().startsWith('m')
               ? ('minor_works' as const)
               : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
+            const jobStatus = STATUS_SYNONYMS[values.status.trim().toLowerCase()] ?? labelToKey(JOB_STATUS_LABELS, values.status);
             await api.createJob({
               code: values.code || undefined,
               name: values.name,
               client_id: resolveClientId(values.client),
               job_type: jobType,
-              status: labelToKey(JOB_STATUS_LABELS, values.status),
+              status: jobStatus,
               site_address: values.site_address || null,
               value: value ? Number(value) : null,
               notes: values.notes || null,

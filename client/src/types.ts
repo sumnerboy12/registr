@@ -106,7 +106,15 @@ export interface Plant {
 }
 
 export type JobType = 'contract' | 'minor_works';
-export type JobStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
+export type JobStatus =
+  | 'tendering'
+  | 'awarded'
+  | 'active'
+  | 'practical_completion'
+  | 'awaiting_retentions'
+  | 'closed'
+  | 'on_hold'
+  | 'lost';
 export type AssignmentRole = 'project_manager' | 'site_supervisor' | 'estimator' | 'qs';
 
 export const JOB_TYPE_LABELS: Record<JobType, string> = {
@@ -117,10 +125,12 @@ export const JOB_TYPE_LABELS: Record<JobType, string> = {
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   tendering: 'Tendering',
   awarded: 'Awarded',
-  active: 'Active',
-  on_hold: 'On Hold',
+  active: 'In Progress',
   practical_completion: 'Practical Completion',
-  closed: 'Closed',
+  awaiting_retentions: 'Awaiting Retentions',
+  closed: 'Completed',
+  on_hold: 'On Hold',
+  lost: 'Lost',
 };
 
 export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {

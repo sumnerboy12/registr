@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
   job_type TEXT NOT NULL CHECK (job_type IN ('contract', 'minor_works')),
   status TEXT NOT NULL DEFAULT 'tendering'
-    CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'closed')),
+    CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'awaiting_retentions', 'closed', 'lost')),
   site_address TEXT,
   -- Optional regardless of type — typically blank while a job's still
   -- tendering, but nothing stops a minor works job from carrying one too.

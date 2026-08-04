@@ -7,7 +7,16 @@ import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 const router = Router();
 
 const TYPES = ['contract', 'minor_works'];
-const STATUSES = ['tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'closed'];
+const STATUSES = [
+  'tendering',
+  'awarded',
+  'active',
+  'on_hold',
+  'practical_completion',
+  'awaiting_retentions',
+  'closed',
+  'lost',
+];
 const ASSIGNMENT_ROLES = ['project_manager', 'site_supervisor', 'estimator', 'qs'];
 
 function loadAssignments(jobId) {
