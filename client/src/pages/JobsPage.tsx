@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Client, Job, JobStatus, JobType } from '../types';
-import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
+import type { AssignmentRole, Client, Job, JobStatus, JobType, Person } from '../types';
+import { ASSIGNMENT_ROLE_LABELS, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import { downloadCsv, labelToKey } from '../lib/csv';
@@ -21,7 +21,16 @@ const JOB_IMPORT_FIELDS: ImportField[] = [
   { key: 'site_address', label: 'Site address', aliases: ['site address', 'address', 'location'] },
   { key: 'value', label: 'Value', aliases: ['value', 'job value', 'contract value'] },
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+  { key: 'project_manager', label: 'Project Manager', aliases: ['project manager', 'pm'] },
+  { key: 'site_supervisor', label: 'Site Supervisor', aliases: ['site supervisor', 'supervisor', 'foreman'] },
+  { key: 'estimator', label: 'Estimator', aliases: ['estimator'] },
+  { key: 'qs', label: 'QS', aliases: ['qs', 'quantity surveyor'] },
 ];
+
+// The four import fields above are keyed the same as AssignmentRole itself
+// (project_manager, site_supervisor, estimator, qs), so each can be
+// resolved to a person by name and posted as an assignment on import.
+const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
 // Common spreadsheet synonyms that don't match JOB_STATUS_LABELS' own
 // wording — Pipeline/Quoted predate this app's Tendering stage, and
@@ -38,6 +47,7 @@ export default function JobsPage() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<JobStatus | ''>('');
@@ -45,6 +55,7 @@ export default function JobsPage() {
   const [showImport, setShowImport] = useState(false);
 
   const loadClients = () => api.getClients().then(setClients);
+  const loadPeople = () => api.getPeople({ active: true }).then(setPeople);
   const loadJobs = () => {
     setLoading(true);
     return api
@@ -57,6 +68,7 @@ export default function JobsPage() {
 
   useEffect(() => {
     loadClients();
+    loadPeople();
   }, []);
   useEffect(() => {
     loadJobs();
@@ -67,6 +79,11 @@ export default function JobsPage() {
     const name = rawName?.trim();
     if (!name) return null;
     return clients.find((c) => c.name.trim().toLowerCase() === name.toLowerCase())?.id ?? null;
+  };
+  const resolvePersonId = (rawName: string | undefined): number | null => {
+    const name = rawName?.trim();
+    if (!name) return null;
+    return people.find((p) => p.name.trim().toLowerCase() === name.toLowerCase())?.id ?? null;
   };
 
   const exportCsv = () => {
@@ -239,7 +256,7 @@ export default function JobsPage() {
               : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
             const jobStatus = STATUS_SYNONYMS[values.status.trim().toLowerCase()] ?? labelToKey(JOB_STATUS_LABELS, values.status);
             const clientId = resolveClientId(values.client);
-            await api.createJob({
+            const created = await api.createJob({
               code: values.code || undefined,
               name: values.name,
               client_id: clientId,
@@ -254,6 +271,12 @@ export default function JobsPage() {
               value: value ? Number(value) : null,
               notes: values.notes || null,
             });
+            // A name that doesn't match an existing active person is just
+            // skipped — same forgiving fallback as an unmatched Client.
+            for (const role of ASSIGNMENT_ROLES) {
+              const personId = resolvePersonId(values[role]);
+              if (personId != null) await api.addAssignment(created.id, { person_id: personId, role });
+            }
           }}
           onDone={() => {
             loadJobs();
