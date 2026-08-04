@@ -193,6 +193,8 @@ export default function PeoplePage() {
         <ImportModal
           title="Import People"
           fields={PEOPLE_IMPORT_FIELDS}
+          existingKeys={new Set(people.filter((p) => p.email).map((p) => p.email!.trim().toLowerCase()))}
+          getKey={(values) => values.email.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
             await api.createPerson({

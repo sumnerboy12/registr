@@ -14,6 +14,12 @@ interface Props {
   helpText?: string;
   // Page-specific controls rendered between the column mapping and preview.
   extraContent?: ReactNode;
+  // Existing rows' dedup keys (e.g. every person's email, lowercased —
+  // see PeoplePage.tsx) and how to derive that same key from an import row.
+  // A row whose key is already present — either here or earlier in this
+  // same paste — is skipped rather than creating a duplicate.
+  existingKeys?: Set<string>;
+  getKey?: (values: Record<string, string>) => string;
   onClose: () => void;
   onImportRow: (values: Record<string, string>, rowNumber: number) => Promise<void>;
   onDone: () => void;
@@ -24,12 +30,22 @@ interface Failure {
   message: string;
 }
 
-export default function ImportModal({ title, fields, helpText, extraContent, onClose, onImportRow, onDone }: Props) {
+export default function ImportModal({
+  title,
+  fields,
+  helpText,
+  extraContent,
+  existingKeys,
+  getKey,
+  onClose,
+  onImportRow,
+  onDone,
+}: Props) {
   const [text, setText] = useState('');
   const [mapping, setMapping] = useState<Record<string, number>>({});
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<{ success: number; failures: Failure[] } | null>(null);
+  const [results, setResults] = useState<{ success: number; skipped: number; failures: Failure[] } | null>(null);
 
   const parsed = useMemo(() => parseDelimited(text), [text]);
   const dataRows = useMemo(() => parsed.rows.filter((r) => r.some((c) => c.trim() !== '')), [parsed]);
@@ -63,6 +79,10 @@ export default function ImportModal({ title, fields, helpText, extraContent, onC
     setResults(null);
     const failures: Failure[] = [];
     let success = 0;
+    let skipped = 0;
+    // Seeded with existing rows, then grown as we go — catches a duplicate
+    // against an existing row and a duplicate within this same paste alike.
+    const seenKeys = new Set(existingKeys);
 
     for (let i = 0; i < dataRows.length; i++) {
       setProgress(i + 1);
@@ -73,15 +93,21 @@ export default function ImportModal({ title, fields, helpText, extraContent, onC
         failures.push({ row: rowNumber, message: `${missingField.label} is required` });
         continue;
       }
+      const key = getKey?.(values);
+      if (key && seenKeys.has(key)) {
+        skipped++;
+        continue;
+      }
       try {
         await onImportRow(values, rowNumber);
         success++;
+        if (key) seenKeys.add(key);
       } catch (e) {
         failures.push({ row: rowNumber, message: e instanceof Error ? e.message : 'Import failed' });
       }
     }
 
-    setResults({ success, failures });
+    setResults({ success, skipped, failures });
     setImporting(false);
     onDone();
   };
@@ -110,6 +136,7 @@ export default function ImportModal({ title, fields, helpText, extraContent, onC
                 <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 8 }}>
                   Detected {parsed.headers.length} column{parsed.headers.length === 1 ? '' : 's'}, {dataRows.length} data row
                   {dataRows.length === 1 ? '' : 's'}. Match your columns to the fields below.
+                  {getKey && ' Rows matching an existing one are skipped rather than duplicated.'}
                 </div>
 
                 <div className="card" style={{ padding: 12, marginBottom: 16 }}>
@@ -190,6 +217,12 @@ export default function ImportModal({ title, fields, helpText, extraContent, onC
           <div style={{ padding: 4 }}>
             <div style={{ marginBottom: 8 }}>
               Imported <strong>{results.success}</strong> of {dataRows.length} row{dataRows.length === 1 ? '' : 's'}.
+              {results.skipped > 0 && (
+                <span style={{ color: 'var(--text-dim)' }}>
+                  {' '}
+                  Skipped {results.skipped} duplicate{results.skipped === 1 ? '' : 's'}.
+                </span>
+              )}
             </div>
             {results.failures.length > 0 && (
               <div style={{ maxHeight: 200, overflowY: 'auto' }}>

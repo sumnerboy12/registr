@@ -149,6 +149,8 @@ export default function ClientsPage() {
         <ImportModal
           title="Import Clients"
           fields={CLIENT_IMPORT_FIELDS}
+          existingKeys={new Set(clients.map((c) => c.name.trim().toLowerCase()))}
+          getKey={(values) => values.name.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
             await api.createClient({
