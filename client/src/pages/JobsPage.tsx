@@ -141,9 +141,9 @@ export default function JobsPage() {
                     <span
                       style={{
                         display: 'inline-block',
-                        padding: '1px 7px',
+                        padding: '3px 10px',
                         borderRadius: 999,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
@@ -156,7 +156,7 @@ export default function JobsPage() {
                   </td>
                   <td>{JOB_TYPE_LABELS[job.job_type]}</td>
                   <td>
-                    <span className="badge">{JOB_STATUS_LABELS[job.status]}</span>
+                    <span className="badge" style={{ fontSize: 11 }}>{JOB_STATUS_LABELS[job.status]}</span>
                   </td>
                   <td>
                     <button className="btn" onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}>
@@ -189,11 +189,17 @@ export default function JobsPage() {
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
             const value = values.value.replace(/[^0-9.-]/g, '');
+            // A code starting with "M" is always Minor Works, matching how
+            // generateJobCode itself prefixes them (see routes/jobs.js) —
+            // takes priority over the Type column when both are present.
+            const jobType = values.code.trim().toLowerCase().startsWith('m')
+              ? ('minor_works' as const)
+              : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
             await api.createJob({
               code: values.code || undefined,
               name: values.name,
               client_id: resolveClientId(values.client),
-              job_type: labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract',
+              job_type: jobType,
               status: labelToKey(JOB_STATUS_LABELS, values.status),
               site_address: values.site_address || null,
               value: value ? Number(value) : null,
