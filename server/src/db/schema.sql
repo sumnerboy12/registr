@@ -1,4 +1,4 @@
--- registr is the system of record for project identity, plus the people,
+-- registr is the system of record for job identity, plus the people,
 -- clients and plant that hang off it. Downstream apps store only a foreign
 -- reference.
 
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS people (
   date_of_birth TEXT,
   employment_start_date TEXT,
   employment_end_date TEXT,
-  -- Free-text job title, distinct from project_assignments.role (per-project).
+  -- Free-text job title, distinct from job_assignments.role (per-job).
   role TEXT,
   -- Employment classification — registr is just the master list of WRS
   -- employees; whether someone actually shows up in rostr's job scheduling
@@ -71,13 +71,13 @@ CREATE TABLE IF NOT EXISTS plant (
 );
 
 -- TEXT (UUID) primary key — stays stable across renumbering, unguessable across apps.
-CREATE TABLE IF NOT EXISTS projects (
+CREATE TABLE IF NOT EXISTS jobs (
   id TEXT PRIMARY KEY,
   -- Human code (e.g. "24-118"). Never the join key — always join on id.
   code TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
-  project_type TEXT NOT NULL CHECK (project_type IN ('contract', 'minor_works')),
+  job_type TEXT NOT NULL CHECK (job_type IN ('contract', 'minor_works')),
   status TEXT NOT NULL DEFAULT 'tendering'
     CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'closed')),
   site_address TEXT,
@@ -90,13 +90,13 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 -- Join table so roles can grow without migrations; not a "one PM" constraint.
-CREATE TABLE IF NOT EXISTS project_assignments (
+CREATE TABLE IF NOT EXISTS job_assignments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
   person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
-  role TEXT NOT NULL CHECK (role IN ('project_manager', 'foreman', 'estimator', 'qs')),
+  role TEXT NOT NULL CHECK (role IN ('project_manager', 'site_supervisor', 'estimator', 'qs')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(project_id, person_id, role)
+  UNIQUE(job_id, person_id, role)
 );
 
 -- Server-to-server credentials, one per consuming app. Only the hash is stored.
@@ -111,10 +111,10 @@ CREATE TABLE IF NOT EXISTS api_keys (
 
 CREATE INDEX IF NOT EXISTS idx_person_app_access_person ON person_app_access(person_id);
 CREATE INDEX IF NOT EXISTS idx_person_app_access_app ON person_app_access(app);
-CREATE INDEX IF NOT EXISTS idx_projects_client ON projects(client_id);
-CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
-CREATE INDEX IF NOT EXISTS idx_projects_type ON projects(project_type);
-CREATE INDEX IF NOT EXISTS idx_projects_updated ON projects(updated_at);
-CREATE INDEX IF NOT EXISTS idx_project_assignments_project ON project_assignments(project_id);
-CREATE INDEX IF NOT EXISTS idx_project_assignments_person ON project_assignments(person_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_client ON jobs(client_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(job_type);
+CREATE INDEX IF NOT EXISTS idx_jobs_updated ON jobs(updated_at);
+CREATE INDEX IF NOT EXISTS idx_job_assignments_job ON job_assignments(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_assignments_person ON job_assignments(person_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_app ON api_keys(app);

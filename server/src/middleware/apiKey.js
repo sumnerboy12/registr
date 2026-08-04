@@ -3,7 +3,7 @@ import { hashApiKey } from '../lib/apiKeys.js';
 import { requireAuth } from './auth.js';
 
 // Server-to-server auth for rostr/claimr/costr. Read-only by design for
-// registr's own data — write routes touching people/projects/clients never
+// registr's own data — write routes touching people/jobs/clients never
 // mount this, only requireAuth (registr's own UI) does. routes/email.js is
 // the one deliberate exception: sending mail doesn't mutate any registr
 // data, it just relays to SMTP, so it doesn't weaken that invariant.

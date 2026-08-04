@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Client, Project, ProjectStatus, ProjectType } from '../types';
-import { PROJECT_STATUS_LABELS, PROJECT_TYPE_LABELS } from '../types';
+import type { Client, Job, JobStatus, JobType } from '../types';
+import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 
-export default function ProjectsPage() {
+export default function JobsPage() {
   const { isReadOnly } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<ProjectStatus | ''>('');
-  const [type, setType] = useState<ProjectType | ''>('');
+  const [status, setStatus] = useState<JobStatus | ''>('');
+  const [type, setType] = useState<JobType | ''>('');
 
   useEffect(() => {
     api.getClients().then(setClients);
@@ -22,9 +22,9 @@ export default function ProjectsPage() {
   useEffect(() => {
     setLoading(true);
     api
-      .getProjects({ status: status || undefined, type: type || undefined, q: q || undefined })
+      .getJobs({ status: status || undefined, type: type || undefined, q: q || undefined })
       .then((data) => {
-        setProjects([...data].sort((a, b) => a.code.localeCompare(b.code)));
+        setJobs([...data].sort((a, b) => a.code.localeCompare(b.code)));
         setLoading(false);
       });
   }, [status, type, q]);
@@ -34,27 +34,27 @@ export default function ProjectsPage() {
   return (
     <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>Projects</h1>
+        <h1 style={{ fontSize: 20, margin: 0 }}>Jobs</h1>
         {!isReadOnly && (
-          <button className="btn btn-primary" onClick={() => navigate('/projects/new')}>
-            + New Project
+          <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
+            + New Job
           </button>
         )}
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
         <input placeholder="Search by code or name…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
-        <select value={status} onChange={(e) => setStatus(e.target.value as ProjectStatus | '')}>
+        <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus | '')}>
           <option value="">All statuses</option>
-          {Object.entries(PROJECT_STATUS_LABELS).map(([value, label]) => (
+          {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
           ))}
         </select>
-        <select value={type} onChange={(e) => setType(e.target.value as ProjectType | '')}>
+        <select value={type} onChange={(e) => setType(e.target.value as JobType | '')}>
           <option value="">All types</option>
-          {Object.entries(PROJECT_TYPE_LABELS).map(([value, label]) => (
+          {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
             </option>
@@ -78,26 +78,26 @@ export default function ProjectsPage() {
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
-                <tr key={project.id}>
-                  <td>{project.code}</td>
-                  <td>{project.name}</td>
-                  <td>{clientName(project.client_id)}</td>
-                  <td>{PROJECT_TYPE_LABELS[project.project_type]}</td>
+              {jobs.map((job) => (
+                <tr key={job.id}>
+                  <td>{job.code}</td>
+                  <td>{job.name}</td>
+                  <td>{clientName(job.client_id)}</td>
+                  <td>{JOB_TYPE_LABELS[job.job_type]}</td>
                   <td>
-                    <span className="badge">{PROJECT_STATUS_LABELS[project.status]}</span>
+                    <span className="badge">{JOB_STATUS_LABELS[job.status]}</span>
                   </td>
                   <td>
-                    <button className="btn" onClick={() => navigate(`/projects/${project.id}`)}>
+                    <button className="btn" onClick={() => navigate(`/jobs/${job.id}`)}>
                       {isReadOnly ? 'View' : 'Edit'}
                     </button>
                   </td>
                 </tr>
               ))}
-              {projects.length === 0 && (
+              {jobs.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
-                    No projects found.
+                    No jobs found.
                   </td>
                 </tr>
               )}

@@ -23,7 +23,7 @@ db.exec(schema);
 // Local login removed — replaced by a single hardcoded break-glass admin
 // login (ADMIN_PASSWORD env var), not a per-person account. Existing 'local'
 // people are deleted outright (cascades to their app access grants and
-// project assignments) — they had no email-based way back in, so 'none'
+// job assignments) — they had no email-based way back in, so 'none'
 // would just leave dead accounts nobody could ever sign in as again.
 // username carries an inline UNIQUE constraint, which SQLite refuses to drop
 // via plain ALTER TABLE DROP COLUMN — needs the full rebuild-table procedure.
@@ -77,6 +77,75 @@ if (peopleColumnsForEmploymentType.includes('billable') && !peopleColumnsForEmpl
 const peopleColumnsForEmploymentEnd = db.prepare('PRAGMA table_info(people)').all().map((c) => c.name);
 if (!peopleColumnsForEmploymentEnd.includes('employment_end_date')) {
   db.exec('ALTER TABLE people ADD COLUMN employment_end_date TEXT');
+}
+
+// Project → Job rename: schema.sql now creates `jobs`/`job_assignments`
+// instead of `projects`/`project_assignments`, but CREATE TABLE IF NOT
+// EXISTS above is a no-op against an existing database — so a deployment
+// that already had real jobs ends up with the old (populated) tables
+// orphaned alongside the new (empty) ones. Copy any old rows across first,
+// so this never silently loses jobs already in production, then drop the
+// old tables. The `WHERE id NOT IN` guards make this safe to run more than
+// once, though the old tables are gone after the first run regardless.
+const hasOldProjectsTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'projects'").get();
+if (hasOldProjectsTable) {
+  db.exec(`
+    INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, contract_value, start_date, end_date, created_at, updated_at)
+    SELECT id, code, name, client_id, project_type, status, site_address, contract_value, start_date, end_date, created_at, updated_at
+    FROM projects
+    WHERE id NOT IN (SELECT id FROM jobs)
+  `);
+
+  const hasOldAssignmentsTable = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'project_assignments'")
+    .get();
+  if (hasOldAssignmentsTable) {
+    // role is remapped inline (not just the table/columns) since job_assignments
+    // was just freshly created above from the current schema.sql, which only
+    // accepts 'site_supervisor' — an unmapped 'foreman' row here would violate
+    // that CHECK constraint. See the foreman → site_supervisor migration below
+    // for the case where job_assignments already existed with the old constraint.
+    db.exec(`
+      INSERT INTO job_assignments (id, job_id, person_id, role, created_at)
+      SELECT id, project_id, person_id, CASE WHEN role = 'foreman' THEN 'site_supervisor' ELSE role END, created_at
+      FROM project_assignments
+      WHERE id NOT IN (SELECT id FROM job_assignments)
+    `);
+    db.exec('DROP TABLE project_assignments');
+  }
+
+  db.exec('DROP TABLE projects');
+}
+
+// foreman → site_supervisor: same title, different name. job_assignments.role
+// carries an inline CHECK constraint, which SQLite bakes into the table at
+// creation time — updating schema.sql alone doesn't touch a table that
+// already exists, and simply UPDATEing old 'foreman' rows would violate that
+// still-attached old constraint. Needs the full rebuild-table procedure,
+// same as the people username removal above.
+const jobAssignmentsTableSql = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'job_assignments'").get();
+if (jobAssignmentsTableSql && jobAssignmentsTableSql.sql.includes("'foreman'")) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE job_assignments_new (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK (role IN ('project_manager', 'site_supervisor', 'estimator', 'qs')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(job_id, person_id, role)
+    )
+  `);
+  db.exec(`
+    INSERT INTO job_assignments_new (id, job_id, person_id, role, created_at)
+    SELECT id, job_id, person_id, CASE WHEN role = 'foreman' THEN 'site_supervisor' ELSE role END, created_at
+    FROM job_assignments
+  `);
+  db.exec('DROP TABLE job_assignments');
+  db.exec('ALTER TABLE job_assignments_new RENAME TO job_assignments');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_job_assignments_job ON job_assignments(job_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_job_assignments_person ON job_assignments(person_id)');
+  db.exec('PRAGMA foreign_keys = ON');
 }
 
 export { dataDir };

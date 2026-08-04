@@ -7,10 +7,10 @@ import type {
   ConsumingApp,
   Person,
   Plant,
-  Project,
-  ProjectAssignment,
-  ProjectStatus,
-  ProjectType,
+  Job,
+  JobAssignment,
+  JobStatus,
+  JobType,
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -74,7 +74,7 @@ export const api = {
   revokeAppAccess: (personId: number, app: string) =>
     request<void>(`/v1/people/${personId}/app-access/${app}`, { method: 'DELETE' }),
 
-  getProjects: (params?: { status?: ProjectStatus; type?: ProjectType; client_id?: number; q?: string; archived?: boolean }) => {
+  getJobs: (params?: { status?: JobStatus; type?: JobType; client_id?: number; q?: string; archived?: boolean }) => {
     const qs = new URLSearchParams();
     if (params?.status) qs.set('status', params.status);
     if (params?.type) qs.set('type', params.type);
@@ -82,16 +82,16 @@ export const api = {
     if (params?.q) qs.set('q', params.q);
     if (params?.archived) qs.set('archived', '1');
     const suffix = qs.toString() ? `?${qs}` : '';
-    return request<Project[]>(`/v1/projects${suffix}`);
+    return request<Job[]>(`/v1/jobs${suffix}`);
   },
-  getProject: (id: string) => request<Project>(`/v1/projects/${id}?include=assignments`),
-  createProject: (data: Partial<Project>) => request<Project>('/v1/projects', { method: 'POST', body: JSON.stringify(data) }),
-  updateProject: (id: string, data: Partial<Project>) =>
-    request<Project>(`/v1/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  addAssignment: (projectId: string, data: { person_id: number; role: string }) =>
-    request<ProjectAssignment[]>(`/v1/projects/${projectId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
-  removeAssignment: (projectId: string, assignmentId: number) =>
-    request<void>(`/v1/projects/${projectId}/assignments/${assignmentId}`, { method: 'DELETE' }),
+  getJob: (id: string) => request<Job>(`/v1/jobs/${id}?include=assignments`),
+  createJob: (data: Partial<Job>) => request<Job>('/v1/jobs', { method: 'POST', body: JSON.stringify(data) }),
+  updateJob: (id: string, data: Partial<Job>) =>
+    request<Job>(`/v1/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  addAssignment: (jobId: string, data: { person_id: number; role: string }) =>
+    request<JobAssignment[]>(`/v1/jobs/${jobId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
+  removeAssignment: (jobId: string, assignmentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/assignments/${assignmentId}`, { method: 'DELETE' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

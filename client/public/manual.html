@@ -350,7 +350,7 @@
     <div class="toc-sub">User Manual</div>
     <ol>
       <li><a href="#signing-in">Signing in</a></li>
-      <li><a href="#projects">Projects</a></li>
+      <li><a href="#jobs">Jobs</a></li>
       <li><a href="#clients">Clients</a></li>
       <li><a href="#people">People</a></li>
       <li><a href="#plant">Plant</a></li>
@@ -368,9 +368,9 @@
       <div class="eyebrow">Internal tool · Wayman Roofing</div>
       <h1>Registr</h1>
       <p class="lede">
-        Registr is the system of record for project identity, plus the people and clients
+        Registr is the system of record for job identity, plus the people and clients
         that hang off it. Every other internal app — rostr, claimr, costr — stores only a
-        project, person or client reference back to Registr, rather than keeping its own
+        job, person or client reference back to Registr, rather than keeping its own
         copy of that data. Registr is also where sign-in access to all of those apps is
         granted, from one place. This manual covers every screen on the main toolbar.
       </p>
@@ -421,19 +421,19 @@
       </p>
     </section>
 
-    <section class="chapter" id="projects">
+    <section class="chapter" id="jobs">
       <div class="chapter-num">02</div>
-      <h2>Projects</h2>
+      <h2>Jobs</h2>
       <p>
         Every job Registr tracks lives here, identified by a human <strong>code</strong>
-        (e.g. "24-118") — the code is what other apps and people use to refer to a project,
+        (e.g. "24-118") — the code is what other apps and people use to refer to a job,
         though the underlying link is always a stable internal ID, so renaming a code later
         doesn't break anything already pointing at it.
       </p>
 
       <h3>Type and status</h3>
       <p>
-        Every project is either a <strong>Contract</strong> or <strong>Minor Works</strong>,
+        Every job is either a <strong>Contract</strong> or <strong>Minor Works</strong>,
         and carries one status:
       </p>
       <div class="status-pills">
@@ -445,18 +445,18 @@
         <span class="status-pill">Closed</span>
       </div>
       <p class="dim">
-        Registr never hard-deletes a project — <strong>Closed</strong> is how one is
-        archived. Closed projects drop out of the default list and search, but aren't gone;
+        Registr never hard-deletes a job — <strong>Closed</strong> is how one is
+        archived. Closed jobs drop out of the default list and search, but aren't gone;
         tick <span class="kbd">All statuses</span> off the status filter, or ask for
         archived ones specifically, to see them again.
       </p>
 
-      <h3>Working with a project</h3>
+      <h3>Working with a job</h3>
       <ol class="steps">
-        <li>Click <span class="kbd">+ New Project</span> — code and name are the only fields
+        <li>Click <span class="kbd">+ New Job</span> — code and name are the only fields
           required up front. Client, site address, contract value and start/end dates stay
           optional.</li>
-        <li>Click any project in the list to open its detail page and edit any of those
+        <li>Click any job in the list to open its detail page and edit any of those
           fields, including re-linking its client or changing its status.</li>
         <li><strong>Contract value</strong> is free-form — leave it blank for tendering work
           or minor works where there isn't one fixed figure yet.</li>
@@ -464,11 +464,11 @@
 
       <h3>Assignments</h3>
       <p>
-        A project's detail page also lists who's assigned to it and in what role —
-        <strong>Project Manager</strong>, <strong>Foreman</strong>, <strong>Estimator</strong>
-        or <strong>QS</strong>. Pick a person (from active People) and a role and click
+        A job's detail page also lists who's assigned to it and in what role —
+        <strong>Project Manager</strong>, <strong>Site Supervisor</strong>,
+        <strong>Estimator</strong> or <strong>QS</strong>. Pick a person (from active People) and a role and click
         <span class="kbd">Add</span>; the same person can hold more than one role on the same
-        project, but not the same role twice. <span class="kbd">Remove</span> next to any row
+        job, but not the same role twice. <span class="kbd">Remove</span> next to any row
         takes them off that role.
       </p>
       <p class="dim">
@@ -481,7 +481,7 @@
       <div class="chapter-num">03</div>
       <h2>Clients</h2>
       <p>
-        The organisations projects are done for or through. Every client carries a
+        The organisations jobs are done for or through. Every client carries a
         <strong>type</strong> — <strong>Main Contractor</strong>, <strong>Direct</strong> or
         <strong>Residential</strong> — plus optional contact details and a colour.
       </p>
@@ -499,7 +499,7 @@
             next to the client's name in lists.</td></tr>
           <tr><td class="name">Notes</td><td>Optional free text.</td></tr>
           <tr><td class="name">Active</td><td>Turn off instead of deleting when a client's
-            no longer current — projects linked to it are unaffected either way.</td></tr>
+            no longer current — jobs linked to it are unaffected either way.</td></tr>
         </tbody>
       </table>
       <p class="dim">
@@ -515,7 +515,7 @@
       <div class="chapter-num">04</div>
       <h2>People</h2>
       <p>
-        Registr's directory — everyone who might need to be assigned to a project, appear in
+        Registr's directory — everyone who might need to be assigned to a job, appear in
         another app, or sign in anywhere. Not everyone in People needs to sign in at all; see
         <a href="#login-access">chapter 6</a> for how that's decided per person.
       </p>
@@ -526,7 +526,7 @@
             type — an email is needed even for a <strong>None</strong> login so it's there for
             notifications (see <a href="#login-access">chapter 6</a>).</td></tr>
           <tr><td class="name">Role</td><td>Free text, e.g. Foreman, Estimator — distinct
-            from a project's own assignment roles (chapter 2).</td></tr>
+            from a job's own assignment roles (chapter 2).</td></tr>
           <tr><td class="name">Phone</td><td>Optional.</td></tr>
           <tr><td class="name">Date of birth / Employment start &amp; end date</td><td>Optional
             record-keeping fields.</td></tr>
@@ -560,7 +560,7 @@
       <p>
         Registr's master list of WRS-<strong>owned</strong> equipment and machinery — diggers,
         mixers, scaffolding, whatever you track. It mirrors People and Clients in shape, but is
-        deliberately simpler: no type, no project or client link.
+        deliberately simpler: no type, no job or client link.
       </p>
       <table class="field-table">
         <thead><tr><th>Field</th><th>Notes</th></tr></thead>
@@ -718,7 +718,7 @@
       <div class="chapter-num">09</div>
       <h2>Your data</h2>
       <p>
-        Every project, person, client and API key lives in one SQLite database file on
+        Every job, person, client and API key lives in one SQLite database file on
         whichever machine hosts Registr — there's no cloud copy behind it.
       </p>
       <div class="callout danger">
@@ -745,7 +745,7 @@
         <span class="kbd">SSO</span><span class="action">login type — signs in via M365, matched by email</span>
         <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email is still used for notifications</span>
         <span class="kbd">admin</span><span class="action">break-glass login — password only, set by the server's ADMIN_PASSWORD, not tied to any person</span>
-        <span class="kbd">Closed</span><span class="action">project status — how a project is archived; never hard-deleted</span>
+        <span class="kbd">Closed</span><span class="action">job status — how a job is archived; never hard-deleted</span>
         <span class="kbd">Employment type</span><span class="action">Wage / Temp / Salary — a payroll classification on People; doesn't decide rostr scheduling</span>
       </div>
     </section>

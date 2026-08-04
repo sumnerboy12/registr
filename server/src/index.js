@@ -13,7 +13,7 @@ import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
 import clientsRouter from './routes/clients.js';
 import plantRouter from './routes/plant.js';
-import projectsRouter from './routes/projects.js';
+import jobsRouter from './routes/jobs.js';
 import apiKeysRouter from './routes/apiKeys.js';
 import emailRouter from './routes/email.js';
 
@@ -42,7 +42,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/v1/people', peopleRouter);
 app.use('/api/v1/clients', clientsRouter);
 app.use('/api/v1/plant', plantRouter);
-app.use('/api/v1/projects', projectsRouter);
+app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/api-keys', apiKeysRouter);
 app.use('/api/v1/email', emailRouter);
 

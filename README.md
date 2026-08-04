@@ -1,8 +1,8 @@
 # Registr
 
-The system of record for project identity, plus the people and clients that
+The system of record for job identity, plus the people and clients that
 hang off it. Every other internal app — rostr, claimr, costr — stores only a
-project/person/client reference back to Registr, rather than keeping its own
+job/person/client reference back to Registr, rather than keeping its own
 copy of that data, and asks Registr whether a signed-in email is allowed
 into that app and with what role.
 
@@ -35,7 +35,7 @@ netsh advfirewall firewall add rule name="Registr" dir=in action=allow protocol=
 
 ### Data (Windows install)
 
-All data (projects, people, clients, API keys) lives in a single SQLite file
+All data (jobs, people, clients, API keys) lives in a single SQLite file
 at `server/data/registr.db`. Back this file up periodically (copy it
 somewhere safe) — there is no other copy of the data.
 
@@ -124,21 +124,21 @@ server. Leave it blank (or `production`) on the real deployment.
 
 ## How it works
 
-- **Projects** — every job Registr tracks, identified by a human **code**
+- **Jobs** — every job Registr tracks, identified by a human **code**
   (e.g. "24-118"). Each carries a **type** (Contract or Minor Works), a
   **status** (Tendering / Awarded / Active / On Hold / Practical Completion
-  / Closed — Registr never hard-deletes a project, Closed is how one is
+  / Closed — Registr never hard-deletes a job, Closed is how one is
   archived), an optional linked client, site address, contract value and
-  dates, plus a list of people **assigned** to it (Project Manager, Foreman,
-  Estimator, QS — the same person can hold more than one role).
-- **Clients** — the organisations projects are done for or through. Each has
+  dates, plus a list of people **assigned** to it (Project Manager, Site
+  Supervisor, Estimator, QS — the same person can hold more than one role).
+- **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)
   used by rostr to identify that client's jobs. Inactive clients are hidden
   by default (tick **Show inactive** to see them). **Import**/**Export** work
   from a spreadsheet — see below.
 - **People** — Registr's directory: everyone who might be assigned to a
-  project, appear in another app, or sign in anywhere. Not everyone needs to
+  job, appear in another app, or sign in anywhere. Not everyone needs to
   sign in — see Login type, below. Each person also carries a role (free
   text), phone, date of birth/employment start/end dates, notes, colour, and
   an **employment type** (Wage / Temp / Salary) — a payroll/HR

@@ -105,16 +105,16 @@ export interface Plant {
   notes: string | null;
 }
 
-export type ProjectType = 'contract' | 'minor_works';
-export type ProjectStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
-export type AssignmentRole = 'project_manager' | 'foreman' | 'estimator' | 'qs';
+export type JobType = 'contract' | 'minor_works';
+export type JobStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
+export type AssignmentRole = 'project_manager' | 'site_supervisor' | 'estimator' | 'qs';
 
-export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
   contract: 'Contract',
   minor_works: 'Minor Works',
 };
 
-export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   tendering: 'Tendering',
   awarded: 'Awarded',
   active: 'Active',
@@ -125,27 +125,27 @@ export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
 
 export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {
   project_manager: 'Project Manager',
-  foreman: 'Foreman',
+  site_supervisor: 'Site Supervisor',
   estimator: 'Estimator',
   qs: 'QS',
 };
 
-export interface ProjectAssignment {
+export interface JobAssignment {
   id: number;
   role: AssignmentRole;
   person: { id: number; name: string; email: string | null };
 }
 
-export interface Project {
+export interface Job {
   id: string;
   code: string;
   name: string;
   client_id: number | null;
-  project_type: ProjectType;
-  status: ProjectStatus;
+  job_type: JobType;
+  status: JobStatus;
   site_address: string | null;
   contract_value: number | null;
   start_date: string | null;
   end_date: string | null;
-  assignments?: ProjectAssignment[];
+  assignments?: JobAssignment[];
 }

@@ -58,7 +58,7 @@ export default function Layout() {
         </div>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
           <NavLink to="/" end style={navStyle}>
-            Projects
+            Jobs
           </NavLink>
           <NavLink to="/clients" style={navStyle}>
             Clients
