@@ -6,10 +6,14 @@ import PlantModal from '../components/PlantModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import { downloadCsv } from '../lib/csv';
 
+// Covers every field in the Export CSV below, so exporting and re-importing
+// the same file round-trips a plant item exactly — this doubles as backup/restore.
 const PLANT_IMPORT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'plant', 'equipment', 'description', 'asset', 'asset name'] },
   { key: 'rego', label: 'Rego', aliases: ['rego', 'registration', 'rego number', 'plate'] },
+  { key: 'active', label: 'Active', aliases: ['active', 'status'] },
   { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+  { key: 'color', label: 'Color', aliases: ['color', 'colour'] },
 ];
 
 export default function PlantPage() {
@@ -36,8 +40,8 @@ export default function PlantPage() {
   const exportCsv = () => {
     downloadCsv(
       'plant.csv',
-      ['Name', 'Rego', 'Active', 'Notes'],
-      filtered.map((p) => [p.name, p.rego ?? '', p.active ? 'Yes' : 'No', p.notes ?? ''])
+      ['Name', 'Rego', 'Active', 'Notes', 'Color'],
+      filtered.map((p) => [p.name, p.rego ?? '', p.active ? 'Yes' : 'No', p.notes ?? '', p.color])
     );
   };
 
@@ -139,11 +143,15 @@ export default function PlantPage() {
           getKey={(values) => values.name.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
-            await api.createPlant({
+            const created = await api.createPlant({
               name: values.name,
               rego: values.rego || null,
               notes: values.notes || null,
+              color: values.color || undefined,
             });
+            if (values.active.trim().toLowerCase() === 'no') {
+              await api.updatePlant(created.id, { active: false });
+            }
           }}
           onDone={load}
         />

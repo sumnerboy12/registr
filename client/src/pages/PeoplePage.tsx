@@ -6,13 +6,23 @@ import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import AppAccessModal from '../components/AppAccessModal';
-import { downloadCsv } from '../lib/csv';
+import { downloadCsv, labelToKey } from '../lib/csv';
 
+// Covers every field in the Export CSV below, so exporting and re-importing
+// the same file round-trips a person exactly — this doubles as backup/restore.
 const PEOPLE_IMPORT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'person', 'full name', 'employee', 'employee name'] },
+  { key: 'login_type', label: 'Login type', aliases: ['login type', 'login', 'sign-in'] },
   { key: 'email', label: 'Email', required: true, aliases: ['email', 'email address', 'e-mail'] },
   { key: 'phone', label: 'Phone', aliases: ['phone', 'mobile', 'cell', 'phone number', 'contact number'] },
   { key: 'role', label: 'Role', aliases: ['role', 'default role', 'position', 'title', 'job title'] },
+  { key: 'date_of_birth', label: 'Date of birth', aliases: ['date of birth', 'dob', 'birth date'] },
+  { key: 'employment_start_date', label: 'Employment start date', aliases: ['employment start date', 'start date'] },
+  { key: 'employment_end_date', label: 'Employment end date', aliases: ['employment end date', 'end date'] },
+  { key: 'employment_type', label: 'Employment type', aliases: ['employment type'] },
+  { key: 'active', label: 'Active', aliases: ['active', 'status'] },
+  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+  { key: 'color', label: 'Color', aliases: ['color', 'colour'] },
 ];
 
 export default function PeoplePage() {
@@ -63,6 +73,7 @@ export default function PeoplePage() {
         'Employment type',
         'Active',
         'Notes',
+        'Color',
       ],
       filtered.map((p) => [
         p.name,
@@ -76,6 +87,7 @@ export default function PeoplePage() {
         EMPLOYMENT_TYPE_LABELS[p.employment_type],
         p.active ? 'Yes' : 'No',
         p.notes ?? '',
+        p.color,
       ])
     );
   };
@@ -197,13 +209,25 @@ export default function PeoplePage() {
           getKey={(values) => values.email.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
-            await api.createPerson({
+            // Not mapped (or unrecognised) falls back to the plain-onboarding
+            // defaults this import used before it also had to double as
+            // restore: 'none' login, active, server-default employment type.
+            const created = await api.createPerson({
               name: values.name,
-              login_type: 'none',
+              login_type: labelToKey(LOGIN_TYPE_LABELS, values.login_type) ?? 'none',
               email: values.email,
               phone: values.phone || null,
               role: values.role || null,
+              date_of_birth: values.date_of_birth || null,
+              employment_start_date: values.employment_start_date || null,
+              employment_end_date: values.employment_end_date || null,
+              employment_type: labelToKey(EMPLOYMENT_TYPE_LABELS, values.employment_type),
+              notes: values.notes || null,
+              color: values.color || undefined,
             });
+            if (values.active.trim().toLowerCase() === 'no') {
+              await api.updatePerson(created.id, { active: false });
+            }
           }}
           onDone={load}
         />

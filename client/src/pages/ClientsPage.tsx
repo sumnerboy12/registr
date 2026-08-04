@@ -5,14 +5,20 @@ import { CLIENT_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ClientModal from '../components/ClientModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
-import { downloadCsv } from '../lib/csv';
+import { downloadCsv, labelToKey } from '../lib/csv';
 
+// Covers every field in the Export CSV below, so exporting and re-importing
+// the same file round-trips a client exactly — this doubles as backup/restore.
 const CLIENT_IMPORT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'client', 'client name', 'company', 'company name'] },
+  { key: 'type', label: 'Type', aliases: ['type', 'client type'] },
   { key: 'contact_name', label: 'Contact name', aliases: ['contact', 'contact name', 'contact person'] },
   { key: 'contact_email', label: 'Contact email', aliases: ['email', 'contact email', 'email address', 'e-mail'] },
   { key: 'contact_phone', label: 'Contact phone', aliases: ['phone', 'contact phone', 'mobile', 'phone number'] },
   { key: 'accounts_email', label: 'Accounts email', aliases: ['accounts email', 'accounts', 'payables email'] },
+  { key: 'active', label: 'Active', aliases: ['active', 'status'] },
+  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+  { key: 'color', label: 'Color', aliases: ['color', 'colour'] },
 ];
 
 export default function ClientsPage() {
@@ -39,7 +45,7 @@ export default function ClientsPage() {
   const exportCsv = () => {
     downloadCsv(
       'clients.csv',
-      ['Name', 'Type', 'Contact name', 'Contact email', 'Contact phone', 'Accounts email', 'Active', 'Notes'],
+      ['Name', 'Type', 'Contact name', 'Contact email', 'Contact phone', 'Accounts email', 'Active', 'Notes', 'Color'],
       filtered.map((c) => [
         c.name,
         CLIENT_TYPE_LABELS[c.type],
@@ -49,6 +55,7 @@ export default function ClientsPage() {
         c.accounts_email ?? '',
         c.active ? 'Yes' : 'No',
         c.notes ?? '',
+        c.color,
       ])
     );
   };
@@ -153,13 +160,19 @@ export default function ClientsPage() {
           getKey={(values) => values.name.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
-            await api.createClient({
+            const created = await api.createClient({
               name: values.name,
+              type: labelToKey(CLIENT_TYPE_LABELS, values.type),
               contact_name: values.contact_name || null,
               contact_email: values.contact_email || null,
               contact_phone: values.contact_phone || null,
               accounts_email: values.accounts_email || null,
+              notes: values.notes || null,
+              color: values.color || undefined,
             });
+            if (values.active.trim().toLowerCase() === 'no') {
+              await api.updateClient(created.id, { active: false });
+            }
           }}
           onDone={load}
         />
