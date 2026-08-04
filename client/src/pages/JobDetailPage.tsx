@@ -117,7 +117,7 @@ export default function JobDetailPage() {
   return (
     <div style={{ padding: 20, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>{isNew ? 'New Job' : job?.code}</h1>
+        <h1 style={{ fontSize: 20, margin: 0 }}>{isNew ? 'New Job' : job && `${job.code} - ${job.name}`}</h1>
         <button className="btn" onClick={() => navigate('/')}>
           Back to Jobs
         </button>
