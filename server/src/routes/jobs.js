@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import db from '../db/index.js';
-import { requireAuth, requireWrite } from '../middleware/auth.js';
+import { requireAuth, requireWrite, requireAdmin } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 
 const router = Router();
@@ -196,6 +196,16 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
 
   const row = db.prepare('SELECT * FROM jobs WHERE id = ?').get(existing.id);
   res.json(publicJob(row, { includeAssignments: true }));
+});
+
+// Admin-only, unlike everything else here — jobs are otherwise archived via
+// status ('closed'), never removed. Assignments cascade (see schema.sql).
+router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
+  const existing = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'not found' });
+
+  db.prepare('DELETE FROM jobs WHERE id = ?').run(req.params.id);
+  res.status(204).end();
 });
 
 router.post('/:id/assignments', requireAuth, requireWrite, (req, res) => {

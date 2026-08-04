@@ -106,6 +106,20 @@ export default function JobDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!job) return;
+    if (!confirm(`Delete ${job.code} - ${job.name}? This also removes its assignments.`)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.deleteJob(job.id);
+      navigate('/');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete');
+      setSaving(false);
+    }
+  };
+
   const addAssignment = async () => {
     if (!job || newPersonId === '') return;
     setAssignmentBusy(true);
@@ -240,7 +254,14 @@ export default function JobDetailPage() {
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
         {!isReadOnly && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div>
+              {isAdmin && !isNew && (
+                <button className="btn btn-danger" onClick={handleDelete} disabled={saving}>
+                  Delete
+                </button>
+              )}
+            </div>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? 'Saving…' : isNew ? 'Create Job' : 'Save'}
             </button>
