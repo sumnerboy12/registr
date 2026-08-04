@@ -353,6 +353,7 @@
       <li><a href="#projects">Projects</a></li>
       <li><a href="#clients">Clients</a></li>
       <li><a href="#people">People</a></li>
+      <li><a href="#plant">Plant</a></li>
       <li><a href="#login-access">Login type &amp; app access</a></li>
       <li><a href="#api-keys">API keys</a></li>
       <li><a href="#importing">Importing &amp; exporting</a></li>
@@ -401,7 +402,7 @@
         <p>
           Real people sign in via SSO only. Add them from the <strong>People</strong> screen
           (see <a href="#people">chapter 4</a>) and grant sign-in rights from there — see
-          <a href="#login-access">chapter 5</a>. Nobody signs themselves up.
+          <a href="#login-access">chapter 6</a>. Nobody signs themselves up.
         </p>
       </div>
       <div class="callout warn">
@@ -412,6 +413,12 @@
           admin.
         </p>
       </div>
+      <p class="dim">
+        A small badge next to the Registr name (login screen and toolbar) shows
+        <span class="kbd">DEVELOPMENT</span> or <span class="kbd">TEST</span> on any deployment
+        that isn't the real production one, so it's never mistaken for it. Nothing to do here —
+        it's set once, server-side, when that deployment is stood up.
+      </p>
     </section>
 
     <section class="chapter" id="projects">
@@ -490,14 +497,17 @@
             inbox.</td></tr>
           <tr><td class="name">Colour</td><td>Picked from an 18-colour swatch, shown as a dot
             next to the client's name in lists.</td></tr>
+          <tr><td class="name">Notes</td><td>Optional free text.</td></tr>
           <tr><td class="name">Active</td><td>Turn off instead of deleting when a client's
             no longer current — projects linked to it are unaffected either way.</td></tr>
         </tbody>
       </table>
       <p class="dim">
+        Inactive clients are hidden by default — tick <span class="kbd">Show inactive</span>
+        above the list to see them.
         <span class="kbd">Import</span> pastes a client list in from a spreadsheet,
         <span class="kbd">Export</span> downloads whatever's currently listed and searched —
-        see <a href="#importing">chapter 7</a>.
+        see <a href="#importing">chapter 8</a>.
       </p>
     </section>
 
@@ -507,42 +517,85 @@
       <p>
         Registr's directory — everyone who might need to be assigned to a project, appear in
         another app, or sign in anywhere. Not everyone in People needs to sign in at all; see
-        <a href="#login-access">chapter 5</a> for how that's decided per person.
+        <a href="#login-access">chapter 6</a> for how that's decided per person.
       </p>
       <table class="field-table">
         <thead><tr><th>Field</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td class="name">Name</td><td>The only field required regardless of login
-            type.</td></tr>
+          <tr><td class="name">Name / Email</td><td>Both required, regardless of login
+            type — an email is needed even for a <strong>None</strong> login so it's there for
+            notifications (see <a href="#login-access">chapter 6</a>).</td></tr>
           <tr><td class="name">Role</td><td>Free text, e.g. Foreman, Estimator — distinct
             from a project's own assignment roles (chapter 2).</td></tr>
           <tr><td class="name">Phone</td><td>Optional.</td></tr>
-          <tr><td class="name">Date of birth / Employment start date</td><td>Optional
+          <tr><td class="name">Date of birth / Employment start &amp; end date</td><td>Optional
             record-keeping fields.</td></tr>
+          <tr><td class="name">Employment type</td><td><strong>Wage</strong>,
+            <strong>Temp</strong> or <strong>Salary</strong> — a payroll/HR classification.
+            Registr is just the master list of WRS employees; it has no bearing on whether
+            rostr actually schedules this person, which is rostr's own separate local
+            flag.</td></tr>
           <tr><td class="name">Colour</td><td>Picked from the same 18-colour swatch as
             clients — used by rostr to identify this person on its Schedule.</td></tr>
-          <tr><td class="name">Billable</td><td>Whether this person's time is chargeable —
-            used by rostr's scheduling.</td></tr>
+          <tr><td class="name">Notes</td><td>Optional free text.</td></tr>
           <tr><td class="name">Active</td><td>Turn off instead of deleting when someone
             leaves — they disappear from pickers elsewhere, but their history is kept. You
             can't mark your own account inactive.</td></tr>
         </tbody>
       </table>
       <p class="dim">
-        By default the list only shows what you've searched for by name, email or role.
-        <span class="kbd">Import</span> and <span class="kbd">Export</span> work the same way
-        as on Clients — see <a href="#importing">chapter 7</a>. Imported people default to
-        the <strong>None</strong> login type (see next chapter), since a bulk import is
-        usually a contact list, not a batch of new logins.
+        The search box filters by name, email or role. Inactive people are hidden by default —
+        tick <span class="kbd">Show inactive</span> to see them — and a second dropdown
+        narrows the list to one employment type. <span class="kbd">Import</span> and
+        <span class="kbd">Export</span> work the same way as on Clients — see
+        <a href="#importing">chapter 8</a>. Imported people default to the <strong>None</strong>
+        login type (see the next chapter), since a bulk import is usually a contact list, not a
+        batch of new logins.
+      </p>
+    </section>
+
+    <section class="chapter" id="plant">
+      <div class="chapter-num">05</div>
+      <h2>Plant</h2>
+      <p>
+        Registr's master list of WRS-<strong>owned</strong> equipment and machinery — diggers,
+        mixers, scaffolding, whatever you track. It mirrors People and Clients in shape, but is
+        deliberately simpler: no type, no project or client link.
+      </p>
+      <table class="field-table">
+        <thead><tr><th>Field</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Name</td><td>The only required field, e.g. "Excavator 5T".</td></tr>
+          <tr><td class="name">Rego</td><td>Optional registration/plate number.</td></tr>
+          <tr><td class="name">Colour</td><td>Picked from the same 18-colour swatch as People
+            and Clients.</td></tr>
+          <tr><td class="name">Notes</td><td>Optional free text.</td></tr>
+          <tr><td class="name">Active</td><td>Turn off instead of deleting when a machine's
+            gone from the fleet.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        <span class="label">Owned only</span>
+        <p>
+          Hired-in gear is deliberately not tracked here — that's a rostr-only concept, tied to
+          a specific job and hire company, since it has no reason to be Registr master data.
+          rostr syncs this owned list in read-only alongside it.
+        </p>
+      </div>
+      <p class="dim">
+        Inactive plant is hidden by default — tick <span class="kbd">Show inactive</span> to see
+        it. <span class="kbd">Import</span> and <span class="kbd">Export</span> work the same
+        way as People/Clients — see <a href="#importing">chapter 8</a>.
       </p>
     </section>
 
     <section class="chapter" id="login-access">
-      <div class="chapter-num">05</div>
+      <div class="chapter-num">06</div>
       <h2>Login type &amp; app access</h2>
       <p>
         Every person has exactly one <strong>login type</strong>, set on their own record —
-        it decides whether, and how, they can sign in anywhere.
+        it decides whether, and how, they can sign in anywhere. Either way, an email is always
+        required on the person's own record.
       </p>
       <div class="card-grid">
         <div class="mini-card">
@@ -552,8 +605,8 @@
         </div>
         <div class="mini-card">
           <h4>None</h4>
-          <p>Can't sign in anywhere. Still carries an email if you give it one — used for
-            sending schedules and other notifications, not for login.</p>
+          <p>Can't sign in anywhere. Its email is used for sending schedules and other
+            notifications, not for login.</p>
         </div>
       </div>
       <p class="dim">
@@ -586,12 +639,12 @@
     </section>
 
     <section class="chapter" id="api-keys">
-      <div class="chapter-num">06</div>
+      <div class="chapter-num">07</div>
       <h2>API keys</h2>
       <p>
         rostr, claimr and costr each ask Registr, server-to-server, whether a signed-in
         email is allowed into <em>that</em> app and with what role — the same access decided
-        in chapter 5. Each app needs its own credential to do that, managed from the
+        in chapter 6. Each app needs its own credential to do that, managed from the
         <strong>API Keys</strong> screen (admin only).
       </p>
       <ol class="steps">
@@ -619,10 +672,10 @@
     </section>
 
     <section class="chapter" id="importing">
-      <div class="chapter-num">07</div>
+      <div class="chapter-num">08</div>
       <h2>Importing &amp; exporting</h2>
       <p>
-        The People and Clients screens each have <span class="kbd">Import</span> and
+        The People, Clients and Plant screens each have <span class="kbd">Import</span> and
         <span class="kbd">Export</span> buttons for working with a spreadsheet you already
         keep, instead of retyping everything by hand.
       </p>
@@ -633,20 +686,36 @@
           adjust any dropdown that guessed wrong, or set it to
           <em>— Don't import —</em> to skip a column.</li>
         <li>Check the preview of the first few rows, then click <span class="kbd">Import</span>.
-          Only the name is required — everything else can be left unmapped.</li>
+          Name is always required (plus email, for People) — everything else can be left
+          unmapped.</li>
       </ol>
       <p class="dim">
-        Rows that fail (e.g. a duplicate email) are listed with the reason afterwards;
-        everything else still imports, so a bad row won't block the rest of the batch.
+        A row matching an existing record — by email for People, by name for Clients/Plant —
+        or an earlier row in the same paste, is skipped as a <strong>duplicate</strong> rather
+        than re-created; the result summary counts these separately from actual failures. A row
+        that genuinely fails (e.g. a missing required field) is listed with the reason
+        afterwards; everything else still imports, so one bad row won't block the rest of the
+        batch.
       </p>
       <p class="dim">
         <span class="kbd">Export</span> downloads a CSV of whatever's currently listed and
         searched — not necessarily everything, if you've filtered the list first.
       </p>
+      <div class="callout">
+        <span class="label">Doubles as backup/restore</span>
+        <p>
+          Export now covers every field on a record, not just the obvious ones, so re-importing
+          the same file reproduces each person/client/plant item faithfully — that's the
+          "restore" half. This is per-entity (People, Clients and Plant each export/import their
+          own CSV), not one combined whole-database file, and a restored record gets a new
+          internal ID — a person's app-access grants (chapter 6) aren't part of the export and
+          need re-setting by hand afterwards.
+        </p>
+      </div>
     </section>
 
     <section class="chapter" id="data">
-      <div class="chapter-num">08</div>
+      <div class="chapter-num">09</div>
       <h2>Your data</h2>
       <p>
         Every project, person, client and API key lives in one SQLite database file on
@@ -669,14 +738,15 @@
     </section>
 
     <section class="chapter" id="reference">
-      <div class="chapter-num">09</div>
+      <div class="chapter-num">10</div>
       <h2>Quick reference</h2>
       <div class="cheat-grid">
         <span class="kbd">Access</span><span class="action">SSO people list button (admin only) — grant or revoke sign-in to Registr and every other app, per person</span>
         <span class="kbd">SSO</span><span class="action">login type — signs in via M365, matched by email</span>
-        <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email (if set) is for notifications only</span>
+        <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email is still used for notifications</span>
         <span class="kbd">admin</span><span class="action">break-glass login — password only, set by the server's ADMIN_PASSWORD, not tied to any person</span>
         <span class="kbd">Closed</span><span class="action">project status — how a project is archived; never hard-deleted</span>
+        <span class="kbd">Employment type</span><span class="action">Wage / Temp / Salary — a payroll classification on People; doesn't decide rostr scheduling</span>
       </div>
     </section>
 

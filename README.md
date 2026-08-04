@@ -117,6 +117,11 @@ let you revoke or demote your own Registr admin access, or mark your own
 account inactive. One of those actions has to come from another admin (or
 the break-glass login).
 
+Set `APP_ENV=development` or `APP_ENV=test` in `server/.env` on any
+non-production deployment (a staging box, a local dev copy) — the toolbar
+and login screen then show a badge so nobody mistakes it for the real
+server. Leave it blank (or `production`) on the real deployment.
+
 ## How it works
 
 - **Projects** — every job Registr tracks, identified by a human **code**
@@ -128,16 +133,25 @@ the break-glass login).
   Estimator, QS — the same person can hold more than one role).
 - **Clients** — the organisations projects are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
-  accounts/payables details, and a colour (from an 18-colour swatch) used by
-  rostr to identify that client's jobs. **Import**/**Export** work from a
-  spreadsheet.
+  accounts/payables details, notes, and a colour (from an 18-colour swatch)
+  used by rostr to identify that client's jobs. Inactive clients are hidden
+  by default (tick **Show inactive** to see them). **Import**/**Export** work
+  from a spreadsheet — see below.
 - **People** — Registr's directory: everyone who might be assigned to a
   project, appear in another app, or sign in anywhere. Not everyone needs to
   sign in — see Login type, below. Each person also carries a role (free
-  text), phone, date of birth/employment start date, colour, and whether
-  they're **billable** (used by rostr's scheduling). **Import**/**Export**
-  work here too; imported people default to the **None** login type, since a
-  bulk import is usually a contact list, not a batch of new logins.
+  text), phone, date of birth/employment start/end dates, notes, colour, and
+  an **employment type** (Wage / Temp / Salary) — a payroll/HR
+  classification only; it has no bearing on whether rostr actually schedules
+  that person, which is rostr's own separate local flag. Inactive people are
+  hidden by default (tick **Show inactive** to see them), and the list can be
+  filtered by employment type. **Import**/**Export** work here too; imported
+  people default to the **None** login type, since a bulk import is usually
+  a contact list, not a batch of new logins.
+- **Plant** — Registr's master list of WRS-owned equipment/machinery (name,
+  optional rego, notes, colour, active). Hired-in gear is deliberately not
+  tracked here — that's a rostr-only concept, tied to a specific job and
+  hire company. **Import**/**Export** work the same way as People/Clients.
 - **Login type & app access** — every person is either **SSO** (signs in via
   M365, matched by email) or **None** (can't sign in anywhere; an email, if
   set, is only used for notifications). The **Access** button on an SSO
@@ -149,6 +163,16 @@ the break-glass login).
   and costr use to ask Registr whether a signed-in email is allowed into
   that app. Generate one per app; the plaintext is shown once, at creation.
   Revoking deletes a key permanently.
+
+**Import/Export doubles as backup/restore.** Each entity's Export CSV covers
+every field on that entity (not just the obvious ones), so re-importing the
+same file reproduces every record faithfully. A row matching an existing
+record (by email for People, by name for Clients/Plant) — or an earlier row
+in the same paste — is skipped as a duplicate rather than re-created, and
+reported separately from actual failures. This isn't a single combined
+"whole database" backup: People, Clients and Plant each export/import their
+own CSV, and a restore doesn't recreate a record's internal ID or (for
+People) its app-access grants — those need re-setting by hand afterwards.
 
 ## Signing in with SSO (optional)
 
@@ -182,7 +206,7 @@ fallback if the identity provider is ever unreachable.
 1. Generate an API key for that app from the **API Keys** screen (or, from
    `registr/server`, `npm run create-api-key -- <app>`).
 2. Store the plaintext key (shown once) in that app's own server config.
-3. That app calls `GET /api/v1/auth/check?email=<email>` with
+3. That app calls `GET /api/auth/check?email=<email>` with
    `Authorization: Bearer <key>` after its own SSO handshake, and uses the
    returned `{ authorized, role, person }` to decide access — see
    `server/src/routes/auth.js`.
