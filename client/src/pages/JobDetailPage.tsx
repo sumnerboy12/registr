@@ -7,6 +7,18 @@ import { useAuth } from '../auth/AuthContext';
 
 const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
+// jobValue state stays a plain unformatted numeric string ("1234.5") — this
+// only affects how it's displayed while editing. A native number input
+// can't show thousand separators (browsers strip them), so Value is a text
+// input instead, formatted with commas here and re-parsed back to raw
+// digits on every keystroke (see handleValueChange below).
+function formatCurrencyInput(raw: string): string {
+  if (!raw) return '';
+  const [intPart, decPart] = raw.split('.');
+  const formattedInt = intPart === '' ? '' : Number(intPart).toLocaleString('en-US');
+  return decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
+}
+
 export default function JobDetailPage() {
   const { code: codeParam } = useParams();
   const isNew = codeParam === undefined;
@@ -186,13 +198,37 @@ export default function JobDetailPage() {
           </div>
           <div className="field">
             <label>Value</label>
-            <input
-              type="number"
-              value={jobValue}
-              onChange={(e) => setJobValue(e.target.value)}
-              placeholder="Blank while tendering"
-              disabled={isReadOnly}
-            />
+            <div style={{ position: 'relative' }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  left: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-dim)',
+                  pointerEvents: 'none',
+                }}
+              >
+                $
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0.00"
+                value={formatCurrencyInput(jobValue)}
+                onChange={(e) => {
+                  // Keep only digits and a single decimal point.
+                  let cleaned = e.target.value.replace(/[^0-9.]/g, '');
+                  const firstDot = cleaned.indexOf('.');
+                  if (firstDot !== -1) {
+                    cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+                  }
+                  setJobValue(cleaned);
+                }}
+                disabled={isReadOnly}
+                style={{ paddingLeft: 20, width: '100%', boxSizing: 'border-box' }}
+              />
+            </div>
           </div>
         </div>
 
