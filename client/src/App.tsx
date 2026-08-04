@@ -6,6 +6,7 @@ import ProjectsPage from './pages/ProjectsPage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import ClientsPage from './pages/ClientsPage';
 import PeoplePage from './pages/PeoplePage';
+import PlantPage from './pages/PlantPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 
 function Gate() {
@@ -22,6 +23,7 @@ function Gate() {
         <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="people" element={<PeoplePage />} />
+        <Route path="plant" element={<PlantPage />} />
         {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
       </Route>
     </Routes>

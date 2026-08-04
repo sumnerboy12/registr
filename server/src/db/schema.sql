@@ -1,5 +1,6 @@
--- registr is the system of record for project identity, plus the people and
--- clients that hang off it. Downstream apps store only a foreign reference.
+-- registr is the system of record for project identity, plus the people,
+-- clients and plant that hang off it. Downstream apps store only a foreign
+-- reference.
 
 CREATE TABLE IF NOT EXISTS people (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,6 +50,21 @@ CREATE TABLE IF NOT EXISTS clients (
   active INTEGER NOT NULL DEFAULT 1,
   -- Swatch colour rostr uses to identify this client's jobs on the Schedule.
   color TEXT NOT NULL DEFAULT '#22c55e',
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- WRS-owned equipment/machinery only — hired-in gear is a rostr-only
+-- concept (tied to a specific job and hire company) with no reason to be
+-- WRS master data, so it never lives here; see rostr's plant.source.
+CREATE TABLE IF NOT EXISTS plant (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  rego TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  -- Swatch colour rostr uses to identify this plant on the Schedule.
+  color TEXT NOT NULL DEFAULT '#238f0e',
   notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))

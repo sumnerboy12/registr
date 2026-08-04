@@ -94,6 +94,17 @@ export interface Client {
   notes: string | null;
 }
 
+// WRS-owned equipment only — hired-in gear is a rostr-only concept, not
+// tracked here.
+export interface Plant {
+  id: number;
+  name: string;
+  rego: string | null;
+  active: boolean;
+  color: string;
+  notes: string | null;
+}
+
 export type ProjectType = 'contract' | 'minor_works';
 export type ProjectStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
 export type AssignmentRole = 'project_manager' | 'foreman' | 'estimator' | 'qs';

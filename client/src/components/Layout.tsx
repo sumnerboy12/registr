@@ -66,6 +66,9 @@ export default function Layout() {
           <NavLink to="/people" style={navStyle}>
             People
           </NavLink>
+          <NavLink to="/plant" style={navStyle}>
+            Plant
+          </NavLink>
           {user?.role === 'admin' && (
             <NavLink to="/api-keys" style={navStyle}>
               API Keys

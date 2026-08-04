@@ -6,6 +6,7 @@ import type {
   Client,
   ConsumingApp,
   Person,
+  Plant,
   Project,
   ProjectAssignment,
   ProjectStatus,
@@ -46,6 +47,17 @@ export const api = {
   createClient: (data: Partial<Client>) => request<Client>('/v1/clients', { method: 'POST', body: JSON.stringify(data) }),
   updateClient: (id: number, data: Partial<Client>) =>
     request<Client>(`/v1/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getPlant: (params?: { active?: boolean; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.active) qs.set('active', '1');
+    if (params?.q) qs.set('q', params.q);
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return request<Plant[]>(`/v1/plant${suffix}`);
+  },
+  createPlant: (data: Partial<Plant>) => request<Plant>('/v1/plant', { method: 'POST', body: JSON.stringify(data) }),
+  updatePlant: (id: number, data: Partial<Plant>) =>
+    request<Plant>(`/v1/plant/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   getPeople: (params?: { active?: boolean; q?: string }) => {
     const qs = new URLSearchParams();
