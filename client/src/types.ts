@@ -144,8 +144,7 @@ export interface Job {
   job_type: JobType;
   status: JobStatus;
   site_address: string | null;
-  contract_value: number | null;
-  start_date: string | null;
-  end_date: string | null;
+  value: number | null;
+  notes: string | null;
   assignments?: JobAssignment[];
 }

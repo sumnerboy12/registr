@@ -128,8 +128,8 @@ server. Leave it blank (or `production`) on the real deployment.
   (e.g. "24-118"). Each carries a **type** (Contract or Minor Works), a
   **status** (Tendering / Awarded / Active / On Hold / Practical Completion
   / Closed — Registr never hard-deletes a job, Closed is how one is
-  archived), an optional linked client, site address, contract value and
-  dates, plus a list of people **assigned** to it (Project Manager, Site
+  archived), an optional linked client, site address, value and notes,
+  plus a list of people **assigned** to it (Project Manager, Site
   Supervisor, Estimator, QS — the same person can hold more than one role).
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and

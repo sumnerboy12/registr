@@ -81,10 +81,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   status TEXT NOT NULL DEFAULT 'tendering'
     CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'closed')),
   site_address TEXT,
-  -- Null for minor works and for jobs still tendering.
-  contract_value REAL,
-  start_date TEXT,
-  end_date TEXT,
+  -- Optional regardless of type — typically blank while a job's still
+  -- tendering, but nothing stops a minor works job from carrying one too.
+  value REAL,
+  notes TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

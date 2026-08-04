@@ -92,7 +92,7 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { code, name, client_id, job_type, status, site_address, contract_value, start_date, end_date } = req.body;
+  const { code, name, client_id, job_type, status, site_address, value, notes } = req.body;
   if (!code || !code.trim()) return res.status(400).json({ error: 'code is required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
@@ -103,8 +103,8 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
 
   const id = crypto.randomUUID();
   db.prepare(
-    `INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, contract_value, start_date, end_date)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, value, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     code.trim(),
@@ -113,9 +113,8 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
     job_type,
     status || 'tendering',
     site_address || null,
-    contract_value ?? null,
-    start_date || null,
-    end_date || null
+    value ?? null,
+    notes || null
   );
 
   const row = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
@@ -126,7 +125,7 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM jobs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { code, name, client_id, job_type, status, site_address, contract_value, start_date, end_date } = req.body;
+  const { code, name, client_id, job_type, status, site_address, value, notes } = req.body;
   if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
@@ -140,8 +139,8 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
 
   db.prepare(
     `UPDATE jobs SET
-       code = ?, name = ?, client_id = ?, job_type = ?, status = ?, site_address = ?, contract_value = ?,
-       start_date = ?, end_date = ?, updated_at = datetime('now')
+       code = ?, name = ?, client_id = ?, job_type = ?, status = ?, site_address = ?, value = ?,
+       notes = ?, updated_at = datetime('now')
      WHERE id = ?`
   ).run(
     nextCode,
@@ -150,9 +149,8 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     job_type ?? existing.job_type,
     status ?? existing.status,
     site_address !== undefined ? site_address : existing.site_address,
-    contract_value !== undefined ? contract_value : existing.contract_value,
-    start_date !== undefined ? start_date : existing.start_date,
-    end_date !== undefined ? end_date : existing.end_date,
+    value !== undefined ? value : existing.value,
+    notes !== undefined ? notes : existing.notes,
     existing.id
   );
 

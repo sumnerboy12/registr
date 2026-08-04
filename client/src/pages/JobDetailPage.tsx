@@ -24,9 +24,8 @@ export default function JobDetailPage() {
   const [jobType, setJobType] = useState<JobType>('contract');
   const [status, setStatus] = useState<JobStatus>('tendering');
   const [siteAddress, setSiteAddress] = useState('');
-  const [contractValue, setContractValue] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [jobValue, setJobValue] = useState('');
+  const [notes, setNotes] = useState('');
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,9 +49,8 @@ export default function JobDetailPage() {
       setJobType(j.job_type);
       setStatus(j.status);
       setSiteAddress(j.site_address ?? '');
-      setContractValue(j.contract_value != null ? String(j.contract_value) : '');
-      setStartDate(j.start_date ?? '');
-      setEndDate(j.end_date ?? '');
+      setJobValue(j.value != null ? String(j.value) : '');
+      setNotes(j.notes ?? '');
       setLoading(false);
     });
   }, [id, isNew]);
@@ -69,9 +67,8 @@ export default function JobDetailPage() {
       job_type: jobType,
       status,
       site_address: siteAddress || null,
-      contract_value: contractValue === '' ? null : Number(contractValue),
-      start_date: startDate || null,
-      end_date: endDate || null,
+      value: jobValue === '' ? null : Number(jobValue),
+      notes: notes || null,
     };
     try {
       if (isNew) {
@@ -138,6 +135,11 @@ export default function JobDetailPage() {
           </div>
         </div>
 
+        <div className="field">
+          <label>Site address</label>
+          <input value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} disabled={isReadOnly} />
+        </div>
+
         <div className="row">
           <div className="field">
             <label>Client</label>
@@ -146,16 +148,6 @@ export default function JobDetailPage() {
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="field">
-            <label>Type</label>
-            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly}>
-              {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
                 </option>
               ))}
             </select>
@@ -172,30 +164,32 @@ export default function JobDetailPage() {
           </div>
         </div>
 
-        <div className="field">
-          <label>Site address</label>
-          <input value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} disabled={isReadOnly} />
-        </div>
-
         <div className="row">
           <div className="field">
-            <label>Contract value</label>
+            <label>Type</label>
+            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly}>
+              {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>Value</label>
             <input
               type="number"
-              value={contractValue}
-              onChange={(e) => setContractValue(e.target.value)}
-              placeholder="Blank for tendering / minor works"
+              value={jobValue}
+              onChange={(e) => setJobValue(e.target.value)}
+              placeholder="Blank while tendering"
               disabled={isReadOnly}
             />
           </div>
-          <div className="field">
-            <label>Start date</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={isReadOnly} />
-          </div>
-          <div className="field">
-            <label>End date</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={isReadOnly} />
-          </div>
+        </div>
+
+        <div className="field">
+          <label>Notes</label>
+          <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isReadOnly} />
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}

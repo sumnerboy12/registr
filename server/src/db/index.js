@@ -89,9 +89,13 @@ if (!peopleColumnsForEmploymentEnd.includes('employment_end_date')) {
 // once, though the old tables are gone after the first run regardless.
 const hasOldProjectsTable = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'projects'").get();
 if (hasOldProjectsTable) {
+  // start_date/end_date/notes aren't copied — the first no longer exists on
+  // jobs (see the "Jobs UI redesign" migration below), the second (notes)
+  // didn't exist on the old projects table at all. contract_value (old) ->
+  // value (new) per the same redesign.
   db.exec(`
-    INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, contract_value, start_date, end_date, created_at, updated_at)
-    SELECT id, code, name, client_id, project_type, status, site_address, contract_value, start_date, end_date, created_at, updated_at
+    INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, value, created_at, updated_at)
+    SELECT id, code, name, client_id, project_type, status, site_address, contract_value, created_at, updated_at
     FROM projects
     WHERE id NOT IN (SELECT id FROM jobs)
   `);
@@ -146,6 +150,20 @@ if (jobAssignmentsTableSql && jobAssignmentsTableSql.sql.includes("'foreman'")) 
   db.exec('CREATE INDEX IF NOT EXISTS idx_job_assignments_job ON job_assignments(job_id)');
   db.exec('CREATE INDEX IF NOT EXISTS idx_job_assignments_person ON job_assignments(person_id)');
   db.exec('PRAGMA foreign_keys = ON');
+}
+
+// Jobs UI redesign: dropped start/end dates (unused — a job's dates live on
+// its rostr phases, not here) and added a Notes field, matching People/
+// Clients/Plant. Neither column carries a constraint, so plain ALTER TABLE
+// works, same as the billable column removal above.
+const jobsColumns = db.prepare('PRAGMA table_info(jobs)').all().map((c) => c.name);
+if (jobsColumns.includes('start_date')) db.exec('ALTER TABLE jobs DROP COLUMN start_date');
+if (jobsColumns.includes('end_date')) db.exec('ALTER TABLE jobs DROP COLUMN end_date');
+if (!jobsColumns.includes('notes')) db.exec('ALTER TABLE jobs ADD COLUMN notes TEXT');
+// contract_value → value: no longer implies "contract jobs only" — a minor
+// works job can carry one too. Not a constrained column, so a plain rename.
+if (jobsColumns.includes('contract_value') && !jobsColumns.includes('value')) {
+  db.exec('ALTER TABLE jobs RENAME COLUMN contract_value TO value');
 }
 
 export { dataDir };

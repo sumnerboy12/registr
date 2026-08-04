@@ -43,7 +43,7 @@ export default function JobsPage() {
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <input placeholder="Search by code or name…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <input placeholder="Search jobs…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
         <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus | '')}>
           <option value="">All statuses</option>
           {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
