@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
@@ -26,6 +26,9 @@ function Gate() {
         <Route path="plant" element={<PlantPage />} />
         {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
       </Route>
+      {/* /login?error=... is a real URL (server-side OIDC-failure redirect) — once
+          logged in there's no route for it, so send it back to the projects list. */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
