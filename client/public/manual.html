@@ -425,10 +425,17 @@
       <div class="chapter-num">02</div>
       <h2>Jobs</h2>
       <p>
-        Every job Registr tracks lives here, identified by a human <strong>code</strong>
-        (e.g. "24-118") — the code is what other apps and people use to refer to a job,
-        though the underlying link is always a stable internal ID, so renaming a code later
-        doesn't break anything already pointing at it.
+        Every job Registr tracks lives here, identified by a human <strong>code</strong> —
+        the code is what other apps and people use to refer to a job, though the underlying
+        link is always a stable internal ID, so changing a code later doesn't break anything
+        already pointing at it.
+      </p>
+      <p class="dim">
+        Codes are generated automatically: <strong>YYXX</strong> for a Contract job (e.g.
+        "2601" — the year, then the next unused number that year) or
+        <strong>MYYXX</strong> for Minor Works (e.g. "M2601") — each type counts its own
+        sequence, so a Contract and a Minor Works job created the same year can both be
+        "…01". Only admins can override the suggested code.
       </p>
 
       <h3>Type and status</h3>
@@ -453,15 +460,23 @@
 
       <h3>Working with a job</h3>
       <ol class="steps">
-        <li>Click <span class="kbd">+ New Job</span> — code and name are the only fields
-          required up front. Site address, client, status, type, value and notes stay
-          optional.</li>
+        <li>Click <span class="kbd">+ New Job</span> — name is the only field required up
+          front; code is filled in for you (see above) and updates if you change Type before
+          saving. Site address, client, status, value and notes stay optional.</li>
         <li>Click any job in the list to open its detail page and edit any of those
           fields, including re-linking its client or changing its status.</li>
         <li><strong>Value</strong> is free-form and independent of type — leave it
           blank while a job's still tendering, or whenever there isn't a fixed
           figure yet, but a minor works job can carry one too.</li>
       </ol>
+      <div class="callout">
+        <span class="label">Code is admin-only</span>
+        <p>
+          Editors and read-only users see the code (auto-filled on a new job, as-is on an
+          existing one) but can't change it — only an admin can type over the suggested code,
+          or edit an existing job's code afterwards.
+        </p>
+      </div>
 
       <h3>Assignments</h3>
       <p>

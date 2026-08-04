@@ -11,7 +11,7 @@ export default function JobDetailPage() {
   const { id } = useParams();
   const isNew = id === undefined;
   const navigate = useNavigate();
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, isAdmin } = useAuth();
 
   const [job, setJob] = useState<Job | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -38,6 +38,15 @@ export default function JobDetailPage() {
     api.getClients({ active: true }).then(setClients);
     api.getPeople({ active: true }).then(setPeople);
   }, []);
+
+  // Prefills (and keeps refreshing, if Type changes) a suggested code for a
+  // new job — non-admins can't override it, so this is the only way they get
+  // one at all. Re-fetches on every jobType change rather than reusing a
+  // stale suggestion, since switching type changes which sequence applies.
+  useEffect(() => {
+    if (!isNew) return;
+    api.getNextJobCode(jobType).then((r) => setCode(r.code));
+  }, [isNew, jobType]);
 
   useEffect(() => {
     if (isNew) return;
@@ -127,7 +136,7 @@ export default function JobDetailPage() {
         <div className="row">
           <div className="field">
             <label>Code</label>
-            <input value={code} onChange={(e) => setCode(e.target.value)} disabled={isReadOnly} />
+            <input value={code} onChange={(e) => setCode(e.target.value)} disabled={isReadOnly || !isAdmin} />
           </div>
           <div className="field">
             <label>Name</label>

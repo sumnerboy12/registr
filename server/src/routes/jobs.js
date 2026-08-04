@@ -33,6 +33,23 @@ function publicJob(row, { includeAssignments } = {}) {
   return job;
 }
 
+// Contract: YYXX (e.g. "2601"). Minor works: MYYXX (e.g. "M2601") — same
+// shape, just prefixed, and counted separately: a contract job and a minor
+// works job created the same year can both be "…01". XX is the lowest
+// unused number for that year/type, looking at every job ever coded that
+// year (including Closed) so a number is never reused once assigned.
+function generateJobCode(jobType) {
+  const yy = String(new Date().getFullYear() % 100).padStart(2, '0');
+  const prefix = jobType === 'minor_works' ? `M${yy}` : yy;
+  const rows = db.prepare('SELECT code FROM jobs WHERE code LIKE ?').all(`${prefix}%`);
+  let max = 0;
+  for (const { code } of rows) {
+    const suffix = code.slice(prefix.length);
+    if (/^\d{2}$/.test(suffix)) max = Math.max(max, Number(suffix));
+  }
+  return `${prefix}${String(max + 1).padStart(2, '0')}`;
+}
+
 router.get('/', requireAuthOrApiKey, (req, res) => {
   const { status, type, client_id, q, updated_since, include, archived } = req.query;
   const clauses = [];
@@ -90,6 +107,15 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
   );
 });
 
+// Previews the code a new job of this type would get right now — used to
+// prefill the New Job form. Not reserved: the actual code is (re)computed
+// again at creation time, so this is only ever a suggestion.
+router.get('/next-code', requireAuth, requireWrite, (req, res) => {
+  const { job_type } = req.query;
+  if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
+  res.json({ code: generateJobCode(job_type) });
+});
+
 router.get('/by-code/:code', requireAuthOrApiKey, (req, res) => {
   const row = db.prepare('SELECT * FROM jobs WHERE code = ?').get(req.params.code);
   if (!row) return res.status(404).json({ error: 'not found' });
@@ -104,12 +130,15 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
   const { code, name, client_id, job_type, status, site_address, value, notes } = req.body;
-  if (!code || !code.trim()) return res.status(400).json({ error: 'code is required' });
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
-  const existing = db.prepare('SELECT id FROM jobs WHERE code = ?').get(code.trim());
+  // Code is admin-only to set by hand — anyone else gets the auto-generated
+  // one regardless of what (if anything) they sent, same as PATCH below.
+  const finalCode = req.registrRole === 'admin' && code && code.trim() ? code.trim() : generateJobCode(job_type);
+
+  const existing = db.prepare('SELECT id FROM jobs WHERE code = ?').get(finalCode);
   if (existing) return res.status(400).json({ error: 'That job code is already in use' });
 
   const id = crypto.randomUUID();
@@ -118,7 +147,7 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
-    code.trim(),
+    finalCode,
     name.trim(),
     client_id || null,
     job_type,
@@ -140,8 +169,11 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
+  // Code is admin-only to change — anyone else's edit to it is silently
+  // ignored rather than erroring, since a non-admin's form has it disabled
+  // and shouldn't be sending a real change in the first place.
   let nextCode = existing.code;
-  if (code !== undefined) {
+  if (req.registrRole === 'admin' && code !== undefined) {
     nextCode = code.trim();
     if (!nextCode) return res.status(400).json({ error: 'code is required' });
     const clash = db.prepare('SELECT id FROM jobs WHERE code = ? AND id != ?').get(nextCode, existing.id);
