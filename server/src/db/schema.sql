@@ -80,6 +80,15 @@ CREATE TABLE IF NOT EXISTS jobs (
   code TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+  -- Free-text fallback when no client_id is picked from the list (e.g. a
+  -- prospective client not yet in Clients) — cleared once a real client is
+  -- linked (see routes/jobs.js).
+  client_name TEXT,
+  -- This job's own contact — set regardless of whether client_id or
+  -- client_name is used; independent of the linked Client's own contact
+  -- fields, since a job's actual site contact can differ.
+  contact_name TEXT,
+  contact_email TEXT,
   job_type TEXT NOT NULL CHECK (job_type IN ('contract', 'minor_works')),
   status TEXT NOT NULL DEFAULT 'tendering'
     CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'awaiting_retentions', 'closed', 'lost')),

@@ -14,6 +14,8 @@ const JOB_IMPORT_FIELDS: ImportField[] = [
   { key: 'code', label: 'Code', aliases: ['code', 'job code', 'job #', 'job number', 'reference', 'ref'] },
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'job', 'job name', 'project', 'project name', 'title'] },
   { key: 'client', label: 'Client', aliases: ['client', 'client name', 'customer', 'customer name'] },
+  { key: 'contact_name', label: 'Contact name', aliases: ['contact name', 'contact', 'contact person'] },
+  { key: 'contact_email', label: 'Contact email', aliases: ['contact email', 'email', 'email address'] },
   { key: 'type', label: 'Type', aliases: ['type', 'job type'] },
   { key: 'status', label: 'Status', aliases: ['status', 'stage'] },
   { key: 'site_address', label: 'Site address', aliases: ['site address', 'address', 'location'] },
@@ -70,11 +72,13 @@ export default function JobsPage() {
   const exportCsv = () => {
     downloadCsv(
       'jobs.csv',
-      ['Code', 'Name', 'Client', 'Type', 'Status', 'Site address', 'Value', 'Notes'],
+      ['Code', 'Name', 'Client', 'Contact name', 'Contact email', 'Type', 'Status', 'Site address', 'Value', 'Notes'],
       jobs.map((j) => [
         j.code,
         j.name,
-        clientFor(j.client_id)?.name ?? '',
+        clientFor(j.client_id)?.name ?? j.client_name ?? '',
+        j.contact_name ?? '',
+        j.contact_email ?? '',
         JOB_TYPE_LABELS[j.job_type],
         JOB_STATUS_LABELS[j.status],
         j.site_address ?? '',
@@ -161,7 +165,7 @@ export default function JobsPage() {
                         color: '#fff',
                       }}
                     >
-                      {client?.name ?? 'No client'}
+                      {client?.name ?? job.client_name ?? 'No client'}
                     </span>
                   </td>
                   <td>
@@ -234,10 +238,16 @@ export default function JobsPage() {
               ? ('minor_works' as const)
               : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
             const jobStatus = STATUS_SYNONYMS[values.status.trim().toLowerCase()] ?? labelToKey(JOB_STATUS_LABELS, values.status);
+            const clientId = resolveClientId(values.client);
             await api.createJob({
               code: values.code || undefined,
               name: values.name,
-              client_id: resolveClientId(values.client),
+              client_id: clientId,
+              // Preserved as free text when the Client column doesn't match
+              // an existing client, same as the New Job form.
+              client_name: clientId ? null : values.client || null,
+              contact_name: values.contact_name || null,
+              contact_email: values.contact_email || null,
               job_type: jobType,
               status: jobStatus,
               site_address: values.site_address || null,

@@ -92,10 +92,10 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
   }
 
   // clients is left-joined (not inner) so a job with no client linked still
-  // shows up — client_name just comes back null for it. Client's own name
-  // and updated_at columns would otherwise collide with jobs' — see the
-  // jobs.-qualified clauses above and the client_name alias below.
-  let sql = 'SELECT jobs.*, clients.name AS client_name FROM jobs LEFT JOIN clients ON clients.id = jobs.client_id';
+  // shows up. Aliased linked_client_name rather than client_name to avoid
+  // colliding with jobs' own client_name column (the free-text fallback
+  // used when client_id isn't set — see routes/jobs.js POST/PATCH below).
+  let sql = 'SELECT jobs.*, clients.name AS linked_client_name FROM jobs LEFT JOIN clients ON clients.id = jobs.client_id';
   if (clauses.length) sql += ` WHERE ${clauses.join(' AND ')}`;
   sql += ' ORDER BY jobs.code COLLATE NOCASE';
 
@@ -106,13 +106,14 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
       (p) =>
         p.code.toLowerCase().includes(needle) ||
         p.name.toLowerCase().includes(needle) ||
+        (p.linked_client_name ?? '').toLowerCase().includes(needle) ||
         (p.client_name ?? '').toLowerCase().includes(needle)
     );
   }
 
   const includeAssignments = include === 'assignments';
   res.json(
-    rows.map(({ client_name, ...row }) => publicJob(row, { includeAssignments }))
+    rows.map(({ linked_client_name, ...row }) => publicJob(row, { includeAssignments }))
   );
 });
 
@@ -138,7 +139,7 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { code, name, client_id, job_type, status, site_address, value, notes } = req.body;
+  const { code, name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
@@ -157,13 +158,18 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
 
   const id = crypto.randomUUID();
   db.prepare(
-    `INSERT INTO jobs (id, code, name, client_id, job_type, status, site_address, value, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO jobs (id, code, name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     finalCode,
     name.trim(),
     client_id || null,
+    // client_name is a free-text fallback for when no client_id is picked
+    // from the list — irrelevant (and cleared) once a real client is linked.
+    client_id ? null : client_name || null,
+    contact_name || null,
+    contact_email || null,
     job_type,
     status || 'tendering',
     site_address || null,
@@ -185,17 +191,22 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   // silently stop matching its own type, or collide with a future job's
   // generated code for that type/year. Any value sent for either is ignored
   // rather than erroring, since the form has both disabled here anyway.
-  const { name, client_id, status, site_address, value, notes } = req.body;
+  const { name, client_id, client_name, contact_name, contact_email, status, site_address, value, notes } = req.body;
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
+  const nextClientId = client_id !== undefined ? client_id : existing.client_id;
   db.prepare(
     `UPDATE jobs SET
-       name = ?, client_id = ?, status = ?, site_address = ?, value = ?,
+       name = ?, client_id = ?, client_name = ?, contact_name = ?, contact_email = ?, status = ?, site_address = ?, value = ?,
        notes = ?, updated_at = datetime('now')
      WHERE id = ?`
   ).run(
     name ?? existing.name,
-    client_id !== undefined ? client_id : existing.client_id,
+    nextClientId,
+    // Cleared as soon as a real client is linked — see POST above.
+    nextClientId ? null : client_name !== undefined ? client_name || null : existing.client_name,
+    contact_name !== undefined ? contact_name || null : existing.contact_name,
+    contact_email !== undefined ? contact_email || null : existing.contact_email,
     status ?? existing.status,
     site_address !== undefined ? site_address : existing.site_address,
     value !== undefined ? value : existing.value,

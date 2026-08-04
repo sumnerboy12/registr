@@ -151,6 +151,13 @@ export interface Job {
   code: string;
   name: string;
   client_id: number | null;
+  // Free-text fallback when no client_id is picked from the list — cleared
+  // once a real client is linked (see routes/jobs.js).
+  client_name: string | null;
+  // This job's own contact — applies regardless of client_id/client_name,
+  // independent of the linked Client's own contact fields.
+  contact_name: string | null;
+  contact_email: string | null;
   job_type: JobType;
   status: JobStatus;
   site_address: string | null;

@@ -205,5 +205,14 @@ if (jobsTableSql && !jobsTableSql.sql.includes('awaiting_retentions')) {
   db.exec('PRAGMA foreign_keys = ON');
 }
 
+// Free-text client name (used when no client_id is picked) and a job-level
+// contact — queried fresh rather than reusing jobsColumns above, since the
+// rebuild just above may have replaced the table. Unconstrained columns,
+// so plain ALTER TABLE works.
+const jobsColumnsAfterRebuild = db.prepare('PRAGMA table_info(jobs)').all().map((c) => c.name);
+if (!jobsColumnsAfterRebuild.includes('client_name')) db.exec('ALTER TABLE jobs ADD COLUMN client_name TEXT');
+if (!jobsColumnsAfterRebuild.includes('contact_name')) db.exec('ALTER TABLE jobs ADD COLUMN contact_name TEXT');
+if (!jobsColumnsAfterRebuild.includes('contact_email')) db.exec('ALTER TABLE jobs ADD COLUMN contact_email TEXT');
+
 export { dataDir };
 export default db;

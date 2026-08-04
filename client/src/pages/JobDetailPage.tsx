@@ -33,6 +33,9 @@ export default function JobDetailPage() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [clientId, setClientId] = useState<number | ''>('');
+  const [clientName, setClientName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
   const [jobType, setJobType] = useState<JobType>('contract');
   const [status, setStatus] = useState<JobStatus>('tendering');
   const [siteAddress, setSiteAddress] = useState('');
@@ -67,6 +70,9 @@ export default function JobDetailPage() {
       setCode(j.code);
       setName(j.name);
       setClientId(j.client_id ?? '');
+      setClientName(j.client_name ?? '');
+      setContactName(j.contact_name ?? '');
+      setContactEmail(j.contact_email ?? '');
       setJobType(j.job_type);
       setStatus(j.status);
       setSiteAddress(j.site_address ?? '');
@@ -85,6 +91,9 @@ export default function JobDetailPage() {
       code,
       name,
       client_id: clientId === '' ? null : clientId,
+      client_name: clientId === '' ? clientName || null : null,
+      contact_name: contactName || null,
+      contact_email: contactEmail || null,
       job_type: jobType,
       status,
       site_address: siteAddress || null,
@@ -191,6 +200,24 @@ export default function JobDetailPage() {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {clientId === '' && (
+          <div className="field">
+            <label>Client name (not in the list above)</label>
+            <input value={clientName} onChange={(e) => setClientName(e.target.value)} disabled={isReadOnly} />
+          </div>
+        )}
+
+        <div className="row">
+          <div className="field">
+            <label>Contact name</label>
+            <input value={contactName} onChange={(e) => setContactName(e.target.value)} disabled={isReadOnly} />
+          </div>
+          <div className="field">
+            <label>Contact email</label>
+            <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} disabled={isReadOnly} />
           </div>
         </div>
 
