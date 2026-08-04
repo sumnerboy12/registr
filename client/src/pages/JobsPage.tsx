@@ -6,6 +6,7 @@ import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import { downloadCsv, labelToKey } from '../lib/csv';
+import { NO_CLIENT_COLOR } from '../lib/colors';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
 // the same file round-trips a job exactly — this doubles as backup/restore.
@@ -49,7 +50,7 @@ export default function JobsPage() {
     loadJobs();
   }, [status, type, q]);
 
-  const clientName = (id: number | null) => clients.find((c) => c.id === id)?.name ?? '—';
+  const clientFor = (id: number | null) => (id != null ? clients.find((c) => c.id === id) : undefined);
   const resolveClientId = (rawName: string | undefined): number | null => {
     const name = rawName?.trim();
     if (!name) return null;
@@ -63,7 +64,7 @@ export default function JobsPage() {
       jobs.map((j) => [
         j.code,
         j.name,
-        (j.client_id != null ? clients.find((c) => c.id === j.client_id)?.name : undefined) ?? '',
+        clientFor(j.client_id)?.name ?? '',
         JOB_TYPE_LABELS[j.job_type],
         JOB_STATUS_LABELS[j.status],
         j.site_address ?? '',
@@ -130,11 +131,29 @@ export default function JobsPage() {
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job) => (
+              {jobs.map((job) => {
+                const client = clientFor(job.client_id);
+                return (
                 <tr key={job.id}>
                   <td>{job.code}</td>
                   <td>{job.name}</td>
-                  <td>{clientName(job.client_id)}</td>
+                  <td>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '1px 7px',
+                        borderRadius: 999,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em',
+                        background: client?.color ?? NO_CLIENT_COLOR,
+                        color: '#fff',
+                      }}
+                    >
+                      {client?.name ?? 'No client'}
+                    </span>
+                  </td>
                   <td>{JOB_TYPE_LABELS[job.job_type]}</td>
                   <td>
                     <span className="badge">{JOB_STATUS_LABELS[job.status]}</span>
@@ -145,7 +164,8 @@ export default function JobsPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {jobs.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
