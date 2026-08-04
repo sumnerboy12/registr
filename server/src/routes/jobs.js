@@ -40,43 +40,54 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
 
   if (status) {
     if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-    clauses.push('status = ?');
+    clauses.push('jobs.status = ?');
     params.push(status);
   } else if (archived === '1') {
     // Archived (closed) jobs are hidden unless explicitly asked for —
     // registr never hard-deletes a job, it just archives via status.
-    clauses.push('status = ?');
+    clauses.push('jobs.status = ?');
     params.push('closed');
   } else {
-    clauses.push('status != ?');
+    clauses.push('jobs.status != ?');
     params.push('closed');
   }
   if (type) {
     if (!TYPES.includes(type)) return res.status(400).json({ error: 'Invalid type' });
-    clauses.push('job_type = ?');
+    clauses.push('jobs.job_type = ?');
     params.push(type);
   }
   if (client_id) {
-    clauses.push('client_id = ?');
+    clauses.push('jobs.client_id = ?');
     params.push(Number(client_id));
   }
   if (updated_since) {
-    clauses.push('updated_at > ?');
+    clauses.push('jobs.updated_at > ?');
     params.push(updated_since);
   }
 
-  let sql = 'SELECT * FROM jobs';
+  // clients is left-joined (not inner) so a job with no client linked still
+  // shows up — client_name just comes back null for it. Client's own name
+  // and updated_at columns would otherwise collide with jobs' — see the
+  // jobs.-qualified clauses above and the client_name alias below.
+  let sql = 'SELECT jobs.*, clients.name AS client_name FROM jobs LEFT JOIN clients ON clients.id = jobs.client_id';
   if (clauses.length) sql += ` WHERE ${clauses.join(' AND ')}`;
-  sql += ' ORDER BY code COLLATE NOCASE';
+  sql += ' ORDER BY jobs.code COLLATE NOCASE';
 
   let rows = db.prepare(sql).all(...params);
   if (q) {
     const needle = String(q).toLowerCase();
-    rows = rows.filter((p) => p.code.toLowerCase().includes(needle) || p.name.toLowerCase().includes(needle));
+    rows = rows.filter(
+      (p) =>
+        p.code.toLowerCase().includes(needle) ||
+        p.name.toLowerCase().includes(needle) ||
+        (p.client_name ?? '').toLowerCase().includes(needle)
+    );
   }
 
   const includeAssignments = include === 'assignments';
-  res.json(rows.map((r) => publicJob(r, { includeAssignments })));
+  res.json(
+    rows.map(({ client_name, ...row }) => publicJob(row, { includeAssignments }))
+  );
 });
 
 router.get('/by-code/:code', requireAuthOrApiKey, (req, res) => {
