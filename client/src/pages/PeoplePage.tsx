@@ -130,7 +130,6 @@ export default function PeoplePage() {
                 <th>Role</th>
                 <th>Type</th>
                 <th>Login type</th>
-                <th>Status</th>
                 <th></th>
               </tr>
             </thead>
@@ -145,7 +144,6 @@ export default function PeoplePage() {
                   <td>{person.role || '—'}</td>
                   <td>{EMPLOYMENT_TYPE_LABELS[person.employment_type]}</td>
                   <td>{LOGIN_TYPE_LABELS[person.login_type]}</td>
-                  <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     {isAdmin && person.login_type === 'sso' && (
                       <button className="btn" onClick={() => setManagingAccessFor(person)}>
@@ -160,7 +158,7 @@ export default function PeoplePage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No people found.
                   </td>
                 </tr>

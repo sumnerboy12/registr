@@ -93,7 +93,6 @@ export default function ClientsPage() {
                 <th>Name</th>
                 <th>Type</th>
                 <th>Contact</th>
-                <th>Status</th>
                 <th></th>
               </tr>
             </thead>
@@ -106,7 +105,6 @@ export default function ClientsPage() {
                   <td>{client.name}</td>
                   <td>{CLIENT_TYPE_LABELS[client.type]}</td>
                   <td>{client.contact_name || client.contact_email || '—'}</td>
-                  <td>{client.active ? 'Active' : 'Inactive'}</td>
                   <td>
                     <button className="btn" onClick={() => setEditing(client)}>
                       {isReadOnly ? 'View' : 'Edit'}
@@ -116,7 +114,7 @@ export default function ClientsPage() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No clients found.
                   </td>
                 </tr>
