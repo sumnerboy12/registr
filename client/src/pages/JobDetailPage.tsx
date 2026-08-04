@@ -63,24 +63,31 @@ export default function JobDetailPage() {
     api.getNextJobCode(jobType).then((r) => setCode(r.code));
   }, [isNew, jobType]);
 
+  // Populates every editable field from a loaded job.
+  const applyJobToForm = (j: Job) => {
+    setCode(j.code);
+    setName(j.name);
+    setClientId(j.client_id ?? '');
+    setClientName(j.client_name ?? '');
+    setContactName(j.contact_name ?? '');
+    setContactEmail(j.contact_email ?? '');
+    setJobType(j.job_type);
+    setStatus(j.status);
+    setSiteAddress(j.site_address ?? '');
+    setJobValue(j.value != null ? String(j.value) : '');
+    setNotes(j.notes ?? '');
+  };
+
   useEffect(() => {
     if (isNew) return;
     api.getJobByCode(codeParam).then((j) => {
       setJob(j);
-      setCode(j.code);
-      setName(j.name);
-      setClientId(j.client_id ?? '');
-      setClientName(j.client_name ?? '');
-      setContactName(j.contact_name ?? '');
-      setContactEmail(j.contact_email ?? '');
-      setJobType(j.job_type);
-      setStatus(j.status);
-      setSiteAddress(j.site_address ?? '');
-      setJobValue(j.value != null ? String(j.value) : '');
-      setNotes(j.notes ?? '');
+      applyJobToForm(j);
       setLoading(false);
     });
   }, [codeParam, isNew]);
+
+  const handleCancel = () => navigate('/');
 
   const handleSave = async () => {
     if (!code.trim()) return setError('Job code is required');
@@ -102,15 +109,13 @@ export default function JobDetailPage() {
     };
     try {
       if (isNew) {
-        const created = await api.createJob(data);
-        navigate(`/jobs/${encodeURIComponent(created.code)}`, { replace: true });
+        await api.createJob(data);
       } else {
-        const updated = await api.updateJob(job!.id, data);
-        setJob(updated);
+        await api.updateJob(job!.id, data);
       }
+      navigate('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
-    } finally {
       setSaving(false);
     }
   };
@@ -162,9 +167,6 @@ export default function JobDetailPage() {
     <div style={{ padding: 20, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>{isNew ? 'New Job' : job && `${job.code} - ${job.name}`}</h1>
-        <button className="btn" onClick={() => navigate('/')}>
-          Back to Jobs
-        </button>
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
@@ -280,7 +282,13 @@ export default function JobDetailPage() {
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
-        {!isReadOnly && (
+        {isReadOnly ? (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="btn" onClick={() => navigate('/')}>
+              Close
+            </button>
+          </div>
+        ) : (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <div>
               {isAdmin && !isNew && (
@@ -289,9 +297,14 @@ export default function JobDetailPage() {
                 </button>
               )}
             </div>
-            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : isNew ? 'Create Job' : 'Save'}
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn" onClick={handleCancel} disabled={saving}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
           </div>
         )}
       </div>
