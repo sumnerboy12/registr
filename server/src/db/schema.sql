@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS plant (
 -- TEXT (UUID) primary key — stays stable across renumbering, unguessable across apps.
 CREATE TABLE IF NOT EXISTS jobs (
   id TEXT PRIMARY KEY,
-  -- Human code (e.g. "2601", "M2601" — see generateJobCode in routes/jobs.js).
+  -- Human code (e.g. "26001", "M26001" — see generateJobCode in routes/jobs.js).
   -- Never the join key internally — always join on id — but it is how the
   -- API/UI address a job in a URL (GET /by-code/:code, /jobs/:code client-side),
   -- so it has to stay unique and, once assigned, immutable (see routes/jobs.js).

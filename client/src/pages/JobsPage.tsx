@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { AssignmentRole, Client, Job, JobStatus, JobType, Person } from '../types';
@@ -61,7 +61,7 @@ export default function JobsPage() {
     return api
       .getJobs({ status: status || undefined, type: type || undefined, q: q || undefined })
       .then((data) => {
-        setJobs([...data].sort((a, b) => a.code.localeCompare(b.code)));
+        setJobs(data);
         setLoading(false);
       });
   };
@@ -75,6 +75,17 @@ export default function JobsPage() {
   }, [status, type, q]);
 
   const clientFor = (id: number | null) => (id != null ? clients.find((c) => c.id === id) : undefined);
+
+  const sortedJobs = useMemo(
+    () =>
+      [...jobs].sort((a, b) => {
+        const clientA = clientFor(a.client_id)?.name ?? a.client_name ?? '';
+        const clientB = clientFor(b.client_id)?.name ?? b.client_name ?? '';
+        return clientA.localeCompare(clientB) || a.code.localeCompare(b.code);
+      }),
+    [jobs, clients]
+  );
+
   const resolveClientId = (rawName: string | undefined): number | null => {
     const name = rawName?.trim();
     if (!name) return null;
@@ -153,28 +164,27 @@ export default function JobsPage() {
           <table>
             <thead>
               <tr>
+                <th>Client</th>
                 <th>Code</th>
                 <th>Name</th>
-                <th>Client</th>
                 <th>Type</th>
                 <th>Status</th>
+                <th>Value</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {jobs.map((job) => {
+              {sortedJobs.map((job) => {
                 const client = clientFor(job.client_id);
                 return (
                 <tr key={job.id}>
-                  <td>{job.code}</td>
-                  <td>{job.name}</td>
                   <td>
                     <span
                       style={{
                         display: 'inline-block',
                         padding: '3px 10px',
                         borderRadius: 999,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 400,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
@@ -185,6 +195,8 @@ export default function JobsPage() {
                       {client?.name ?? job.client_name ?? 'No client'}
                     </span>
                   </td>
+                  <td>{job.code}</td>
+                  <td>{job.name}</td>
                   <td>
                     <span
                       className="badge"
@@ -192,7 +204,7 @@ export default function JobsPage() {
                         display: 'inline-block',
                         padding: '3px 10px',
                         borderRadius: 999,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 400,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
@@ -208,7 +220,7 @@ export default function JobsPage() {
                         display: 'inline-block',
                         padding: '3px 10px',
                         borderRadius: 999,
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 400,
                         textTransform: 'uppercase',
                         letterSpacing: '0.02em',
@@ -217,6 +229,7 @@ export default function JobsPage() {
                       {JOB_STATUS_LABELS[job.status]}
                     </span>
                   </td>
+                  <td>{job.value != null ? `$${job.value.toLocaleString('en-US')}` : '—'}</td>
                   <td>
                     <button className="btn" onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}>
                       {isReadOnly ? 'View' : 'Edit'}
@@ -225,9 +238,9 @@ export default function JobsPage() {
                 </tr>
                 );
               })}
-              {jobs.length === 0 && (
+              {sortedJobs.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-dim)', padding: 24 }}>
                     No jobs found.
                   </td>
                 </tr>

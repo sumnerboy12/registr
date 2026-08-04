@@ -42,9 +42,9 @@ function publicJob(row, { includeAssignments } = {}) {
   return job;
 }
 
-// Contract: YYXX (e.g. "2601"). Minor works: MYYXX (e.g. "M2601") — same
+// Contract: YYXXX (e.g. "26001"). Minor works: MYYXXX (e.g. "M26001") — same
 // shape, just prefixed, and counted separately: a contract job and a minor
-// works job created the same year can both be "…01". XX is the lowest
+// works job created the same year can both be "…001". XXX is the lowest
 // unused number for that year/type, looking at every job ever coded that
 // year (including Closed) so a number is never reused once assigned.
 function generateJobCode(jobType) {
@@ -54,9 +54,9 @@ function generateJobCode(jobType) {
   let max = 0;
   for (const { code } of rows) {
     const suffix = code.slice(prefix.length);
-    if (/^\d{2}$/.test(suffix)) max = Math.max(max, Number(suffix));
+    if (/^\d{3}$/.test(suffix)) max = Math.max(max, Number(suffix));
   }
-  return `${prefix}${String(max + 1).padStart(2, '0')}`;
+  return `${prefix}${String(max + 1).padStart(3, '0')}`;
 }
 
 router.get('/', requireAuthOrApiKey, (req, res) => {
