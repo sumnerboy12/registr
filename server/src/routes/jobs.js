@@ -138,6 +138,11 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
   // one regardless of what (if anything) they sent, same as PATCH below.
   const finalCode = req.registrRole === 'admin' && code && code.trim() ? code.trim() : generateJobCode(job_type);
 
+  // Only reachable via an admin-supplied code — generateJobCode never
+  // produces a slash. The code is a URL path segment (GET /by-code/:code,
+  // the client's /jobs/:code), so a slash in it would break that route.
+  if (finalCode.includes('/')) return res.status(400).json({ error: "Job code can't contain a '/'" });
+
   const existing = db.prepare('SELECT id FROM jobs WHERE code = ?').get(finalCode);
   if (existing) return res.status(400).json({ error: 'That job code is already in use' });
 
@@ -165,31 +170,23 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM jobs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { code, name, client_id, job_type, status, site_address, value, notes } = req.body;
-  if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
+  // code and job_type are immutable once a job exists — regardless of role,
+  // including admin. Both drive the auto-generated code (see generateJobCode
+  // above), so letting either change after creation would let a job's code
+  // silently stop matching its own type, or collide with a future job's
+  // generated code for that type/year. Any value sent for either is ignored
+  // rather than erroring, since the form has both disabled here anyway.
+  const { name, client_id, status, site_address, value, notes } = req.body;
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-
-  // Code is admin-only to change — anyone else's edit to it is silently
-  // ignored rather than erroring, since a non-admin's form has it disabled
-  // and shouldn't be sending a real change in the first place.
-  let nextCode = existing.code;
-  if (req.registrRole === 'admin' && code !== undefined) {
-    nextCode = code.trim();
-    if (!nextCode) return res.status(400).json({ error: 'code is required' });
-    const clash = db.prepare('SELECT id FROM jobs WHERE code = ? AND id != ?').get(nextCode, existing.id);
-    if (clash) return res.status(400).json({ error: 'That job code is already in use' });
-  }
 
   db.prepare(
     `UPDATE jobs SET
-       code = ?, name = ?, client_id = ?, job_type = ?, status = ?, site_address = ?, value = ?,
+       name = ?, client_id = ?, status = ?, site_address = ?, value = ?,
        notes = ?, updated_at = datetime('now')
      WHERE id = ?`
   ).run(
-    nextCode,
     name ?? existing.name,
     client_id !== undefined ? client_id : existing.client_id,
-    job_type ?? existing.job_type,
     status ?? existing.status,
     site_address !== undefined ? site_address : existing.site_address,
     value !== undefined ? value : existing.value,

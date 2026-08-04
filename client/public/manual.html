@@ -426,16 +426,23 @@
       <h2>Jobs</h2>
       <p>
         Every job Registr tracks lives here, identified by a human <strong>code</strong> —
-        the code is what other apps and people use to refer to a job, though the underlying
-        link is always a stable internal ID, so changing a code later doesn't break anything
-        already pointing at it.
+        the code is what other apps and people use to refer to a job. Every app and integration
+        pointing at a job actually joins on its stable internal ID, not the code, but the code
+        itself is locked in at creation and can't be changed afterwards (see below), so it
+        never drifts out of sync with what's printed on paperwork, invoices, and so on.
       </p>
       <p class="dim">
         Codes are generated automatically: <strong>YYXX</strong> for a Contract job (e.g.
         "2601" — the year, then the next unused number that year) or
         <strong>MYYXX</strong> for Minor Works (e.g. "M2601") — each type counts its own
         sequence, so a Contract and a Minor Works job created the same year can both be
-        "…01". Only admins can override the suggested code.
+        "…01". Only admins can override the suggested code, and only while creating the job.
+      </p>
+      <p class="dim">
+        A job's own page lives at a URL built straight from its code (e.g.
+        <code class="path">/jobs/2601</code>), so it's safe to type, bookmark or paste one
+        into an email or another system without looking anything up first — the code being
+        locked in for good (see below) is exactly what makes that safe to rely on.
       </p>
 
       <h3>Type and status</h3>
@@ -464,17 +471,20 @@
           front; code is filled in for you (see above) and updates if you change Type before
           saving. Site address, client, status, value and notes stay optional.</li>
         <li>Click any job in the list to open its detail page and edit any of those
-          fields, including re-linking its client or changing its status.</li>
+          fields, including re-linking its client or changing its status — except Code and
+          Type, which are locked as soon as the job is created (see below).</li>
         <li><strong>Value</strong> is free-form and independent of type — leave it
           blank while a job's still tendering, or whenever there isn't a fixed
           figure yet, but a minor works job can carry one too.</li>
       </ol>
       <div class="callout">
-        <span class="label">Code is admin-only</span>
+        <span class="label">Code and Type are locked once created</span>
         <p>
-          Editors and read-only users see the code (auto-filled on a new job, as-is on an
-          existing one) but can't change it — only an admin can type over the suggested code,
-          or edit an existing job's code afterwards.
+          Neither can be changed after the job is saved, by anyone — not even an admin;
+          delete and recreate the job if one was genuinely wrong. While still creating a new
+          job, Editors and read-only users see the auto-filled code but can't change it —
+          only an admin can type over the suggestion. Type has no such restriction while
+          creating: anyone with write access can pick it, it just can't be changed afterwards.
         </p>
       </div>
 

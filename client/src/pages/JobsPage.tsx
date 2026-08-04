@@ -88,7 +88,7 @@ export default function JobsPage() {
                     <span className="badge">{JOB_STATUS_LABELS[job.status]}</span>
                   </td>
                   <td>
-                    <button className="btn" onClick={() => navigate(`/jobs/${job.id}`)}>
+                    <button className="btn" onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}>
                       {isReadOnly ? 'View' : 'Edit'}
                     </button>
                   </td>

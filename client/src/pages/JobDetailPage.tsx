@@ -8,8 +8,8 @@ import { useAuth } from '../auth/AuthContext';
 const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
 export default function JobDetailPage() {
-  const { id } = useParams();
-  const isNew = id === undefined;
+  const { code: codeParam } = useParams();
+  const isNew = codeParam === undefined;
   const navigate = useNavigate();
   const { isReadOnly, isAdmin } = useAuth();
 
@@ -50,7 +50,7 @@ export default function JobDetailPage() {
 
   useEffect(() => {
     if (isNew) return;
-    api.getJob(id).then((j) => {
+    api.getJobByCode(codeParam).then((j) => {
       setJob(j);
       setCode(j.code);
       setName(j.name);
@@ -62,7 +62,7 @@ export default function JobDetailPage() {
       setNotes(j.notes ?? '');
       setLoading(false);
     });
-  }, [id, isNew]);
+  }, [codeParam, isNew]);
 
   const handleSave = async () => {
     if (!code.trim()) return setError('Job code is required');
@@ -82,9 +82,9 @@ export default function JobDetailPage() {
     try {
       if (isNew) {
         const created = await api.createJob(data);
-        navigate(`/jobs/${created.id}`, { replace: true });
+        navigate(`/jobs/${encodeURIComponent(created.code)}`, { replace: true });
       } else {
-        const updated = await api.updateJob(id, data);
+        const updated = await api.updateJob(job!.id, data);
         setJob(updated);
       }
     } catch (e) {
@@ -135,21 +135,26 @@ export default function JobDetailPage() {
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <div className="row">
           <div className="field">
-            <label>Code</label>
-            <input value={code} onChange={(e) => setCode(e.target.value)} disabled={isReadOnly || !isAdmin} />
+            <label>Type</label>
+            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly || !isNew}>
+              {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
+          <div className="field">
+            <label>Code</label>
+            <input value={code} onChange={(e) => setCode(e.target.value)} disabled={isReadOnly || !isNew || !isAdmin} />
+          </div>
+        </div>
+
+        <div className="row">
           <div className="field">
             <label>Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} disabled={isReadOnly} />
           </div>
-        </div>
-
-        <div className="field">
-          <label>Site address</label>
-          <input value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} disabled={isReadOnly} />
-        </div>
-
-        <div className="row">
           <div className="field">
             <label>Client</label>
             <select value={clientId} onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')} disabled={isReadOnly}>
@@ -161,23 +166,18 @@ export default function JobDetailPage() {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label>Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)} disabled={isReadOnly}>
-              {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+        </div>
+
+        <div className="field">
+          <label>Site address</label>
+          <input value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} disabled={isReadOnly} />
         </div>
 
         <div className="row">
           <div className="field">
-            <label>Type</label>
-            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly}>
-              {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
+            <label>Status</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)} disabled={isReadOnly}>
+              {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>

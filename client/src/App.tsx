@@ -20,7 +20,7 @@ function Gate() {
       <Route element={<Layout />}>
         <Route index element={<JobsPage />} />
         <Route path="jobs/new" element={<JobDetailPage />} />
-        <Route path="jobs/:id" element={<JobDetailPage />} />
+        <Route path="jobs/:code" element={<JobDetailPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="people" element={<PeoplePage />} />
         <Route path="plant" element={<PlantPage />} />

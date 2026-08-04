@@ -85,6 +85,7 @@ export const api = {
     return request<Job[]>(`/v1/jobs${suffix}`);
   },
   getJob: (id: string) => request<Job>(`/v1/jobs/${id}?include=assignments`),
+  getJobByCode: (code: string) => request<Job>(`/v1/jobs/by-code/${encodeURIComponent(code)}?include=assignments`),
   getNextJobCode: (jobType: JobType) => request<{ code: string }>(`/v1/jobs/next-code?job_type=${jobType}`),
   createJob: (data: Partial<Job>) => request<Job>('/v1/jobs', { method: 'POST', body: JSON.stringify(data) }),
   updateJob: (id: string, data: Partial<Job>) =>

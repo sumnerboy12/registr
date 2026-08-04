@@ -128,13 +128,14 @@ server. Leave it blank (or `production`) on the real deployment.
   generated automatically as `YYXX` for Contract jobs (e.g. "2601") or
   `MYYXX` for Minor Works (e.g. "M2601") — `YY` is the year, `XX` the next
   unused number that year, counted separately per type. Only admins can
-  override the suggested code. Each job also carries a **type** (Contract
-  or Minor Works), a **status** (Tendering / Awarded / Active / On Hold /
-  Practical Completion / Closed — Registr never hard-deletes a job, Closed
-  is how one is archived), an optional linked client, site address, value
-  and notes, plus a list of people **assigned** to it (Project Manager,
-  Site Supervisor, Estimator, QS — the same person can hold more than one
-  role).
+  override the suggested code, and only while creating the job — both code
+  and **type** (Contract or Minor Works) are locked for good as soon as the
+  job is saved, for every role including admin. Each job also carries a
+  **status** (Tendering / Awarded / Active / On Hold / Practical Completion
+  / Closed — Registr never hard-deletes a job, Closed is how one is
+  archived), an optional linked client, site address, value and notes,
+  plus a list of people **assigned** to it (Project Manager, Site
+  Supervisor, Estimator, QS — the same person can hold more than one role).
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)
