@@ -19,6 +19,11 @@ const STATUSES = [
 ];
 const ASSIGNMENT_ROLES = ['project_manager', 'site_supervisor', 'estimator', 'qs'];
 
+// Practical Completion / Awaiting Retentions are retentions-scheme statuses
+// specific to Contract jobs — Minor Works and Remedial jobs don't hold
+// retentions, so those statuses are meaningless (and confusing) on them.
+const CONTRACT_ONLY_STATUSES = ['practical_completion', 'awaiting_retentions'];
+
 function loadAssignments(jobId) {
   return db
     .prepare(
@@ -144,6 +149,9 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  if (CONTRACT_ONLY_STATUSES.includes(status) && job_type !== 'contract') {
+    return res.status(400).json({ error: 'That status only applies to Contract jobs' });
+  }
 
   // Code is admin-only to set by hand — anyone else gets the auto-generated
   // one regardless of what (if anything) they sent, same as PATCH below.
@@ -204,6 +212,11 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const { name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes } = req.body;
   if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  const nextJobType = job_type ?? existing.job_type;
+  const nextStatus = status ?? existing.status;
+  if (CONTRACT_ONLY_STATUSES.includes(nextStatus) && nextJobType !== 'contract') {
+    return res.status(400).json({ error: 'That status only applies to Contract jobs' });
+  }
 
   const nextClientId = client_id !== undefined ? client_id : existing.client_id;
   db.prepare(
@@ -218,8 +231,8 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     nextClientId ? null : client_name !== undefined ? client_name || null : existing.client_name,
     contact_name !== undefined ? contact_name || null : existing.contact_name,
     contact_email !== undefined ? contact_email || null : existing.contact_email,
-    job_type ?? existing.job_type,
-    status ?? existing.status,
+    nextJobType,
+    nextStatus,
     site_address !== undefined ? site_address : existing.site_address,
     value !== undefined ? value : existing.value,
     notes !== undefined ? notes : existing.notes,

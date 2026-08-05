@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { AssignmentRole, Client, Person, Job, JobStatus, JobType } from '../types';
-import { ASSIGNMENT_ROLE_LABELS, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
+import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 
 const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
@@ -62,6 +62,13 @@ export default function JobDetailPage() {
     if (!isNew) return;
     api.getNextJobCode(jobType).then((r) => setCode(r.code));
   }, [isNew, jobType]);
+
+  // If Type switches away from Contract while a retentions-scheme status is
+  // set, that status no longer applies — fall back to Tendering rather than
+  // silently submitting an invalid combination.
+  useEffect(() => {
+    if (jobType !== 'contract' && CONTRACT_ONLY_STATUSES.includes(status)) setStatus('tendering');
+  }, [jobType, status]);
 
   // Populates every editable field from a loaded job.
   const applyJobToForm = (j: Job) => {
@@ -218,11 +225,13 @@ export default function JobDetailPage() {
           <div className="field">
             <label>Status</label>
             <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)} disabled={isReadOnly}>
-              {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
+              {Object.entries(JOB_STATUS_LABELS)
+                .filter(([value]) => jobType === 'contract' || !CONTRACT_ONLY_STATUSES.includes(value as JobStatus))
+                .map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
             </select>
           </div>
           {/* Remedial work is billed differently (not a fixed contract sum),

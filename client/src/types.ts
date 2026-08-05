@@ -134,6 +134,10 @@ export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   lost: 'Lost',
 };
 
+// Retentions-scheme statuses — only meaningful on Contract jobs. Mirrored
+// server-side in routes/jobs.js's CONTRACT_ONLY_STATUSES.
+export const CONTRACT_ONLY_STATUSES: JobStatus[] = ['practical_completion', 'awaiting_retentions'];
+
 export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {
   project_manager: 'Project Manager',
   site_supervisor: 'Site Supervisor',

@@ -13,9 +13,12 @@ interface Props {
   value: JobStatus[];
   onChange: (next: JobStatus[]) => void;
   style?: CSSProperties;
+  // Restricts which statuses are offered (e.g. hiding the Contract-only
+  // ones when Contract isn't in the Type filter) — defaults to all of them.
+  statuses?: JobStatus[];
 }
 
-export default function StatusFilterDropdown({ value, onChange, style }: Props) {
+export default function StatusFilterDropdown({ value, onChange, style, statuses = ALL_STATUSES }: Props) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -32,21 +35,23 @@ export default function StatusFilterDropdown({ value, onChange, style }: Props) 
     onChange(value.includes(status) ? value.filter((s) => s !== status) : [...value, status]);
   };
 
-  const selectedLabels = ALL_STATUSES.filter((s) => value.includes(s)).map((s) => JOB_STATUS_LABELS[s]);
+  const visibleValue = value.filter((s) => statuses.includes(s));
+  const selectedLabels = statuses.filter((s) => visibleValue.includes(s)).map((s) => JOB_STATUS_LABELS[s]);
+  const activeStatuses = ACTIVE_STATUSES.filter((s) => statuses.includes(s));
   const isSameSet = (a: JobStatus[], b: JobStatus[]) => a.length === b.length && a.every((s) => b.includes(s));
 
   const summary =
-    value.length === ALL_STATUSES.length
+    visibleValue.length === statuses.length
       ? 'All jobs'
-      : isSameSet(value, ACTIVE_STATUSES)
+      : isSameSet(visibleValue, activeStatuses)
         ? 'Active jobs'
-        : value.length === 0
+        : visibleValue.length === 0
           ? 'No jobs'
-          : value.length === 1
-            ? JOB_STATUS_LABELS[value[0]]
-            : `${value.length} job statuses`;
+          : visibleValue.length === 1
+            ? JOB_STATUS_LABELS[visibleValue[0]]
+            : `${visibleValue.length} job statuses`;
 
-  const tooltip = value.length === 0 ? 'No statuses selected' : selectedLabels.join(', ');
+  const tooltip = visibleValue.length === 0 ? 'No statuses selected' : selectedLabels.join(', ');
 
   return (
     <div ref={rootRef} style={{ position: 'relative', width: 160, ...style }}>
@@ -75,17 +80,17 @@ export default function StatusFilterDropdown({ value, onChange, style }: Props) 
           }}
         >
           <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => onChange(ALL_STATUSES)}>
+            <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => onChange(statuses)}>
               All
             </button>
-            <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => onChange(ACTIVE_STATUSES)}>
+            <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => onChange(activeStatuses)}>
               Active
             </button>
             <button type="button" className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => onChange([])}>
               None
             </button>
           </div>
-          {ALL_STATUSES.map((status) => (
+          {statuses.map((status) => (
             <label
               key={status}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 13, cursor: 'pointer' }}

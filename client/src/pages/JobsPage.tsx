@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { AssignmentRole, Client, Job, JobStatus, JobType, Person } from '../types';
-import { ASSIGNMENT_ROLE_LABELS, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
+import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import StatusFilterDropdown, { ALL_STATUSES } from '../components/StatusFilterDropdown';
@@ -48,6 +48,43 @@ const STATUS_SYNONYMS: Record<string, JobStatus> = {
 // person/client/plant row.
 const INACTIVE_STATUSES: JobStatus[] = ['closed', 'on_hold', 'lost'];
 
+const VIEW_STORAGE_KEY = 'registr-jobs-view';
+const STATUS_FILTER_KEY = 'registr-jobs-status-filter';
+const TYPE_FILTER_KEY = 'registr-jobs-type-filter';
+
+function loadPersistedView(): 'list' | 'board' {
+  try {
+    const raw = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (raw === 'list' || raw === 'board') return raw;
+  } catch {
+    // storage unavailable — just use the default
+  }
+  return 'list';
+}
+
+// Shared by the Status/Type filter loaders below — validates against the
+// current known values so a status/type removed since the value was saved
+// doesn't linger in the filter forever.
+function loadPersistedFilter<T extends string>(key: string, allValues: T[], fallback: T[]): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return fallback;
+    return parsed.filter((v): v is T => allValues.includes(v as T));
+  } catch {
+    return fallback;
+  }
+}
+
+function savePersistedFilter(key: string, values: string[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(values));
+  } catch {
+    // storage unavailable — selection just won't persist
+  }
+}
+
 // A very faint row tint per job type — just enough to scan the list by
 // type at a glance, without competing with the Type pill or hurting
 // readability of the row's own text.
@@ -65,9 +102,63 @@ export default function JobsPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [statusFilter, setStatusFilter] = useState<JobStatus[]>(ALL_STATUSES);
-  const [typeFilter, setTypeFilter] = useState<JobType[]>(ALL_JOB_TYPES);
+  const [statusFilter, setStatusFilter] = useState<JobStatus[]>(() =>
+    loadPersistedFilter(STATUS_FILTER_KEY, ALL_STATUSES, ALL_STATUSES)
+  );
+  const [typeFilter, setTypeFilter] = useState<JobType[]>(() => loadPersistedFilter(TYPE_FILTER_KEY, ALL_JOB_TYPES, ALL_JOB_TYPES));
   const [showImport, setShowImport] = useState(false);
+  const [view, setView] = useState<'list' | 'board'>(loadPersistedView);
+  const [dragOverStatus, setDragOverStatus] = useState<JobStatus | null>(null);
+
+  // Click-and-drag-to-scroll for the board view, so it doesn't need its own
+  // visible horizontal scrollbar (see the board container below). Mutates
+  // the DOM directly rather than via state — a scroll happens on every
+  // mousemove pixel, and that doesn't need to trigger a re-render.
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+  const panState = useRef<{ startX: number; scrollLeft: number } | null>(null);
+
+  const handleBoardMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Don't hijack a job card's own native drag (status change) or clicks
+    // on any other interactive element.
+    const target = e.target as HTMLElement;
+    if (target.closest('[draggable="true"], button, a, input, select, textarea')) return;
+    const el = boardScrollRef.current;
+    if (!el) return;
+    panState.current = { startX: e.pageX, scrollLeft: el.scrollLeft };
+    el.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const state = panState.current;
+      const el = boardScrollRef.current;
+      if (!state || !el) return;
+      el.scrollLeft = state.scrollLeft - (e.pageX - state.startX);
+    };
+    const stopPanning = () => {
+      panState.current = null;
+      document.body.style.userSelect = '';
+      if (boardScrollRef.current) boardScrollRef.current.style.cursor = 'grab';
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', stopPanning);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', stopPanning);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    } catch {
+      // storage unavailable — selection just won't persist
+    }
+  }, [view]);
+
+  useEffect(() => savePersistedFilter(STATUS_FILTER_KEY, statusFilter), [statusFilter]);
+  useEffect(() => savePersistedFilter(TYPE_FILTER_KEY, typeFilter), [typeFilter]);
 
   const loadClients = () => api.getClients().then(setClients);
   const loadPeople = () => api.getPeople({ active: true }).then(setPeople);
@@ -94,6 +185,15 @@ export default function JobsPage() {
 
   const clientFor = (id: number | null) => (id != null ? clients.find((c) => c.id === id) : undefined);
 
+  // Practical Completion / Awaiting Retentions only apply to Contract jobs
+  // (see routes/jobs.js's CONTRACT_ONLY_STATUSES) — hidden from both the
+  // Status filter and the board's columns unless Contract is part of the
+  // current Type selection.
+  const visibleStatuses = useMemo(
+    () => (typeFilter.includes('contract') ? ALL_STATUSES : ALL_STATUSES.filter((s) => !CONTRACT_ONLY_STATUSES.includes(s))),
+    [typeFilter]
+  );
+
   const sortedJobs = useMemo(
     () =>
       jobs
@@ -105,6 +205,36 @@ export default function JobsPage() {
         }),
     [jobs, clients, statusFilter, typeFilter]
   );
+
+  // Board view groups by status itself (one column per status), so this
+  // only applies Type — no q re-filtering needed either, loadJobs already
+  // fetched from the server with it.
+  const boardJobs = useMemo(
+    () =>
+      jobs
+        .filter((j) => typeFilter.includes(j.job_type))
+        .sort((a, b) => {
+          const clientA = clientFor(a.client_id)?.name ?? a.client_name ?? '';
+          const clientB = clientFor(b.client_id)?.name ?? b.client_name ?? '';
+          return clientA.localeCompare(clientB) || a.code.localeCompare(b.code);
+        }),
+    [jobs, clients, typeFilter]
+  );
+
+  // Optimistic — the board would otherwise visibly snap the card back to
+  // its old column until loadJobs's response lands.
+  const handleDropOnColumn = async (jobId: string, newStatus: JobStatus) => {
+    setDragOverStatus(null);
+    const job = jobs.find((j) => j.id === jobId);
+    if (!job || job.status === newStatus) return;
+    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j)));
+    try {
+      await api.updateJob(job.id, { status: newStatus });
+    } catch (e) {
+      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, status: job.status } : j)));
+      alert(e instanceof Error ? e.message : 'Failed to move job');
+    }
+  };
 
   const resolveClientId = (rawName: string | undefined): number | null => {
     const name = rawName?.trim();
@@ -137,7 +267,7 @@ export default function JobsPage() {
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 1200, margin: '0 auto' }}>
+    <div style={{ padding: 20, maxWidth: view === 'board' ? 'none' : 1200, margin: view === 'board' ? undefined : '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>Jobs</h1>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -157,16 +287,128 @@ export default function JobsPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
-        <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} />
-        <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+          {view === 'list' && <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />}
+          <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
+        </div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            className="btn"
+            onClick={() => setView('list')}
+            style={{ background: view === 'list' ? 'var(--nav-accent)' : undefined, borderColor: view === 'list' ? 'var(--nav-accent)' : undefined }}
+          >
+            List
+          </button>
+          <button
+            className="btn"
+            onClick={() => setView('board')}
+            style={{ background: view === 'board' ? 'var(--nav-accent)' : undefined, borderColor: view === 'board' ? 'var(--nav-accent)' : undefined }}
+          >
+            Board
+          </button>
+        </div>
       </div>
 
-      <div className="card">
-        {loading ? (
-          <div style={{ padding: 20 }}>Loading…</div>
-        ) : (
+      {loading ? (
+        <div className="card" style={{ padding: 20 }}>
+          Loading…
+        </div>
+      ) : view === 'board' ? (
+        <div
+          ref={boardScrollRef}
+          className="scrollbar-none"
+          onMouseDown={handleBoardMouseDown}
+          style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start', cursor: 'grab' }}
+        >
+          {visibleStatuses.map((status) => {
+            const columnJobs = boardJobs.filter((j) => j.status === status);
+            return (
+              <div key={status} style={{ flex: '0 0 250px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, padding: '0 2px' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                    {JOB_STATUS_LABELS[status]}
+                  </span>
+                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{columnJobs.length}</span>
+                </div>
+                <div
+                  className="card"
+                  onDragOver={(e) => {
+                    if (isReadOnly) return;
+                    e.preventDefault();
+                    if (dragOverStatus !== status) setDragOverStatus(status);
+                  }}
+                  onDragLeave={() => setDragOverStatus((s) => (s === status ? null : s))}
+                  onDrop={(e) => {
+                    if (isReadOnly) return;
+                    e.preventDefault();
+                    const jobId = e.dataTransfer.getData('text/plain');
+                    if (jobId) handleDropOnColumn(jobId, status);
+                  }}
+                  style={{
+                    padding: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    minHeight: 60,
+                    outline: dragOverStatus === status ? '2px solid var(--accent)' : undefined,
+                    outlineOffset: -2,
+                  }}
+                >
+                  {columnJobs.map((job) => {
+                    const client = clientFor(job.client_id);
+                    return (
+                      <div
+                        key={job.id}
+                        draggable={!isReadOnly}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('text/plain', String(job.id));
+                          e.dataTransfer.effectAllowed = 'move';
+                        }}
+                        onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}
+                        style={{
+                          cursor: isReadOnly ? 'pointer' : 'grab',
+                          padding: 10,
+                          borderRadius: 6,
+                          border: '1px solid var(--border)',
+                          background: JOB_TYPE_ROW_TINT[job.job_type],
+                          opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{job.name}</div>
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            padding: '2px 8px',
+                            borderRadius: 999,
+                            fontSize: 10,
+                            fontWeight: 400,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.02em',
+                            background: client?.color ?? NO_CLIENT_COLOR,
+                            color: '#fff',
+                          }}
+                        >
+                          {client?.name ?? job.client_name ?? 'No client'}
+                        </span>
+                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{job.code}</span>
+                          <span>{job.job_type !== 'remedial' && job.value != null ? `$${job.value.toLocaleString('en-US')}` : ''}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {columnJobs.length === 0 && (
+                    <div style={{ color: 'var(--text-dim)', fontSize: 12, textAlign: 'center', padding: 12 }}>No jobs</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="card">
           <table>
             <thead>
               <tr>
@@ -259,8 +501,8 @@ export default function JobsPage() {
               )}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
 
       {showImport && (
         <ImportModal

@@ -18,6 +18,14 @@
   box-sizing: border-box;
 }
 
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/new Edge */
+}
+
 html, body, #root {
   height: 100%;
   margin: 0;
