@@ -173,7 +173,7 @@ export default function JobDetailPage() {
         <div className="row">
           <div className="field">
             <label>Type</label>
-            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly || !isNew}>
+            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly}>
               {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -239,40 +239,46 @@ export default function JobDetailPage() {
               ))}
             </select>
           </div>
-          <div className="field">
-            <label>Value</label>
-            <div style={{ position: 'relative' }}>
-              <span
-                style={{
-                  position: 'absolute',
-                  left: 8,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'var(--text-dim)',
-                  pointerEvents: 'none',
-                }}
-              >
-                $
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="0.00"
-                value={formatCurrencyInput(jobValue)}
-                onChange={(e) => {
-                  // Keep only digits and a single decimal point.
-                  let cleaned = e.target.value.replace(/[^0-9.]/g, '');
-                  const firstDot = cleaned.indexOf('.');
-                  if (firstDot !== -1) {
-                    cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
-                  }
-                  setJobValue(cleaned);
-                }}
-                disabled={isReadOnly}
-                style={{ paddingLeft: 20, width: '100%', boxSizing: 'border-box' }}
-              />
+          {/* Remedial work is billed differently (not a fixed contract sum),
+              so Value doesn't apply — hidden rather than just left blank. */}
+          {jobType === 'remedial' ? (
+            <div className="field" />
+          ) : (
+            <div className="field">
+              <label>Value</label>
+              <div style={{ position: 'relative' }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    left: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-dim)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  $
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={formatCurrencyInput(jobValue)}
+                  onChange={(e) => {
+                    // Keep only digits and a single decimal point.
+                    let cleaned = e.target.value.replace(/[^0-9.]/g, '');
+                    const firstDot = cleaned.indexOf('.');
+                    if (firstDot !== -1) {
+                      cleaned = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '');
+                    }
+                    setJobValue(cleaned);
+                  }}
+                  disabled={isReadOnly}
+                  style={{ paddingLeft: 20, width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="field">

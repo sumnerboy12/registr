@@ -186,19 +186,29 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM jobs WHERE id = ?').get(req.params.id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  // code and job_type are immutable once a job exists — regardless of role,
-  // including admin. Both drive the auto-generated code (see generateJobCode
-  // above), so letting either change after creation would let a job's code
-  // silently stop matching its own type, or collide with a future job's
-  // generated code for that type/year. Any value sent for either is ignored
-  // rather than erroring, since the form has both disabled here anyway.
-  const { name, client_id, client_name, contact_name, contact_email, status, site_address, value, notes } = req.body;
+  // code is immutable once a job exists — regardless of role, including
+  // admin. It's a URL path segment (GET /by-code/:code, the client's
+  // /jobs/:code) and the external-facing reference everyone already uses
+  // (invoices, job folders, site boards), so it can't just change under a
+  // job. Any value sent for it is ignored rather than erroring, since the
+  // form has it disabled here anyway.
+  //
+  // job_type CAN change (e.g. a job originally quoted as Minor Works turns
+  // out to need a full Contract) — its code doesn't follow along, so the
+  // code's M/R prefix (see generateJobCode) reflects the type at *creation*
+  // time, not necessarily the current one. That's a cosmetic mismatch, not
+  // a functional one: nothing besides generateJobCode's own numbering reads
+  // the prefix, and rostr's sync already treats job_type as a plain mutable
+  // field (see rostr's lib/jobSync.js) — it'll pick up the change on its
+  // next sync same as any other edit, no re-matching involved.
+  const { name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes } = req.body;
+  if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
 
   const nextClientId = client_id !== undefined ? client_id : existing.client_id;
   db.prepare(
     `UPDATE jobs SET
-       name = ?, client_id = ?, client_name = ?, contact_name = ?, contact_email = ?, status = ?, site_address = ?, value = ?,
+       name = ?, client_id = ?, client_name = ?, contact_name = ?, contact_email = ?, job_type = ?, status = ?, site_address = ?, value = ?,
        notes = ?, updated_at = datetime('now')
      WHERE id = ?`
   ).run(
@@ -208,6 +218,7 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     nextClientId ? null : client_name !== undefined ? client_name || null : existing.client_name,
     contact_name !== undefined ? contact_name || null : existing.contact_name,
     contact_email !== undefined ? contact_email || null : existing.contact_email,
+    job_type ?? existing.job_type,
     status ?? existing.status,
     site_address !== undefined ? site_address : existing.site_address,
     value !== undefined ? value : existing.value,

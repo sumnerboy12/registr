@@ -247,7 +247,7 @@ export default function JobsPage() {
                       {JOB_STATUS_LABELS[job.status]}
                     </span>
                   </td>
-                  <td>{job.value != null ? `$${job.value.toLocaleString('en-US')}` : '—'}</td>
+                  <td>{job.job_type !== 'remedial' && job.value != null ? `$${job.value.toLocaleString('en-US')}` : '—'}</td>
                   <td>
                     <button className="btn" onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}>
                       {isReadOnly ? 'View' : 'Edit'}
