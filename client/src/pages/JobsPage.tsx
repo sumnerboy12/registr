@@ -114,8 +114,13 @@ export default function JobsPage() {
   // visible horizontal scrollbar (see the board container below). Mutates
   // the DOM directly rather than via state — a scroll happens on every
   // mousemove pixel, and that doesn't need to trigger a re-render.
+  // Horizontal scroll happens on this container itself; vertical scroll
+  // happens on Layout.tsx's <main> (the actual overflow:auto ancestor —
+  // the board container has no vertical overflow of its own).
   const boardScrollRef = useRef<HTMLDivElement>(null);
-  const panState = useRef<{ startX: number; scrollLeft: number } | null>(null);
+  const panState = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number; scrollEl: HTMLElement } | null>(
+    null
+  );
 
   const handleBoardMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     // Don't hijack a job card's own native drag (status change) or clicks
@@ -123,8 +128,9 @@ export default function JobsPage() {
     const target = e.target as HTMLElement;
     if (target.closest('[draggable="true"], button, a, input, select, textarea')) return;
     const el = boardScrollRef.current;
-    if (!el) return;
-    panState.current = { startX: e.pageX, scrollLeft: el.scrollLeft };
+    const scrollEl = el?.closest('main');
+    if (!el || !scrollEl) return;
+    panState.current = { startX: e.pageX, startY: e.pageY, scrollLeft: el.scrollLeft, scrollTop: scrollEl.scrollTop, scrollEl };
     el.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
   };
@@ -135,6 +141,7 @@ export default function JobsPage() {
       const el = boardScrollRef.current;
       if (!state || !el) return;
       el.scrollLeft = state.scrollLeft - (e.pageX - state.startX);
+      state.scrollEl.scrollTop = state.scrollTop - (e.pageY - state.startY);
     };
     const stopPanning = () => {
       panState.current = null;
