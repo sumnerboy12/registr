@@ -221,6 +221,10 @@ export default function JobsPage() {
     [jobs, clients, typeFilter]
   );
 
+  // Now shown (and used to choose which status columns appear) in Board
+  // mode too, not just List — see the toolbar below.
+  const boardStatuses = useMemo(() => visibleStatuses.filter((s) => statusFilter.includes(s)), [visibleStatuses, statusFilter]);
+
   // Optimistic — the board would otherwise visibly snap the card back to
   // its old column until loadJobs's response lands.
   const handleDropOnColumn = async (jobId: string, newStatus: JobStatus) => {
@@ -267,7 +271,7 @@ export default function JobsPage() {
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: view === 'board' ? 'none' : 1200, margin: view === 'board' ? undefined : '0 auto' }}>
+    <div style={{ padding: 20, maxWidth: view === 'board' ? 1800 : 1200, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1 style={{ fontSize: 20, margin: 0 }}>Jobs</h1>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -290,7 +294,7 @@ export default function JobsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
         <div style={{ display: 'flex', gap: 10 }}>
           <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
-          {view === 'list' && <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />}
+          <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />
           <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -322,7 +326,7 @@ export default function JobsPage() {
           onMouseDown={handleBoardMouseDown}
           style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start', cursor: 'grab' }}
         >
-          {visibleStatuses.map((status) => {
+          {boardStatuses.map((status) => {
             const columnJobs = boardJobs.filter((j) => j.status === status);
             return (
               <div key={status} style={{ flex: '0 0 250px' }}>
