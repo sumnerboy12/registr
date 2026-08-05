@@ -90,7 +90,6 @@ export const api = {
   createJob: (data: Partial<Job>) => request<Job>('/v1/jobs', { method: 'POST', body: JSON.stringify(data) }),
   updateJob: (id: string, data: Partial<Job>) =>
     request<Job>(`/v1/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  deleteJob: (id: string) => request<void>(`/v1/jobs/${id}`, { method: 'DELETE' }),
   addAssignment: (jobId: string, data: { person_id: number; role: string }) =>
     request<JobAssignment[]>(`/v1/jobs/${jobId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
   removeAssignment: (jobId: string, assignmentId: number) =>
