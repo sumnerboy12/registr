@@ -44,7 +44,7 @@ export default function StatusFilterDropdown({ value, onChange, style }: Props) 
           ? 'No jobs'
           : value.length === 1
             ? JOB_STATUS_LABELS[value[0]]
-            : `${value.length} statuses`;
+            : `${value.length} job statuses`;
 
   const tooltip = value.length === 0 ? 'No statuses selected' : selectedLabels.join(', ');
 
