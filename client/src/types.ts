@@ -105,7 +105,7 @@ export interface Plant {
   notes: string | null;
 }
 
-export type JobType = 'contract' | 'minor_works';
+export type JobType = 'contract' | 'minor_works' | 'remedial';
 export type JobStatus =
   | 'tendering'
   | 'awarded'
@@ -120,6 +120,7 @@ export type AssignmentRole = 'project_manager' | 'site_supervisor' | 'estimator'
 export const JOB_TYPE_LABELS: Record<JobType, string> = {
   contract: 'Contract',
   minor_works: 'Minor Works',
+  remedial: 'Remedial',
 };
 
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {

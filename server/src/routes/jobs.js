@@ -6,7 +6,7 @@ import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 
 const router = Router();
 
-const TYPES = ['contract', 'minor_works'];
+const TYPES = ['contract', 'minor_works', 'remedial'];
 const STATUSES = [
   'tendering',
   'awarded',
@@ -42,14 +42,16 @@ function publicJob(row, { includeAssignments } = {}) {
   return job;
 }
 
-// Contract: YYXXX (e.g. "26001"). Minor works: MYYXXX (e.g. "M26001") — same
-// shape, just prefixed, and counted separately: a contract job and a minor
-// works job created the same year can both be "…001". XXX is the lowest
-// unused number for that year/type, looking at every job ever coded that
-// year (including Closed) so a number is never reused once assigned.
+// Contract: YYXXX (e.g. "26001"). Minor works: MYYXXX (e.g. "M26001").
+// Remedial: RYYXXX (e.g. "R26001") — same shape, just prefixed, and counted
+// separately: a contract/minor works/remedial job created the same year
+// can all be "…001". XXX is the lowest unused number for that year/type,
+// looking at every job ever coded that year (including Closed) so a number
+// is never reused once assigned.
+const TYPE_PREFIXES = { minor_works: 'M', remedial: 'R' };
 function generateJobCode(jobType) {
   const yy = String(new Date().getFullYear() % 100).padStart(2, '0');
-  const prefix = jobType === 'minor_works' ? `M${yy}` : yy;
+  const prefix = `${TYPE_PREFIXES[jobType] ?? ''}${yy}`;
   const rows = db.prepare('SELECT code FROM jobs WHERE code LIKE ?').all(`${prefix}%`);
   let max = 0;
   for (const { code } of rows) {

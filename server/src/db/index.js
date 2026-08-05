@@ -214,5 +214,47 @@ if (!jobsColumnsAfterRebuild.includes('client_name')) db.exec('ALTER TABLE jobs 
 if (!jobsColumnsAfterRebuild.includes('contact_name')) db.exec('ALTER TABLE jobs ADD COLUMN contact_name TEXT');
 if (!jobsColumnsAfterRebuild.includes('contact_email')) db.exec('ALTER TABLE jobs ADD COLUMN contact_email TEXT');
 
+// Remedial: a third job type (code prefix "R", see generateJobCode in
+// routes/jobs.js). job_type's inline CHECK constraint is baked in at
+// creation time — same situation as the status rebuild above, so it needs
+// the same full rebuild-table procedure. Runs last, using the fully
+// current column set (including client_name/contact_name/contact_email
+// added just above), so it doesn't need to know the table's older shapes.
+const jobsTableSqlForType = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'jobs'").get();
+if (jobsTableSqlForType && !jobsTableSqlForType.sql.includes('remedial')) {
+  db.exec('PRAGMA foreign_keys = OFF');
+  db.exec(`
+    CREATE TABLE jobs_new (
+      id TEXT PRIMARY KEY,
+      code TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL,
+      client_id INTEGER REFERENCES clients(id) ON DELETE SET NULL,
+      client_name TEXT,
+      contact_name TEXT,
+      contact_email TEXT,
+      job_type TEXT NOT NULL CHECK (job_type IN ('contract', 'minor_works', 'remedial')),
+      status TEXT NOT NULL DEFAULT 'tendering'
+        CHECK (status IN ('tendering', 'awarded', 'active', 'on_hold', 'practical_completion', 'awaiting_retentions', 'closed', 'lost')),
+      site_address TEXT,
+      value REAL,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+  db.exec(`
+    INSERT INTO jobs_new (id, code, name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes, created_at, updated_at)
+    SELECT id, code, name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes, created_at, updated_at
+    FROM jobs
+  `);
+  db.exec('DROP TABLE jobs');
+  db.exec('ALTER TABLE jobs_new RENAME TO jobs');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_client ON jobs(client_id)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(job_type)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_jobs_updated ON jobs(updated_at)');
+  db.exec('PRAGMA foreign_keys = ON');
+}
+
 export { dataDir };
 export default db;

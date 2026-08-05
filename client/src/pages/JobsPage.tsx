@@ -43,6 +43,19 @@ const STATUS_SYNONYMS: Record<string, JobStatus> = {
   confirmed: 'awarded',
 };
 
+// Dimmed in the list — not actively being worked, same idea as an inactive
+// person/client/plant row.
+const INACTIVE_STATUSES: JobStatus[] = ['closed', 'on_hold', 'lost'];
+
+// A very faint row tint per job type — just enough to scan the list by
+// type at a glance, without competing with the Type pill or hurting
+// readability of the row's own text.
+const JOB_TYPE_ROW_TINT: Record<JobType, string> = {
+  contract: 'color-mix(in srgb, var(--accent) 8%, transparent)',
+  minor_works: 'color-mix(in srgb, #3b82f6 8%, transparent)',
+  remedial: 'color-mix(in srgb, var(--warn) 10%, transparent)',
+};
+
 export default function JobsPage() {
   const { isReadOnly } = useAuth();
   const navigate = useNavigate();
@@ -176,7 +189,13 @@ export default function JobsPage() {
               {sortedJobs.map((job) => {
                 const client = clientFor(job.client_id);
                 return (
-                <tr key={job.id}>
+                <tr
+                  key={job.id}
+                  style={{
+                    opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
+                    background: JOB_TYPE_ROW_TINT[job.job_type],
+                  }}
+                >
                   <td>
                     <span
                       style={{
@@ -260,12 +279,17 @@ export default function JobsPage() {
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
             const value = values.value.replace(/[^0-9.-]/g, '');
-            // A code starting with "M" is always Minor Works, matching how
-            // generateJobCode itself prefixes them (see routes/jobs.js) —
-            // takes priority over the Type column when both are present.
-            const jobType = values.code.trim().toLowerCase().startsWith('m')
-              ? ('minor_works' as const)
-              : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
+            // A code starting with "M"/"R" is always Minor Works/Remedial,
+            // matching how generateJobCode itself prefixes them (see
+            // routes/jobs.js) — takes priority over the Type column when
+            // both are present.
+            const codePrefix = values.code.trim().toLowerCase().charAt(0);
+            const jobType =
+              codePrefix === 'm'
+                ? ('minor_works' as const)
+                : codePrefix === 'r'
+                  ? ('remedial' as const)
+                  : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
             const jobStatus = STATUS_SYNONYMS[values.status.trim().toLowerCase()] ?? labelToKey(JOB_STATUS_LABELS, values.status);
             const clientId = resolveClientId(values.client);
             const created = await api.createJob({
