@@ -8,9 +8,31 @@ services:
       - "4100:4100"
     volumes:
       - ./data:/app/server/data
-    # M365 (Entra ID) SSO, or local username/password — see server/.env.example.
+    # M365 (Entra ID) SSO, or the break-glass admin login — see server/.env.example.
     environment:
+      # Leave unset on the real deployment — set to "development" or "test"
+      # on any other one so the UI shows a badge. See server/.env.example.
+      - APP_ENV=${APP_ENV:-}
       - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
       - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
       - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
       - OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      # Optional — lets registr relay email for rostr/claimr/costr. See server/.env.example.
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-}
+      - SMTP_REPLY_TO=${SMTP_REPLY_TO:-}
+
+# Shared with rostr/claimr/costr's own docker-compose.yml so they can reach
+# registr by container name (e.g. REGISTR_URL=http://registr:4100) instead
+# of localhost, which inside a container means itself. Create it once with
+# `docker network create wayman-apps` before the first `docker compose up`.
+networks:
+  default:
+    name: wayman-apps
+    external: true

@@ -1,65 +1,43 @@
+import crypto from 'node:crypto';
 import { Router } from 'express';
 import db from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireApiKey } from '../middleware/apiKey.js';
 import { isOidcConfigured, buildAuthorizationUrl, handleCallback } from '../lib/oidc.js';
-import { hashPassword, verifyPassword } from '../lib/auth.js';
 
 const router = Router();
 
 function publicPerson(person, role) {
-  return {
-    id: person.id,
-    name: person.name,
-    email: person.email,
-    username: person.username,
-    role,
-    must_change_password: !!person.must_change_password,
-    has_password: !!person.password_hash,
-  };
+  return { id: person.id, name: person.name, email: person.email, role };
 }
 
-// Local username+password login, alongside SSO (see people.password_hash).
-// Only works for a person an admin has explicitly set a username and
-// password for; everyone else must use SSO.
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'username and password are required' });
+function safeCompare(a, b) {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
-  const person = db.prepare('SELECT * FROM people WHERE username = ? COLLATE NOCASE').get(String(username).trim());
-  if (!person || !person.active || !person.password_hash) return res.status(401).json({ error: 'Invalid username or password' });
-  if (!verifyPassword(password, person.password_hash)) return res.status(401).json({ error: 'Invalid username or password' });
+// The only non-SSO way in: a single hardcoded break-glass admin login,
+// password set by ADMIN_PASSWORD — not a person record, so it's unaffected
+// by anything that happens in People. Disabled entirely if unset.
+router.post('/admin-login', (req, res) => {
+  if (!process.env.ADMIN_PASSWORD) return res.status(503).json({ error: 'Admin login is not configured on this server' });
 
-  const access = db.prepare("SELECT role FROM person_app_access WHERE person_id = ? AND app = 'registr'").get(person.id);
-  if (!access) return res.status(401).json({ error: 'This account has not been granted access to Registr' });
+  const { password } = req.body;
+  if (!password || !safeCompare(password, process.env.ADMIN_PASSWORD)) {
+    return res.status(401).json({ error: 'Invalid password' });
+  }
 
   req.session.regenerate((err) => {
     if (err) return res.status(500).json({ error: 'login failed' });
-    req.session.personId = person.id;
-    res.json(publicPerson(person, access.role));
+    req.session.breakGlassAdmin = true;
+    res.json(publicPerson({ id: null, name: 'Admin', email: null }, 'admin'));
   });
 });
 
-router.post('/change-password', requireAuth, (req, res) => {
-  const { current_password, new_password } = req.body;
-  if (!new_password || new_password.length < 8) {
-    return res.status(400).json({ error: 'New password must be at least 8 characters' });
-  }
-
-  const person = db.prepare('SELECT * FROM people WHERE id = ?').get(req.person.id);
-  if (!person.password_hash || !current_password || !verifyPassword(current_password, person.password_hash)) {
-    return res.status(400).json({ error: 'Current password is incorrect' });
-  }
-
-  db.prepare(`UPDATE people SET password_hash = ?, must_change_password = 0, updated_at = datetime('now') WHERE id = ?`).run(
-    hashPassword(new_password),
-    person.id
-  );
-  res.status(204).end();
-});
-
-router.get('/oidc/status', (req, res) => {
-  res.json({ enabled: isOidcConfigured() });
+router.get('/status', (req, res) => {
+  res.json({ oidcEnabled: isOidcConfigured(), adminLoginEnabled: Boolean(process.env.ADMIN_PASSWORD) });
 });
 
 router.get('/oidc/login', async (req, res) => {

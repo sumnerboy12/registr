@@ -63,6 +63,14 @@ export function autoMatchColumn(headers: string[], aliases: string[]): number {
   return -1;
 }
 
+// Reverse of a *_LABELS map — matches an imported free-text value (e.g.
+// "Wage") back to its enum key (e.g. "wage"), case-insensitively. Used to
+// round-trip columns that were exported via that same labels map.
+export function labelToKey<T extends string>(labels: Record<T, string>, label: string): T | undefined {
+  const needle = label.trim().toLowerCase();
+  return (Object.keys(labels) as T[]).find((key) => labels[key].toLowerCase() === needle);
+}
+
 function csvEscape(value: string | number): string {
   const s = String(value);
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

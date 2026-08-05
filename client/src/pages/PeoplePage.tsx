@@ -1,31 +1,44 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { Person } from '../types';
-import { LOGIN_TYPE_LABELS } from '../types';
+import type { EmploymentType, Person, ThinkSafeStatus } from '../types';
+import { EMPLOYMENT_TYPE_LABELS, LOGIN_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
-import SetPersonPasswordModal from '../components/SetPersonPasswordModal';
 import AppAccessModal from '../components/AppAccessModal';
-import { downloadCsv } from '../lib/csv';
+import ThinkSafeBadge from '../components/ThinkSafeBadge';
+import { downloadCsv, labelToKey } from '../lib/csv';
 
+// Covers every field in the Export CSV below, so exporting and re-importing
+// the same file round-trips a person exactly — this doubles as backup/restore.
 const PEOPLE_IMPORT_FIELDS: ImportField[] = [
   { key: 'name', label: 'Name', required: true, aliases: ['name', 'person', 'full name', 'employee', 'employee name'] },
+  { key: 'login_type', label: 'Login type', aliases: ['login type', 'login', 'sign-in'] },
   { key: 'email', label: 'Email', required: true, aliases: ['email', 'email address', 'e-mail'] },
   { key: 'phone', label: 'Phone', aliases: ['phone', 'mobile', 'cell', 'phone number', 'contact number'] },
   { key: 'role', label: 'Role', aliases: ['role', 'default role', 'position', 'title', 'job title'] },
+  { key: 'date_of_birth', label: 'Date of birth', aliases: ['date of birth', 'dob', 'birth date'] },
+  { key: 'employment_start_date', label: 'Employment start date', aliases: ['employment start date', 'start date'] },
+  { key: 'employment_end_date', label: 'Employment end date', aliases: ['employment end date', 'end date'] },
+  { key: 'employment_type', label: 'Employment type', aliases: ['employment type'] },
+  { key: 'active', label: 'Active', aliases: ['active', 'status'] },
+  { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments'] },
+  { key: 'color', label: 'Color', aliases: ['color', 'colour'] },
 ];
 
 export default function PeoplePage() {
-  const { user, isReadOnly, isAdmin } = useAuth();
+  const { isReadOnly, isAdmin } = useAuth();
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
+  const [showInactive, setShowInactive] = useState(false);
+  const [employmentType, setEmploymentType] = useState<EmploymentType | ''>('');
   const [editing, setEditing] = useState<Person | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
-  const [settingPasswordFor, setSettingPasswordFor] = useState<Person | null>(null);
   const [managingAccessFor, setManagingAccessFor] = useState<Person | null>(null);
+  const [thinksafeStatus, setThinksafeStatus] = useState<ThinkSafeStatus | null>(null);
+  const [thinksafeSyncing, setThinksafeSyncing] = useState(false);
 
   const load = () => {
     api.getPeople().then((data) => {
@@ -36,32 +49,61 @@ export default function PeoplePage() {
       setManagingAccessFor((current) => (current ? (data.find((p) => p.id === current.id) ?? current) : current));
     });
   };
+  const loadThinksafeStatus = () => api.getThinkSafeStatus().then(setThinksafeStatus);
+  const handleThinksafeRefresh = async () => {
+    setThinksafeSyncing(true);
+    try {
+      setThinksafeStatus(await api.refreshThinkSafe());
+      load();
+    } finally {
+      setThinksafeSyncing(false);
+    }
+  };
 
   useEffect(load, []);
+  useEffect(() => {
+    loadThinksafeStatus();
+  }, []);
 
   const filtered = people.filter(
     (p) =>
-      p.name.toLowerCase().includes(q.toLowerCase()) ||
-      (p.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
-      (p.role ?? '').toLowerCase().includes(q.toLowerCase())
+      (showInactive || p.active) &&
+      (!employmentType || p.employment_type === employmentType) &&
+      (p.name.toLowerCase().includes(q.toLowerCase()) ||
+        (p.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
+        (p.role ?? '').toLowerCase().includes(q.toLowerCase()))
   );
 
   const exportCsv = () => {
     downloadCsv(
       'people.csv',
-      ['Name', 'Login type', 'Email', 'Username', 'Phone', 'Role', 'Date of birth', 'Employment start date', 'Billable', 'Active', 'Notes'],
+      [
+        'Name',
+        'Login type',
+        'Email',
+        'Phone',
+        'Role',
+        'Date of birth',
+        'Employment start date',
+        'Employment end date',
+        'Employment type',
+        'Active',
+        'Notes',
+        'Color',
+      ],
       filtered.map((p) => [
         p.name,
         LOGIN_TYPE_LABELS[p.login_type],
         p.email ?? '',
-        p.username ?? '',
         p.phone ?? '',
         p.role ?? '',
         p.date_of_birth ?? '',
         p.employment_start_date ?? '',
-        p.billable ? 'Yes' : 'No',
+        p.employment_end_date ?? '',
+        EMPLOYMENT_TYPE_LABELS[p.employment_type],
         p.active ? 'Yes' : 'No',
         p.notes ?? '',
+        p.color,
       ])
     );
   };
@@ -87,7 +129,32 @@ export default function PeoplePage() {
         </div>
       </div>
 
-      <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280, marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+        <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType | '')}>
+          <option value="">All employment types</option>
+          {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
+          Show inactive
+        </label>
+        {thinksafeStatus?.configured && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+            <span title={thinksafeStatus.lastError ? `Last sync failed: ${thinksafeStatus.lastError}` : undefined}>
+              ThinkSafe: {thinksafeStatus.userCount} user{thinksafeStatus.userCount === 1 ? '' : 's'}
+              {thinksafeStatus.lastError ? ' (last sync failed)' : ''}
+            </span>
+            <button className="btn" onClick={handleThinksafeRefresh} disabled={thinksafeSyncing}>
+              {thinksafeSyncing ? 'Syncing...' : 'Sync now'}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div className="card">
         {loading ? (
@@ -100,8 +167,8 @@ export default function PeoplePage() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Type</th>
                 <th>Login type</th>
-                <th>Status</th>
                 <th></th>
               </tr>
             </thead>
@@ -111,22 +178,23 @@ export default function PeoplePage() {
                   <td>
                     <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: person.color }} />
                   </td>
-                  <td>{person.name}</td>
+                  <td>
+                    {person.name}
+                    {person.thinksafe_user && (
+                      <>
+                        {' '}
+                        <ThinkSafeBadge title="Registered on ThinkSafe" />
+                      </>
+                    )}
+                  </td>
                   <td>{person.email || '—'}</td>
                   <td>{person.role || '—'}</td>
+                  <td>{EMPLOYMENT_TYPE_LABELS[person.employment_type]}</td>
                   <td>{LOGIN_TYPE_LABELS[person.login_type]}</td>
-                  <td>{person.active ? 'Active' : 'Inactive'}</td>
                   <td style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                    {isAdmin &&
-                      person.login_type !== 'none' &&
-                      (person.id !== user?.id || person.login_type === 'sso') && (
+                    {isAdmin && person.login_type === 'sso' && (
                       <button className="btn" onClick={() => setManagingAccessFor(person)}>
                         Access
-                      </button>
-                    )}
-                    {isAdmin && person.username && (
-                      <button className="btn" onClick={() => setSettingPasswordFor(person)}>
-                        {person.has_password ? 'Reset password' : 'Set password'}
                       </button>
                     )}
                     <button className="btn" onClick={() => setEditing(person)}>
@@ -172,27 +240,31 @@ export default function PeoplePage() {
         <ImportModal
           title="Import People"
           fields={PEOPLE_IMPORT_FIELDS}
+          existingKeys={new Set(people.filter((p) => p.email).map((p) => p.email!.trim().toLowerCase()))}
+          getKey={(values) => values.email.trim().toLowerCase()}
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
-            await api.createPerson({
+            // Not mapped (or unrecognised) falls back to the plain-onboarding
+            // defaults this import used before it also had to double as
+            // restore: 'none' login, active, server-default employment type.
+            const created = await api.createPerson({
               name: values.name,
-              login_type: 'none',
+              login_type: labelToKey(LOGIN_TYPE_LABELS, values.login_type) ?? 'none',
               email: values.email,
               phone: values.phone || null,
               role: values.role || null,
+              date_of_birth: values.date_of_birth || null,
+              employment_start_date: values.employment_start_date || null,
+              employment_end_date: values.employment_end_date || null,
+              employment_type: labelToKey(EMPLOYMENT_TYPE_LABELS, values.employment_type),
+              notes: values.notes || null,
+              color: values.color || undefined,
             });
+            if (values.active.trim().toLowerCase() === 'no') {
+              await api.updatePerson(created.id, { active: false });
+            }
           }}
           onDone={load}
-        />
-      )}
-      {settingPasswordFor && (
-        <SetPersonPasswordModal
-          person={settingPasswordFor}
-          onClose={() => setSettingPasswordFor(null)}
-          onDone={() => {
-            setSettingPasswordFor(null);
-            load();
-          }}
         />
       )}
       {managingAccessFor && (

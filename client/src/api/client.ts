@@ -2,14 +2,16 @@ import type {
   ApiKey,
   AppAccess,
   AuthPerson,
+  AuthStatus,
   Client,
   ConsumingApp,
-  OidcStatus,
   Person,
-  Project,
-  ProjectAssignment,
-  ProjectStatus,
-  ProjectType,
+  Plant,
+  Job,
+  JobAssignment,
+  JobStatus,
+  JobType,
+  ThinkSafeStatus,
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -28,15 +30,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getHealth: () => request<{ ok: boolean; commit: string | null }>('/health'),
+  getHealth: () => request<{ ok: boolean; commit: string | null; env: string }>('/health'),
 
   getMe: () => request<AuthPerson>('/auth/me'),
-  login: (username: string, password: string) =>
-    request<AuthPerson>('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  login: (password: string) =>
+    request<AuthPerson>('/auth/admin-login', { method: 'POST', body: JSON.stringify({ password }) }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  changePassword: (current_password: string, new_password: string) =>
-    request<void>('/auth/change-password', { method: 'POST', body: JSON.stringify({ current_password, new_password }) }),
-  getOidcStatus: () => request<OidcStatus>('/auth/oidc/status'),
+  getAuthStatus: () => request<AuthStatus>('/auth/status'),
 
   getClients: (params?: { active?: boolean; q?: string }) => {
     const qs = new URLSearchParams();
@@ -48,6 +48,17 @@ export const api = {
   createClient: (data: Partial<Client>) => request<Client>('/v1/clients', { method: 'POST', body: JSON.stringify(data) }),
   updateClient: (id: number, data: Partial<Client>) =>
     request<Client>(`/v1/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  getPlant: (params?: { active?: boolean; q?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.active) qs.set('active', '1');
+    if (params?.q) qs.set('q', params.q);
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return request<Plant[]>(`/v1/plant${suffix}`);
+  },
+  createPlant: (data: Partial<Plant>) => request<Plant>('/v1/plant', { method: 'POST', body: JSON.stringify(data) }),
+  updatePlant: (id: number, data: Partial<Plant>) =>
+    request<Plant>(`/v1/plant/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   getPeople: (params?: { active?: boolean; q?: string }) => {
     const qs = new URLSearchParams();
@@ -63,10 +74,8 @@ export const api = {
     request<AppAccess[]>(`/v1/people/${personId}/app-access`, { method: 'POST', body: JSON.stringify(data) }),
   revokeAppAccess: (personId: number, app: string) =>
     request<void>(`/v1/people/${personId}/app-access/${app}`, { method: 'DELETE' }),
-  setPersonPassword: (personId: number, password: string) =>
-    request<void>(`/v1/people/${personId}/set-password`, { method: 'POST', body: JSON.stringify({ password }) }),
 
-  getProjects: (params?: { status?: ProjectStatus; type?: ProjectType; client_id?: number; q?: string; archived?: boolean }) => {
+  getJobs: (params?: { status?: JobStatus; type?: JobType; client_id?: number; q?: string; archived?: boolean }) => {
     const qs = new URLSearchParams();
     if (params?.status) qs.set('status', params.status);
     if (params?.type) qs.set('type', params.type);
@@ -74,16 +83,20 @@ export const api = {
     if (params?.q) qs.set('q', params.q);
     if (params?.archived) qs.set('archived', '1');
     const suffix = qs.toString() ? `?${qs}` : '';
-    return request<Project[]>(`/v1/projects${suffix}`);
+    return request<Job[]>(`/v1/jobs${suffix}`);
   },
-  getProject: (id: string) => request<Project>(`/v1/projects/${id}?include=assignments`),
-  createProject: (data: Partial<Project>) => request<Project>('/v1/projects', { method: 'POST', body: JSON.stringify(data) }),
-  updateProject: (id: string, data: Partial<Project>) =>
-    request<Project>(`/v1/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-  addAssignment: (projectId: string, data: { person_id: number; role: string }) =>
-    request<ProjectAssignment[]>(`/v1/projects/${projectId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
-  removeAssignment: (projectId: string, assignmentId: number) =>
-    request<void>(`/v1/projects/${projectId}/assignments/${assignmentId}`, { method: 'DELETE' }),
+  getJob: (id: string) => request<Job>(`/v1/jobs/${id}?include=assignments`),
+  getJobByCode: (code: string) => request<Job>(`/v1/jobs/by-code/${encodeURIComponent(code)}?include=assignments`),
+  getNextJobCode: (jobType: JobType) => request<{ code: string }>(`/v1/jobs/next-code?job_type=${jobType}`),
+  getThinkSafeStatus: () => request<ThinkSafeStatus>('/v1/thinksafe/status'),
+  refreshThinkSafe: () => request<ThinkSafeStatus>('/v1/thinksafe/refresh', { method: 'POST' }),
+  createJob: (data: Partial<Job>) => request<Job>('/v1/jobs', { method: 'POST', body: JSON.stringify(data) }),
+  updateJob: (id: string, data: Partial<Job>) =>
+    request<Job>(`/v1/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  addAssignment: (jobId: string, data: { person_id: number; role: string }) =>
+    request<JobAssignment[]>(`/v1/jobs/${jobId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
+  removeAssignment: (jobId: string, assignmentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/assignments/${assignmentId}`, { method: 'DELETE' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

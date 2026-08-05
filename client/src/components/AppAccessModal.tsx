@@ -17,8 +17,6 @@ type Selection = Role | 'none';
 
 export default function AppAccessModal({ person, onClose, onChanged }: Props) {
   const { user } = useAuth();
-  // Local login only ever unlocks registr — SSO is what the other apps need.
-  const apps = person.login_type === 'local' ? (['registr'] as AppName[]) : APPS;
   const isSelf = person.id === user?.id;
   const [busyApp, setBusyApp] = useState<AppName | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +46,7 @@ export default function AppAccessModal({ person, onClose, onChanged }: Props) {
         <h2>App Access — {person.name}</h2>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {apps.map((app) => {
+          {APPS.map((app) => {
             const lockSelf = isSelf && app === 'registr';
             return (
               <div key={app} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -71,7 +69,7 @@ export default function AppAccessModal({ person, onClose, onChanged }: Props) {
             );
           })}
         </div>
-        {isSelf && apps.includes('registr') && (
+        {isSelf && (
           <div style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 8 }}>
             Your own Registr access is locked here — have another admin change it if needed.
           </div>

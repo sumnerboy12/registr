@@ -13,14 +13,25 @@ export const APP_LABELS: Record<AppName, string> = {
   costr: 'Costr',
 };
 
-// A person signs in one way, the other, or not at all — local login is
-// registr-only anyway, so mixing SSO and local doesn't buy anything.
-export type LoginType = 'sso' | 'local' | 'none';
+// A person either signs in via SSO or doesn't sign in at all — the only
+// other way into registr is the single hardcoded break-glass admin login,
+// which isn't a person record.
+export type LoginType = 'sso' | 'none';
 
 export const LOGIN_TYPE_LABELS: Record<LoginType, string> = {
   sso: 'SSO',
-  local: 'Local',
   none: 'None',
+};
+
+// Employment classification — registr is just the master list of WRS
+// employees; whether someone shows up in rostr's job scheduling is rostr's
+// own local flag, not this.
+export type EmploymentType = 'wage' | 'temp' | 'salary';
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  wage: 'Wage',
+  temp: 'Temp',
+  salary: 'Salary',
 };
 
 export interface Person {
@@ -28,16 +39,19 @@ export interface Person {
   name: string;
   login_type: LoginType;
   email: string | null;
-  username: string | null;
   phone: string | null;
   date_of_birth: string | null;
   employment_start_date: string | null;
+  employment_end_date: string | null;
   role: string | null;
-  billable: boolean;
+  employment_type: EmploymentType;
   active: boolean;
   color: string;
   notes: string | null;
-  has_password: boolean;
+  // Whether ThinkSafe (Wayman's H&S system) has a user matching this
+  // person's name — see server/src/lib/thinksafeSync.js. Always false if
+  // THINKSAFE_API_URL/THINKSAFE_API_KEY aren't set on the server.
+  thinksafe_user: boolean;
   app_access: AppAccess[];
 }
 
@@ -45,14 +59,12 @@ export interface AuthPerson {
   id: number;
   name: string;
   email: string | null;
-  username: string | null;
   role: Role;
-  must_change_password: boolean;
-  has_password: boolean;
 }
 
-export interface OidcStatus {
-  enabled: boolean;
+export interface AuthStatus {
+  oidcEnabled: boolean;
+  adminLoginEnabled: boolean;
 }
 
 export type ConsumingApp = 'rostr' | 'claimr' | 'costr';
@@ -86,47 +98,91 @@ export interface Client {
   notes: string | null;
 }
 
-export type ProjectType = 'contract' | 'minor_works';
-export type ProjectStatus = 'tendering' | 'awarded' | 'active' | 'on_hold' | 'practical_completion' | 'closed';
-export type AssignmentRole = 'project_manager' | 'foreman' | 'estimator' | 'qs';
+// WRS-owned equipment only — hired-in gear is a rostr-only concept, not
+// tracked here.
+export interface Plant {
+  id: number;
+  name: string;
+  rego: string | null;
+  active: boolean;
+  color: string;
+  notes: string | null;
+}
 
-export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
+export type JobType = 'contract' | 'minor_works' | 'remedial';
+export type JobStatus =
+  | 'tendering'
+  | 'awarded'
+  | 'active'
+  | 'practical_completion'
+  | 'awaiting_retentions'
+  | 'closed'
+  | 'on_hold'
+  | 'lost';
+export type AssignmentRole = 'project_manager' | 'site_supervisor' | 'estimator' | 'qs';
+
+export const JOB_TYPE_LABELS: Record<JobType, string> = {
   contract: 'Contract',
   minor_works: 'Minor Works',
+  remedial: 'Remedial',
 };
 
-export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
   tendering: 'Tendering',
   awarded: 'Awarded',
-  active: 'Active',
-  on_hold: 'On Hold',
+  active: 'In Progress',
   practical_completion: 'Practical Completion',
-  closed: 'Closed',
+  awaiting_retentions: 'Awaiting Retentions',
+  closed: 'Completed',
+  on_hold: 'On Hold',
+  lost: 'Lost',
 };
+
+// Retentions-scheme statuses — only meaningful on Contract jobs. Mirrored
+// server-side in routes/jobs.js's CONTRACT_ONLY_STATUSES.
+export const CONTRACT_ONLY_STATUSES: JobStatus[] = ['practical_completion', 'awaiting_retentions'];
 
 export const ASSIGNMENT_ROLE_LABELS: Record<AssignmentRole, string> = {
   project_manager: 'Project Manager',
-  foreman: 'Foreman',
+  site_supervisor: 'Site Supervisor',
   estimator: 'Estimator',
   qs: 'QS',
 };
 
-export interface ProjectAssignment {
+export interface JobAssignment {
   id: number;
   role: AssignmentRole;
   person: { id: number; name: string; email: string | null };
 }
 
-export interface Project {
+export interface Job {
   id: string;
   code: string;
   name: string;
   client_id: number | null;
-  project_type: ProjectType;
-  status: ProjectStatus;
+  // Free-text fallback when no client_id is picked from the list — cleared
+  // once a real client is linked (see routes/jobs.js).
+  client_name: string | null;
+  // This job's own contact — applies regardless of client_id/client_name,
+  // independent of the linked Client's own contact fields.
+  contact_name: string | null;
+  contact_email: string | null;
+  job_type: JobType;
+  status: JobStatus;
   site_address: string | null;
-  contract_value: number | null;
-  start_date: string | null;
-  end_date: string | null;
-  assignments?: ProjectAssignment[];
+  value: number | null;
+  notes: string | null;
+  // Whether ThinkSafe (Wayman's H&S system) has a site configured for this
+  // job's code — see server/src/lib/thinksafeSync.js. Always false if
+  // THINKSAFE_API_URL/THINKSAFE_API_KEY aren't set on the server.
+  thinksafe_site: boolean;
+  assignments?: JobAssignment[];
+}
+
+export interface ThinkSafeStatus {
+  configured: boolean;
+  siteCount: number;
+  userCount: number;
+  lastSyncedAt: string | null;
+  lastError: string | null;
 }

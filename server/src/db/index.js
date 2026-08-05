@@ -15,10 +15,12 @@ db.exec('PRAGMA foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
 db.exec(schema);
 
-// registr is in production — every schema.sql change from here needs a
-// matching migration below, guarded by PRAGMA table_info checks, same
-// pattern as rostr's db/index.js. CREATE TABLE IF NOT EXISTS above is a
-// no-op on an existing file, so new/renamed/dropped columns need this.
+// No migrations below — the production db was reset to empty alongside this
+// commit, so schema.sql is the whole story again. Once real data has landed
+// on top of it, resume the old pattern: every schema.sql change needs a
+// matching migration here, guarded by a PRAGMA table_info/sqlite_master
+// check, since CREATE TABLE IF NOT EXISTS above is a no-op against an
+// existing file.
 
 export { dataDir };
 export default db;

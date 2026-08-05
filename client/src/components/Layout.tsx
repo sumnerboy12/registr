@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
-import ChangePasswordModal from './ChangePasswordModal';
 import UserMenu from './UserMenu';
+import EnvBadge from './EnvBadge';
 
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
 const MANUAL_URL = '/manual.html';
@@ -19,12 +19,18 @@ const navStyle = ({ isActive }: { isActive: boolean }) => ({
 });
 
 export default function Layout() {
-  const { user, logout, refresh } = useAuth();
-  const [changingPassword, setChangingPassword] = useState(false);
+  const { user, logout } = useAuth();
   const [commit, setCommit] = useState<string | null>(null);
+  const [env, setEnv] = useState<string | null>(null);
 
   useEffect(() => {
-    api.getHealth().then((h) => setCommit(h.commit)).catch(() => {});
+    api
+      .getHealth()
+      .then((h) => {
+        setCommit(h.commit);
+        setEnv(h.env);
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -48,16 +54,20 @@ export default function Layout() {
             <img src="/favicon.svg" alt="" width={22} height={22} style={{ borderRadius: 5 }} />
           )}
           <strong style={{ fontSize: 16 }}>Registr</strong>
+          {env && <EnvBadge env={env} />}
         </div>
         <nav style={{ display: 'flex', gap: 4, marginLeft: 20 }}>
           <NavLink to="/" end style={navStyle}>
-            Projects
+            Jobs
           </NavLink>
           <NavLink to="/clients" style={navStyle}>
             Clients
           </NavLink>
           <NavLink to="/people" style={navStyle}>
             People
+          </NavLink>
+          <NavLink to="/plant" style={navStyle}>
+            Plant
           </NavLink>
           {user?.role === 'admin' && (
             <NavLink to="/api-keys" style={navStyle}>
@@ -88,26 +98,12 @@ export default function Layout() {
           >
             ?
           </a>
-          <UserMenu
-            name={user?.name ?? ''}
-            showChangePassword={!!user?.has_password}
-            onChangePassword={() => setChangingPassword(true)}
-            onLogout={() => logout()}
-          />
+          <UserMenu name={user?.name ?? ''} onLogout={() => logout()} />
         </div>
       </header>
       <main style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
         <Outlet />
       </main>
-      {changingPassword && (
-        <ChangePasswordModal
-          onClose={() => setChangingPassword(false)}
-          onChanged={() => {
-            setChangingPassword(false);
-            refresh();
-          }}
-        />
-      )}
     </div>
   );
 }

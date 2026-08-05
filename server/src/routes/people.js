@@ -2,13 +2,14 @@ import { Router } from 'express';
 import db from '../db/index.js';
 import { requireAuth, requireWrite, requireAdmin } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
-import { hashPassword } from '../lib/auth.js';
+import { hasThinkSafeUser } from '../lib/thinksafeSync.js';
 
 const router = Router();
 
 const APPS = ['registr', 'rostr', 'claimr', 'costr'];
 const ROLES = ['admin', 'editor', 'readonly'];
-const LOGIN_TYPES = ['sso', 'local', 'none'];
+const LOGIN_TYPES = ['sso', 'none'];
+const EMPLOYMENT_TYPES = ['wage', 'temp', 'salary'];
 
 function withAccess(person) {
   const access = db.prepare('SELECT app, role FROM person_app_access WHERE person_id = ? ORDER BY app').all(person.id);
@@ -17,20 +18,18 @@ function withAccess(person) {
     name: person.name,
     login_type: person.login_type,
     email: person.email,
-    username: person.username,
     phone: person.phone,
     date_of_birth: person.date_of_birth,
     employment_start_date: person.employment_start_date,
+    employment_end_date: person.employment_end_date,
     role: person.role,
-    billable: !!person.billable,
+    employment_type: person.employment_type,
     active: !!person.active,
     color: person.color,
     notes: person.notes,
-    // Never the hash itself — just whether a local password login exists,
-    // so the UI can offer "set/reset password" vs. "change password".
-    has_password: !!person.password_hash,
     created_at: person.created_at,
     updated_at: person.updated_at,
+    thinksafe_user: hasThinkSafeUser(person.name),
     app_access: access,
   };
 }
@@ -53,9 +52,13 @@ router.get('/:id', requireAuthOrApiKey, (req, res) => {
 });
 
 router.post('/', requireAuth, requireWrite, (req, res) => {
-  const { name, login_type, email, username, phone, date_of_birth, employment_start_date, role, billable, color, notes } = req.body;
+  const { name, login_type, email, phone, date_of_birth, employment_start_date, employment_end_date, role, employment_type, color, notes } =
+    req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'name is required' });
   if (login_type != null && !LOGIN_TYPES.includes(login_type)) return res.status(400).json({ error: 'Invalid login_type' });
+  if (employment_type != null && !EMPLOYMENT_TYPES.includes(employment_type)) {
+    return res.status(400).json({ error: 'Invalid employment_type' });
+  }
 
   const nextEmail = email?.trim() || null;
   if (nextEmail) {
@@ -63,27 +66,21 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
     if (existing) return res.status(400).json({ error: 'That email is already registered' });
   }
 
-  const nextUsername = username?.trim() || null;
-  if (nextUsername) {
-    const usernameTaken = db.prepare('SELECT id FROM people WHERE username = ? COLLATE NOCASE').get(nextUsername);
-    if (usernameTaken) return res.status(400).json({ error: 'That username is already taken' });
-  }
-
   const result = db
     .prepare(
-      `INSERT INTO people (name, login_type, email, username, phone, date_of_birth, employment_start_date, role, billable, color, notes)
+      `INSERT INTO people (name, login_type, email, phone, date_of_birth, employment_start_date, employment_end_date, role, employment_type, color, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       name.trim(),
       login_type || 'sso',
       nextEmail,
-      nextUsername,
       phone || null,
       date_of_birth || null,
       employment_start_date || null,
+      employment_end_date || null,
       role || null,
-      billable === false ? 0 : 1,
+      employment_type || 'wage',
       color || '#3b82f6',
       notes || null
     );
@@ -97,8 +94,24 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   const existing = db.prepare('SELECT * FROM people WHERE id = ?').get(id);
   if (!existing) return res.status(404).json({ error: 'not found' });
 
-  const { name, login_type, email, username, phone, date_of_birth, employment_start_date, role, billable, active, color, notes } = req.body;
+  const {
+    name,
+    login_type,
+    email,
+    phone,
+    date_of_birth,
+    employment_start_date,
+    employment_end_date,
+    role,
+    employment_type,
+    active,
+    color,
+    notes,
+  } = req.body;
   if (login_type != null && !LOGIN_TYPES.includes(login_type)) return res.status(400).json({ error: 'Invalid login_type' });
+  if (employment_type != null && !EMPLOYMENT_TYPES.includes(employment_type)) {
+    return res.status(400).json({ error: 'Invalid employment_type' });
+  }
   // requireAuth checks active on every request — marking yourself inactive
   // would kill your own session with no way to undo it.
   if (id === req.person.id && active === false) {
@@ -114,62 +127,29 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     }
   }
 
-  let nextUsername = existing.username;
-  if (username !== undefined) {
-    nextUsername = username?.trim() || null;
-    if (nextUsername) {
-      const clash = db.prepare('SELECT id FROM people WHERE username = ? COLLATE NOCASE AND id != ?').get(nextUsername, id);
-      if (clash) return res.status(400).json({ error: 'That username is already taken' });
-    }
-  }
-
-  // Clearing username drops the login it's tied to — a leftover hash with no
-  // username would just be inert clutter.
-  const clearingUsername = existing.username && !nextUsername;
-
   db.prepare(
     `UPDATE people SET
-       name = ?, login_type = ?, email = ?, username = ?, phone = ?, date_of_birth = ?, employment_start_date = ?, role = ?, billable = ?, active = ?, color = ?, notes = ?,
-       password_hash = ?, must_change_password = ?, updated_at = datetime('now')
+       name = ?, login_type = ?, email = ?, phone = ?, date_of_birth = ?, employment_start_date = ?, employment_end_date = ?, role = ?, employment_type = ?, active = ?, color = ?, notes = ?,
+       updated_at = datetime('now')
      WHERE id = ?`
   ).run(
     name ?? existing.name,
     login_type ?? existing.login_type,
     nextEmail,
-    nextUsername,
     phone !== undefined ? phone : existing.phone,
     date_of_birth !== undefined ? date_of_birth : existing.date_of_birth,
     employment_start_date !== undefined ? employment_start_date : existing.employment_start_date,
+    employment_end_date !== undefined ? employment_end_date : existing.employment_end_date,
     role !== undefined ? role : existing.role,
-    billable != null ? (billable ? 1 : 0) : existing.billable,
+    employment_type ?? existing.employment_type,
     active != null ? (active ? 1 : 0) : existing.active,
     color ?? existing.color,
     notes !== undefined ? notes : existing.notes,
-    clearingUsername ? null : existing.password_hash,
-    clearingUsername ? 0 : existing.must_change_password,
     id
   );
 
   const row = db.prepare('SELECT * FROM people WHERE id = ?').get(id);
   res.json(withAccess(row));
-});
-
-// Sets/resets a person's local password — admin-only. Requires username first,
-// since login looks accounts up by username, not email.
-router.post('/:id/set-password', requireAuth, requireAdmin, (req, res) => {
-  const id = Number(req.params.id);
-  const person = db.prepare('SELECT id, username FROM people WHERE id = ?').get(id);
-  if (!person) return res.status(404).json({ error: 'not found' });
-  if (!person.username) return res.status(400).json({ error: 'Set a username before adding a local password login' });
-
-  const { password } = req.body;
-  if (!password || password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
-
-  db.prepare(`UPDATE people SET password_hash = ?, must_change_password = 1, updated_at = datetime('now') WHERE id = ?`).run(
-    hashPassword(password),
-    id
-  );
-  res.status(204).end();
 });
 
 // Granting app access is admin-only. No domain check — M365 already restricts who can complete SSO.

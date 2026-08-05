@@ -20,3 +20,6 @@ export const SWATCH_COLORS = [
   '#36ad1f', // grass
   '#c322b6', // magenta
 ] as const;
+
+// Pill background for a job with no client set.
+export const NO_CLIENT_COLOR = '#475569';

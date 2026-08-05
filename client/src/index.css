@@ -8,6 +8,7 @@
   --accent: #2f8f7a;
   --nav-accent: #21705f;
   --danger: #e5484d;
+  --warn: #f59e0b;
   --radius: 8px;
   font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color-scheme: dark;
@@ -15,6 +16,14 @@
 
 * {
   box-sizing: border-box;
+}
+
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/new Edge */
 }
 
 html, body, #root {
@@ -140,7 +149,7 @@ th {
 }
 
 .modal.modal-wide {
-  width: 640px;
+  width: 650px;
 }
 
 .modal h2 {
