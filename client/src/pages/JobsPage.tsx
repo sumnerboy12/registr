@@ -149,6 +149,45 @@ export default function JobsPage() {
     };
   }, []);
 
+  // Auto-scrolls the board while dragging a card near its left/right edge —
+  // native dragover fires repeatedly during a drag, but a rAF loop scrolls
+  // smoothly rather than in per-event jumps and keeps going even if dragover
+  // itself pauses firing.
+  const edgeScrollSpeedRef = useRef(0);
+  const edgeScrollFrameRef = useRef<number | null>(null);
+
+  const stepEdgeScroll = () => {
+    const el = boardScrollRef.current;
+    if (el && edgeScrollSpeedRef.current !== 0) el.scrollLeft += edgeScrollSpeedRef.current;
+    edgeScrollFrameRef.current = requestAnimationFrame(stepEdgeScroll);
+  };
+
+  const handleBoardDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    const el = boardScrollRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const EDGE = 60;
+    const MAX_SPEED = 18;
+    if (e.clientX < rect.left + EDGE) {
+      edgeScrollSpeedRef.current = -MAX_SPEED * ((rect.left + EDGE - e.clientX) / EDGE);
+    } else if (e.clientX > rect.right - EDGE) {
+      edgeScrollSpeedRef.current = MAX_SPEED * ((e.clientX - (rect.right - EDGE)) / EDGE);
+    } else {
+      edgeScrollSpeedRef.current = 0;
+    }
+    if (edgeScrollFrameRef.current == null) edgeScrollFrameRef.current = requestAnimationFrame(stepEdgeScroll);
+  };
+
+  const stopEdgeScroll = () => {
+    edgeScrollSpeedRef.current = 0;
+    if (edgeScrollFrameRef.current != null) {
+      cancelAnimationFrame(edgeScrollFrameRef.current);
+      edgeScrollFrameRef.current = null;
+    }
+  };
+
+  useEffect(() => stopEdgeScroll, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, view);
@@ -324,6 +363,7 @@ export default function JobsPage() {
           ref={boardScrollRef}
           className="scrollbar-none"
           onMouseDown={handleBoardMouseDown}
+          onDragOver={handleBoardDragOver}
           style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start', cursor: 'grab' }}
         >
           {boardStatuses.map((status) => {
@@ -370,6 +410,7 @@ export default function JobsPage() {
                           e.dataTransfer.setData('text/plain', String(job.id));
                           e.dataTransfer.effectAllowed = 'move';
                         }}
+                        onDragEnd={stopEdgeScroll}
                         onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}
                         style={{
                           cursor: isReadOnly ? 'pointer' : 'grab',
