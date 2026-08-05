@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import type { EmploymentType, Person } from '../types';
+import type { EmploymentType, Person, ThinkSafeStatus } from '../types';
 import { EMPLOYMENT_TYPE_LABELS, LOGIN_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import AppAccessModal from '../components/AppAccessModal';
+import ThinkSafeBadge from '../components/ThinkSafeBadge';
 import { downloadCsv, labelToKey } from '../lib/csv';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
@@ -36,6 +37,8 @@ export default function PeoplePage() {
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [managingAccessFor, setManagingAccessFor] = useState<Person | null>(null);
+  const [thinksafeStatus, setThinksafeStatus] = useState<ThinkSafeStatus | null>(null);
+  const [thinksafeSyncing, setThinksafeSyncing] = useState(false);
 
   const load = () => {
     api.getPeople().then((data) => {
@@ -46,8 +49,21 @@ export default function PeoplePage() {
       setManagingAccessFor((current) => (current ? (data.find((p) => p.id === current.id) ?? current) : current));
     });
   };
+  const loadThinksafeStatus = () => api.getThinkSafeStatus().then(setThinksafeStatus);
+  const handleThinksafeRefresh = async () => {
+    setThinksafeSyncing(true);
+    try {
+      setThinksafeStatus(await api.refreshThinkSafe());
+      load();
+    } finally {
+      setThinksafeSyncing(false);
+    }
+  };
 
   useEffect(load, []);
+  useEffect(() => {
+    loadThinksafeStatus();
+  }, []);
 
   const filtered = people.filter(
     (p) =>
@@ -127,6 +143,17 @@ export default function PeoplePage() {
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
           Show inactive
         </label>
+        {thinksafeStatus?.configured && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-dim)', marginLeft: 'auto' }}>
+            <span title={thinksafeStatus.lastError ? `Last sync failed: ${thinksafeStatus.lastError}` : undefined}>
+              ThinkSafe: {thinksafeStatus.userCount} user{thinksafeStatus.userCount === 1 ? '' : 's'}
+              {thinksafeStatus.lastError ? ' (last sync failed)' : ''}
+            </span>
+            <button className="btn" onClick={handleThinksafeRefresh} disabled={thinksafeSyncing}>
+              {thinksafeSyncing ? 'Syncing...' : 'Sync now'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -151,7 +178,15 @@ export default function PeoplePage() {
                   <td>
                     <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: person.color }} />
                   </td>
-                  <td>{person.name}</td>
+                  <td>
+                    {person.name}
+                    {person.thinksafe_user && (
+                      <>
+                        {' '}
+                        <ThinkSafeBadge title="Registered on ThinkSafe" />
+                      </>
+                    )}
+                  </td>
                   <td>{person.email || '—'}</td>
                   <td>{person.role || '—'}</td>
                   <td>{EMPLOYMENT_TYPE_LABELS[person.employment_type]}</td>

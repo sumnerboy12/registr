@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import type { AssignmentRole, Client, Person, Job, JobStatus, JobType } from '../types';
 import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
+import ThinkSafeBadge from '../components/ThinkSafeBadge';
 
 const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
@@ -159,7 +160,10 @@ export default function JobDetailPage() {
   return (
     <div style={{ padding: 20, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>{isNew ? 'New Job' : job && `${job.code} - ${job.name}`}</h1>
+        <h1 style={{ fontSize: 20, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span>{isNew ? 'New Job' : job && `${job.code} - ${job.name}`}</span>
+          {job?.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
+        </h1>
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>

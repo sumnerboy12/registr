@@ -136,6 +136,9 @@ server. Leave it blank (or `production`) on the real deployment.
   archived), an optional linked client, site address, value and notes,
   plus a list of people **assigned** to it (Project Manager, Site
   Supervisor, Estimator, QS — the same person can hold more than one role).
+  A job also shows a **ThinkSafe** badge if that job's code has a site
+  configured in ThinkSafe (Wayman's H&S system) — see "Integrating
+  ThinkSafe" below.
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)
@@ -152,7 +155,9 @@ server. Leave it blank (or `production`) on the real deployment.
   hidden by default (tick **Show inactive** to see them), and the list can be
   filtered by employment type. **Import**/**Export** work here too; imported
   people default to the **None** login type, since a bulk import is usually
-  a contact list, not a batch of new logins.
+  a contact list, not a batch of new logins. A person also shows a
+  **ThinkSafe** badge if their name matches a user in ThinkSafe — see
+  "Integrating ThinkSafe" below.
 - **Plant** — Registr's master list of WRS-owned equipment/machinery (name,
   optional rego, notes, colour, active). Hired-in gear is deliberately not
   tracked here — that's a rostr-only concept, tied to a specific job and
@@ -221,6 +226,37 @@ fallback if the identity provider is ever unreachable.
    (see `SMTP_*` in `server/.env.example`) so consuming apps don't need
    their own. `503` if registr's SMTP isn't configured, `502` if the send
    itself fails — see `server/src/routes/email.js`.
+
+## Integrating ThinkSafe (optional)
+
+Registr can show a badge on any job that has a site configured in ThinkSafe
+(Wayman's H&S system), and on any person who has a matching ThinkSafe user,
+by matching ThinkSafe's records to registr's job codes and people's names.
+ThinkSafe's API is read-only from registr's side — nothing here ever
+creates, updates, or deletes anything in ThinkSafe.
+
+1. Set `THINKSAFE_API_URL` (defaults to ThinkSafe's production API,
+   `https://thinksafe-go-api-flex.azurewebsites.net/api/v1`, in
+   `server/.env.example`) and `THINKSAFE_API_KEY` in `server/.env`. Restart
+   the app after saving.
+2. Leave both blank to disable the integration entirely — nothing else
+   breaks, the badges just never show.
+
+Registr fetches ThinkSafe's full site and user lists (there's no per-job or
+per-person endpoint cheap enough to call for every row on the Jobs/People
+lists) every 15 minutes in the background, caches which job codes have a
+site and which names have a user, and shows a **ThinkSafe** badge next to
+any match — see `server/src/lib/thinksafeSync.js`. A **Sync now** control
+(only shown once configured) on the Jobs and People toolbars re-fetches
+both immediately instead of waiting for the next tick — one shared sync
+behind the scenes, via `GET/POST /api/v1/thinksafe/status` and `/refresh`
+(see `server/src/routes/thinksafe.js`).
+
+Verified against a live key: pagination is offset-based (`limit`/`offset`/
+`returned`/`has_more`, not page numbers), each site's job number comes back
+as `job_number`, and each user's name comes back as `name` — matched
+case-insensitively and trimmed against registr's own — see
+`server/src/lib/thinksafeClient.js`.
 
 ## Development mode
 

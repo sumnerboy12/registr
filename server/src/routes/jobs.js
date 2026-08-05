@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import db from '../db/index.js';
 import { requireAuth, requireWrite } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
+import { hasThinkSafeSite } from '../lib/thinksafeSync.js';
 
 const router = Router();
 
@@ -43,6 +44,7 @@ function loadAssignments(jobId) {
 
 function publicJob(row, { includeAssignments } = {}) {
   const job = { ...row };
+  job.thinksafe_site = hasThinkSafeSite(row.code);
   if (includeAssignments) job.assignments = loadAssignments(row.id);
   return job;
 }

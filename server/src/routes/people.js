@@ -2,6 +2,7 @@ import { Router } from 'express';
 import db from '../db/index.js';
 import { requireAuth, requireWrite, requireAdmin } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
+import { hasThinkSafeUser } from '../lib/thinksafeSync.js';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ function withAccess(person) {
     notes: person.notes,
     created_at: person.created_at,
     updated_at: person.updated_at,
+    thinksafe_user: hasThinkSafeUser(person.name),
     app_access: access,
   };
 }

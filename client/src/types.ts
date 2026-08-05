@@ -48,6 +48,10 @@ export interface Person {
   active: boolean;
   color: string;
   notes: string | null;
+  // Whether ThinkSafe (Wayman's H&S system) has a user matching this
+  // person's name — see server/src/lib/thinksafeSync.js. Always false if
+  // THINKSAFE_API_URL/THINKSAFE_API_KEY aren't set on the server.
+  thinksafe_user: boolean;
   app_access: AppAccess[];
 }
 
@@ -168,5 +172,17 @@ export interface Job {
   site_address: string | null;
   value: number | null;
   notes: string | null;
+  // Whether ThinkSafe (Wayman's H&S system) has a site configured for this
+  // job's code — see server/src/lib/thinksafeSync.js. Always false if
+  // THINKSAFE_API_URL/THINKSAFE_API_KEY aren't set on the server.
+  thinksafe_site: boolean;
   assignments?: JobAssignment[];
+}
+
+export interface ThinkSafeStatus {
+  configured: boolean;
+  siteCount: number;
+  userCount: number;
+  lastSyncedAt: string | null;
+  lastError: string | null;
 }

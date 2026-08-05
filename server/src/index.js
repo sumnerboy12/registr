@@ -8,6 +8,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { dataDir } from './db/index.js';
+import { startThinkSafeSyncScheduler } from './lib/thinksafeSync.js';
 
 import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
@@ -16,6 +17,7 @@ import plantRouter from './routes/plant.js';
 import jobsRouter from './routes/jobs.js';
 import apiKeysRouter from './routes/apiKeys.js';
 import emailRouter from './routes/email.js';
+import thinksafeRouter from './routes/thinksafe.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -45,6 +47,7 @@ app.use('/api/v1/plant', plantRouter);
 app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/api-keys', apiKeysRouter);
 app.use('/api/v1/email', emailRouter);
+app.use('/api/v1/thinksafe', thinksafeRouter);
 
 // Defaults to "production" so a deployment only shows the dev/test banner
 // (see client/src/components/EnvBadge.tsx) if someone deliberately opts in
@@ -72,3 +75,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`registr server listening on http://0.0.0.0:${PORT}`);
 });
+
+startThinkSafeSyncScheduler();

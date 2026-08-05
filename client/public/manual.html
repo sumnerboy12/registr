@@ -501,6 +501,18 @@
         Search filters by code, name or client; the status and type dropdowns narrow the list
         further. The list is always sorted by code.
       </p>
+
+      <h3>ThinkSafe</h3>
+      <p class="dim">
+        A <strong>ThinkSafe</strong> badge next to a job's name means that job's code has a
+        site configured in ThinkSafe (Wayman's H&amp;S system) — registr checks in the
+        background every 15 minutes, or immediately via <span class="kbd">Sync now</span>
+        next to the List/Board toggle (this same sync also covers People's own ThinkSafe
+        badge — see <a href="#people">chapter 4</a>). Read-only: nothing done in registr
+        ever changes anything in ThinkSafe. Only shows up at all once whoever manages the
+        server has set <span class="kbd">THINKSAFE_API_URL</span>/
+        <span class="kbd">THINKSAFE_API_KEY</span> — see the README.
+      </p>
     </section>
 
     <section class="chapter" id="clients">
@@ -577,6 +589,18 @@
         <a href="#importing">chapter 8</a>. Imported people default to the <strong>None</strong>
         login type (see the next chapter), since a bulk import is usually a contact list, not a
         batch of new logins.
+      </p>
+
+      <h3>ThinkSafe</h3>
+      <p class="dim">
+        A <strong>ThinkSafe</strong> badge next to a person's name means their name matches a
+        user in ThinkSafe (Wayman's H&amp;S system), checked case-insensitively — registr
+        checks in the background every 15 minutes, or immediately via
+        <span class="kbd">Sync now</span> above the list (the same sync as the Jobs screen's
+        own ThinkSafe badge — see <a href="#jobs">chapter 2</a>). Read-only: nothing done in
+        registr ever changes anything in ThinkSafe. Only shows up at all once whoever manages
+        the server has set <span class="kbd">THINKSAFE_API_URL</span>/
+        <span class="kbd">THINKSAFE_API_KEY</span> — see the README.
       </p>
     </section>
 

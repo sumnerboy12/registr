@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { AssignmentRole, Client, Job, JobStatus, JobType, Person } from '../types';
+import type { AssignmentRole, Client, Job, JobStatus, JobType, Person, ThinkSafeStatus } from '../types';
 import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ImportModal, { type ImportField } from '../components/ImportModal';
@@ -9,6 +9,7 @@ import StatusFilterDropdown, { ALL_STATUSES } from '../components/StatusFilterDr
 import JobTypeFilterDropdown, { ALL_JOB_TYPES } from '../components/JobTypeFilterDropdown';
 import { downloadCsv, labelToKey } from '../lib/csv';
 import { NO_CLIENT_COLOR } from '../lib/colors';
+import ThinkSafeBadge from '../components/ThinkSafeBadge';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
 // the same file round-trips a job exactly — this doubles as backup/restore.
@@ -109,6 +110,8 @@ export default function JobsPage() {
   const [showImport, setShowImport] = useState(false);
   const [view, setView] = useState<'list' | 'board'>(loadPersistedView);
   const [dragOverStatus, setDragOverStatus] = useState<JobStatus | null>(null);
+  const [thinksafeStatus, setThinksafeStatus] = useState<ThinkSafeStatus | null>(null);
+  const [thinksafeSyncing, setThinksafeSyncing] = useState(false);
 
   // Click-and-drag-to-scroll for the board view, so it doesn't need its own
   // visible horizontal scrollbar (see the board container below). Mutates
@@ -208,6 +211,16 @@ export default function JobsPage() {
 
   const loadClients = () => api.getClients().then(setClients);
   const loadPeople = () => api.getPeople({ active: true }).then(setPeople);
+  const loadThinksafeStatus = () => api.getThinkSafeStatus().then(setThinksafeStatus);
+  const handleThinksafeRefresh = async () => {
+    setThinksafeSyncing(true);
+    try {
+      setThinksafeStatus(await api.refreshThinkSafe());
+      await loadJobs();
+    } finally {
+      setThinksafeSyncing(false);
+    }
+  };
   const loadJobs = () => {
     setLoading(true);
     // archived: true so closed jobs are fetched too — status/type filtering
@@ -224,6 +237,7 @@ export default function JobsPage() {
   useEffect(() => {
     loadClients();
     loadPeople();
+    loadThinksafeStatus();
   }, []);
   useEffect(() => {
     loadJobs();
@@ -343,7 +357,19 @@ export default function JobsPage() {
           <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />
           <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          {thinksafeStatus?.configured && (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12, color: 'var(--text-dim)' }}>
+              <span title={thinksafeStatus.lastError ? `Last sync failed: ${thinksafeStatus.lastError}` : undefined}>
+                ThinkSafe: {thinksafeStatus.siteCount} site{thinksafeStatus.siteCount === 1 ? '' : 's'}
+                {thinksafeStatus.lastError ? ' (last sync failed)' : ''}
+              </span>
+              <button className="btn" onClick={handleThinksafeRefresh} disabled={thinksafeSyncing}>
+                {thinksafeSyncing ? 'Syncing...' : 'Sync now'}
+              </button>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 4 }}>
           <button
             className="btn"
             onClick={() => setView('list')}
@@ -358,6 +384,7 @@ export default function JobsPage() {
           >
             Board
           </button>
+          </div>
         </div>
       </div>
 
@@ -428,7 +455,10 @@ export default function JobsPage() {
                           opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
                         }}
                       >
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{job.name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>{job.name}</span>
+                          {job.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
+                        </div>
                         <span
                           style={{
                             display: 'inline-block',
@@ -502,7 +532,15 @@ export default function JobsPage() {
                     </span>
                   </td>
                   <td>{job.code}</td>
-                  <td>{job.name}</td>
+                  <td>
+                    {job.name}
+                    {job.thinksafe_site && (
+                      <>
+                        {' '}
+                        <ThinkSafeBadge title="Site configured on ThinkSafe" />
+                      </>
+                    )}
+                  </td>
                   <td>
                     <span
                       className="badge"
