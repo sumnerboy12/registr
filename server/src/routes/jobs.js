@@ -68,12 +68,11 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
     if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     clauses.push('jobs.status = ?');
     params.push(status);
-  } else if (archived === '1') {
-    // Archived (closed) jobs are hidden unless explicitly asked for —
-    // registr never hard-deletes a job, it just archives via status.
-    clauses.push('jobs.status = ?');
-    params.push('closed');
-  } else {
+  } else if (archived !== '1') {
+    // Closed jobs are hidden unless explicitly asked for (archived=1, which
+    // includes them alongside everything else — registr never hard-deletes
+    // a job, it just archives via status) — used by rostr's job sync
+    // (lib/jobSync.js), which needs every job regardless of status.
     clauses.push('jobs.status != ?');
     params.push('closed');
   }

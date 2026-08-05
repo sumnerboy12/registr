@@ -5,6 +5,7 @@ import type { AssignmentRole, Client, Job, JobStatus, JobType, Person } from '..
 import { ASSIGNMENT_ROLE_LABELS, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ImportModal, { type ImportField } from '../components/ImportModal';
+import StatusFilterDropdown, { ALL_STATUSES } from '../components/StatusFilterDropdown';
 import { downloadCsv, labelToKey } from '../lib/csv';
 import { NO_CLIENT_COLOR } from '../lib/colors';
 
@@ -50,7 +51,7 @@ export default function JobsPage() {
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [status, setStatus] = useState<JobStatus | ''>('');
+  const [statusFilter, setStatusFilter] = useState<JobStatus[]>(ALL_STATUSES);
   const [type, setType] = useState<JobType | ''>('');
   const [showImport, setShowImport] = useState(false);
 
@@ -58,8 +59,11 @@ export default function JobsPage() {
   const loadPeople = () => api.getPeople({ active: true }).then(setPeople);
   const loadJobs = () => {
     setLoading(true);
+    // archived: true so closed jobs are fetched too — status filtering is
+    // all client-side now (see sortedJobs below), to support the
+    // multi-select StatusFilterDropdown.
     return api
-      .getJobs({ status: status || undefined, type: type || undefined, q: q || undefined })
+      .getJobs({ type: type || undefined, q: q || undefined, archived: true })
       .then((data) => {
         setJobs(data);
         setLoading(false);
@@ -72,18 +76,20 @@ export default function JobsPage() {
   }, []);
   useEffect(() => {
     loadJobs();
-  }, [status, type, q]);
+  }, [type, q]);
 
   const clientFor = (id: number | null) => (id != null ? clients.find((c) => c.id === id) : undefined);
 
   const sortedJobs = useMemo(
     () =>
-      [...jobs].sort((a, b) => {
-        const clientA = clientFor(a.client_id)?.name ?? a.client_name ?? '';
-        const clientB = clientFor(b.client_id)?.name ?? b.client_name ?? '';
-        return clientA.localeCompare(clientB) || a.code.localeCompare(b.code);
-      }),
-    [jobs, clients]
+      jobs
+        .filter((j) => statusFilter.includes(j.status))
+        .sort((a, b) => {
+          const clientA = clientFor(a.client_id)?.name ?? a.client_name ?? '';
+          const clientB = clientFor(b.client_id)?.name ?? b.client_name ?? '';
+          return clientA.localeCompare(clientB) || a.code.localeCompare(b.code);
+        }),
+    [jobs, clients, statusFilter]
   );
 
   const resolveClientId = (rawName: string | undefined): number | null => {
@@ -139,14 +145,7 @@ export default function JobsPage() {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
         <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
-        <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus | '')}>
-          <option value="">All statuses</option>
-          {Object.entries(JOB_STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} />
         <select value={type} onChange={(e) => setType(e.target.value as JobType | '')}>
           <option value="">All types</option>
           {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
