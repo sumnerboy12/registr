@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { AssignmentRole, Client, Person, Job, JobComment, JobStatus, JobType } from '../types';
+import type { Client, Person, Job, JobComment, JobStatus, JobType } from '../types';
 import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ThinkSafeBadge from '../components/ThinkSafeBadge';
+import AddAssignmentModal from '../components/AddAssignmentModal';
 import { formatDateTime, formatRelativeTime } from '../lib/formatDate';
-
-const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
 // jobValue state stays a plain unformatted numeric string ("1234.5") — this
 // only affects how it's displayed while editing. A native number input
@@ -47,9 +46,8 @@ export default function JobDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [newPersonId, setNewPersonId] = useState<number | ''>('');
-  const [newRole, setNewRole] = useState<AssignmentRole>('project_manager');
   const [assignmentBusy, setAssignmentBusy] = useState(false);
+  const [showAddAssignment, setShowAddAssignment] = useState(false);
 
   const [comments, setComments] = useState<JobComment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -138,19 +136,9 @@ export default function JobDetailPage() {
     }
   };
 
-  const addAssignment = async () => {
-    if (!job || newPersonId === '') return;
-    setAssignmentBusy(true);
-    try {
-      await api.addAssignment(job.id, { person_id: newPersonId, role: newRole });
-      const refreshed = await api.getJob(job.id);
-      setJob(refreshed);
-      setNewPersonId('');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to add assignment');
-    } finally {
-      setAssignmentBusy(false);
-    }
+  const reloadAssignments = () => {
+    if (!job) return;
+    api.getJob(job.id).then(setJob);
   };
 
   const removeAssignment = async (assignmentId: number) => {
@@ -347,77 +335,63 @@ export default function JobDetailPage() {
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
-        {isReadOnly ? (
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn" onClick={() => navigate('/')}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+            {!isNew &&
+              job &&
+              (job.assignments ?? []).map((a) => (
+                <span
+                  key={a.id}
+                  className="badge"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11 }}
+                >
+                  {a.person.email ? (
+                    <a href={`mailto:${a.person.email}`} title={`Email ${a.person.name}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {ASSIGNMENT_ROLE_LABELS[a.role]}: {a.person.name}
+                    </a>
+                  ) : (
+                    <span>
+                      {ASSIGNMENT_ROLE_LABELS[a.role]}: {a.person.name}
+                    </span>
+                  )}
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => removeAssignment(a.id)}
+                      disabled={assignmentBusy}
+                      title="Remove assignment"
+                      style={{ background: 'none', border: 'none', padding: 0, margin: 0, color: 'inherit', fontSize: 12, lineHeight: 1, cursor: 'pointer' }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              ))}
+            {!isNew && job && !isReadOnly && (
+              <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setShowAddAssignment(true)}>
+                Add role
+              </button>
+            )}
+          </div>
+
+          {isReadOnly ? (
+            <button className="btn" style={{ flexShrink: 0 }} onClick={() => navigate('/')}>
               Close
             </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <button className="btn" onClick={handleCancel} disabled={saving}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {!isNew && job && (
-        <>
-        <div className="card" style={{ padding: 20 }}>
-          <h2 style={{ fontSize: 16, marginTop: 0 }}>Assignments</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isReadOnly ? 0 : 14 }}>
-            {(job.assignments ?? []).length === 0 && (
-              <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>No one assigned yet.</div>
-            )}
-            {(job.assignments ?? []).map((a) => (
-              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
-                <span className="badge" style={{ width: 130, textAlign: 'center' }}>
-                  {ASSIGNMENT_ROLE_LABELS[a.role]}
-                </span>
-                <span>{a.person.name}</span>
-                <span style={{ color: 'var(--text-dim)' }}>{a.person.email}</span>
-                {!isReadOnly && (
-                  <button
-                    className="btn btn-danger"
-                    style={{ padding: '2px 8px', fontSize: 12, marginLeft: 'auto' }}
-                    onClick={() => removeAssignment(a.id)}
-                    disabled={assignmentBusy}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {!isReadOnly && (
-            <div className="row">
-              <select value={newPersonId} onChange={(e) => setNewPersonId(e.target.value ? Number(e.target.value) : '')} style={{ flex: 2 }}>
-                <option value="">Select person…</option>
-                {people.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select value={newRole} onChange={(e) => setNewRole(e.target.value as AssignmentRole)} style={{ flex: 1 }}>
-                {ASSIGNMENT_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ASSIGNMENT_ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-              <button className="btn" onClick={addAssignment} disabled={assignmentBusy || newPersonId === ''}>
-                Add
+          ) : (
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button className="btn" onClick={handleCancel} disabled={saving}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                {saving ? 'Saving…' : 'Save'}
               </button>
             </div>
           )}
         </div>
+      </div>
 
+      {!isNew && job && (
+        <>
         <div className="card" style={{ padding: 20, marginTop: 20 }}>
           <h2 style={{ fontSize: 16, marginTop: 0 }}>Comments</h2>
 
@@ -546,6 +520,15 @@ export default function JobDetailPage() {
           </div>
         </div>
         </>
+      )}
+
+      {showAddAssignment && job && (
+        <AddAssignmentModal
+          jobId={job.id}
+          people={people}
+          onClose={() => setShowAddAssignment(false)}
+          onAdded={reloadAssignments}
+        />
       )}
     </div>
   );
