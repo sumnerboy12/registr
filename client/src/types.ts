@@ -178,11 +178,3 @@ export interface Job {
   thinksafe_site: boolean;
   assignments?: JobAssignment[];
 }
-
-export interface ThinkSafeStatus {
-  configured: boolean;
-  siteCount: number;
-  userCount: number;
-  lastSyncedAt: string | null;
-  lastError: string | null;
-}

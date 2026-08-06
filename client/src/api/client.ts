@@ -11,7 +11,6 @@ import type {
   JobAssignment,
   JobStatus,
   JobType,
-  ThinkSafeStatus,
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -88,8 +87,6 @@ export const api = {
   getJob: (id: string) => request<Job>(`/v1/jobs/${id}?include=assignments`),
   getJobByCode: (code: string) => request<Job>(`/v1/jobs/by-code/${encodeURIComponent(code)}?include=assignments`),
   getNextJobCode: (jobType: JobType) => request<{ code: string }>(`/v1/jobs/next-code?job_type=${jobType}`),
-  getThinkSafeStatus: () => request<ThinkSafeStatus>('/v1/thinksafe/status'),
-  refreshThinkSafe: () => request<ThinkSafeStatus>('/v1/thinksafe/refresh', { method: 'POST' }),
   createJob: (data: Partial<Job>) => request<Job>('/v1/jobs', { method: 'POST', body: JSON.stringify(data) }),
   updateJob: (id: string, data: Partial<Job>) =>
     request<Job>(`/v1/jobs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
