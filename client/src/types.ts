@@ -155,6 +155,14 @@ export interface JobAssignment {
   person: { id: number; name: string; email: string | null };
 }
 
+export interface JobComment {
+  id: number;
+  author_person_id: number | null;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
+
 export interface Job {
   id: string;
   code: string;

@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { AssignmentRole, Client, Person, Job, JobStatus, JobType } from '../types';
+import type { AssignmentRole, Client, Person, Job, JobComment, JobStatus, JobType } from '../types';
 import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ThinkSafeBadge from '../components/ThinkSafeBadge';
+import { formatDateTime, formatRelativeTime } from '../lib/formatDate';
 
 const ASSIGNMENT_ROLES = Object.keys(ASSIGNMENT_ROLE_LABELS) as AssignmentRole[];
 
@@ -24,7 +25,7 @@ export default function JobDetailPage() {
   const { code: codeParam } = useParams();
   const isNew = codeParam === undefined;
   const navigate = useNavigate();
-  const { isReadOnly, isAdmin } = useAuth();
+  const { user, isReadOnly, isAdmin } = useAuth();
 
   const [job, setJob] = useState<Job | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -49,6 +50,14 @@ export default function JobDetailPage() {
   const [newPersonId, setNewPersonId] = useState<number | ''>('');
   const [newRole, setNewRole] = useState<AssignmentRole>('project_manager');
   const [assignmentBusy, setAssignmentBusy] = useState(false);
+
+  const [comments, setComments] = useState<JobComment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editCommentBody, setEditCommentBody] = useState('');
 
   useEffect(() => {
     api.getClients({ active: true }).then(setClients);
@@ -92,6 +101,7 @@ export default function JobDetailPage() {
       setJob(j);
       applyJobToForm(j);
       setLoading(false);
+      api.getJobComments(j.id).then(setComments);
     });
   }, [codeParam, isNew]);
 
@@ -152,6 +162,56 @@ export default function JobDetailPage() {
       setJob(refreshed);
     } finally {
       setAssignmentBusy(false);
+    }
+  };
+
+  const postComment = async () => {
+    if (!job || !newComment.trim()) return;
+    setCommentBusy(true);
+    try {
+      const comment = await api.addJobComment(job.id, newComment.trim());
+      // Most-recent-first, so a new comment goes at the top, matching the
+      // server's own ordering.
+      setComments((prev) => [comment, ...prev]);
+      setNewComment('');
+      commentInputRef.current?.focus();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to post comment');
+    } finally {
+      setCommentBusy(false);
+    }
+  };
+
+  const startEditComment = (comment: JobComment) => {
+    setEditingCommentId(comment.id);
+    setEditCommentBody(comment.body);
+  };
+
+  const saveEditComment = async () => {
+    if (!job || editingCommentId == null || !editCommentBody.trim()) return;
+    setCommentBusy(true);
+    try {
+      const updated = await api.updateJobComment(job.id, editingCommentId, editCommentBody.trim());
+      setComments((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      setEditingCommentId(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update comment');
+    } finally {
+      setCommentBusy(false);
+    }
+  };
+
+  const deleteComment = async (commentId: number) => {
+    if (!job) return;
+    if (!confirm('Delete this comment? This can\'t be undone.')) return;
+    setCommentBusy(true);
+    try {
+      await api.deleteJobComment(job.id, commentId);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete comment');
+    } finally {
+      setCommentBusy(false);
     }
   };
 
@@ -306,6 +366,7 @@ export default function JobDetailPage() {
       </div>
 
       {!isNew && job && (
+        <>
         <div className="card" style={{ padding: 20 }}>
           <h2 style={{ fontSize: 16, marginTop: 0 }}>Assignments</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isReadOnly ? 0 : 14 }}>
@@ -356,6 +417,135 @@ export default function JobDetailPage() {
             </div>
           )}
         </div>
+
+        <div className="card" style={{ padding: 20, marginTop: 20 }}>
+          <h2 style={{ fontSize: 16, marginTop: 0 }}>Comments</h2>
+
+          {!isReadOnly && (
+            <div
+              style={{ marginBottom: 16 }}
+              onFocus={() => setComposerFocused(true)}
+              onBlur={(e) => {
+                // onBlur fires whenever ANY descendant loses focus (it's
+                // focusout under the hood, which bubbles) — only treat it as
+                // "left the composer" if focus didn't just move to another
+                // element still inside this div (e.g. the button below).
+                if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setComposerFocused(false);
+              }}
+            >
+              <textarea
+                ref={commentInputRef}
+                rows={3}
+                placeholder="Write a comment…"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
+              />
+              {composerFocused && (
+                <button className="btn btn-primary" onClick={postComment} disabled={commentBusy || !newComment.trim()}>
+                  {commentBusy ? 'Posting…' : 'Add comment'}
+                </button>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {comments.length === 0 && <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>No comments yet.</div>}
+            {comments.map((c) => {
+              const isOwn = c.author_person_id === (user?.id ?? null);
+              const isEditing = editingCommentId === c.id;
+              return (
+                <div key={c.id} style={{ display: 'flex', gap: 8, justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
+                  <div
+                    style={{
+                      maxWidth: '75%',
+                      width: isEditing ? '75%' : undefined,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      background: isOwn ? 'color-mix(in srgb, var(--accent) 16%, var(--panel-alt))' : 'var(--panel-alt)',
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-dim)', marginBottom: 2 }}>{c.author_name}</div>
+                    {isEditing ? (
+                      <div>
+                        <textarea
+                          rows={Math.max(2, editCommentBody.split('\n').length)}
+                          value={editCommentBody}
+                          onChange={(e) => setEditCommentBody(e.target.value)}
+                          style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 6 }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                          <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setEditingCommentId(null)}>
+                            Cancel
+                          </button>
+                          <button
+                            className="btn btn-primary"
+                            style={{ padding: '2px 8px', fontSize: 12 }}
+                            onClick={saveEditComment}
+                            disabled={commentBusy || !editCommentBody.trim()}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{c.body}</div>
+                    )}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginTop: 6,
+                        fontSize: 11,
+                        color: 'var(--text-dim)',
+                      }}
+                    >
+                      <span title={formatDateTime(c.created_at)}>{formatRelativeTime(c.created_at)}</span>
+                      {!isReadOnly && isOwn && !isEditing && (
+                        <span style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            onClick={() => startEditComment(c)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              font: 'inherit',
+                              fontSize: 11,
+                              color: 'var(--text-dim)',
+                              opacity: 0.6,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteComment(c.id)}
+                            disabled={commentBusy}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              font: 'inherit',
+                              fontSize: 11,
+                              color: 'var(--danger)',
+                              opacity: 0.6,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        </>
       )}
     </div>
   );

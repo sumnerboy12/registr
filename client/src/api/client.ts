@@ -9,6 +9,7 @@ import type {
   Plant,
   Job,
   JobAssignment,
+  JobComment,
   JobStatus,
   JobType,
 } from '../types';
@@ -94,6 +95,13 @@ export const api = {
     request<JobAssignment[]>(`/v1/jobs/${jobId}/assignments`, { method: 'POST', body: JSON.stringify(data) }),
   removeAssignment: (jobId: string, assignmentId: number) =>
     request<void>(`/v1/jobs/${jobId}/assignments/${assignmentId}`, { method: 'DELETE' }),
+  getJobComments: (jobId: string) => request<JobComment[]>(`/v1/jobs/${jobId}/comments`),
+  addJobComment: (jobId: string, body: string) =>
+    request<JobComment>(`/v1/jobs/${jobId}/comments`, { method: 'POST', body: JSON.stringify({ body }) }),
+  updateJobComment: (jobId: string, commentId: number, body: string) =>
+    request<JobComment>(`/v1/jobs/${jobId}/comments/${commentId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
+  deleteJobComment: (jobId: string, commentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/comments/${commentId}`, { method: 'DELETE' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

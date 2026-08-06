@@ -269,4 +269,65 @@ router.delete('/:id/assignments/:assignmentId', requireAuth, requireWrite, (req,
   res.status(204).end();
 });
 
+// Most recent first.
+router.get('/:id/comments', requireAuthOrApiKey, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+  const rows = db
+    .prepare(
+      `SELECT id, author_person_id, author_name, body, created_at FROM job_comments
+       WHERE job_id = ? ORDER BY created_at DESC, id DESC`
+    )
+    .all(job.id);
+  res.json(rows);
+});
+
+router.post('/:id/comments', requireAuth, requireWrite, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+
+  const body = (req.body.body ?? '').trim();
+  if (!body) return res.status(400).json({ error: 'Comment body is required' });
+
+  const result = db
+    .prepare('INSERT INTO job_comments (job_id, author_person_id, author_name, body) VALUES (?, ?, ?, ?)')
+    .run(job.id, req.person.id, req.person.name, body);
+  const row = db
+    .prepare('SELECT id, author_person_id, author_name, body, created_at FROM job_comments WHERE id = ?')
+    .get(result.lastInsertRowid);
+  res.status(201).json(row);
+});
+
+// Own comments only — a break-glass admin (author_person_id NULL) can only
+// edit/delete other NULL-authored comments, which is fine since there's
+// only ever one such account.
+router.patch('/:id/comments/:commentId', requireAuth, requireWrite, (req, res) => {
+  const comment = db
+    .prepare('SELECT author_person_id FROM job_comments WHERE id = ? AND job_id = ?')
+    .get(Number(req.params.commentId), req.params.id);
+  if (!comment) return res.status(404).json({ error: 'not found' });
+  if (comment.author_person_id !== req.person.id) {
+    return res.status(403).json({ error: 'You can only edit your own comments' });
+  }
+  const body = (req.body.body ?? '').trim();
+  if (!body) return res.status(400).json({ error: 'Comment body is required' });
+  db.prepare('UPDATE job_comments SET body = ? WHERE id = ?').run(body, Number(req.params.commentId));
+  const row = db
+    .prepare('SELECT id, author_person_id, author_name, body, created_at FROM job_comments WHERE id = ?')
+    .get(Number(req.params.commentId));
+  res.json(row);
+});
+
+router.delete('/:id/comments/:commentId', requireAuth, requireWrite, (req, res) => {
+  const comment = db
+    .prepare('SELECT author_person_id FROM job_comments WHERE id = ? AND job_id = ?')
+    .get(Number(req.params.commentId), req.params.id);
+  if (!comment) return res.status(404).json({ error: 'not found' });
+  if (comment.author_person_id !== req.person.id) {
+    return res.status(403).json({ error: 'You can only delete your own comments' });
+  }
+  db.prepare('DELETE FROM job_comments WHERE id = ?').run(Number(req.params.commentId));
+  res.status(204).end();
+});
+
 export default router;

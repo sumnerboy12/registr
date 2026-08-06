@@ -111,6 +111,21 @@ CREATE TABLE IF NOT EXISTS job_assignments (
   UNIQUE(job_id, person_id, role)
 );
 
+-- One row per comment on a job, rendered as a message timeline (oldest
+-- first). author_name is a snapshot taken at post time — stays accurate
+-- even if the person is later renamed or removed — while author_person_id
+-- is kept too so the UI can still link back to them while they still exist.
+-- author_person_id is NULL for the break-glass admin login, which has no
+-- person record (see middleware/auth.js's req.person).
+CREATE TABLE IF NOT EXISTS job_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  author_person_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+  author_name TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Server-to-server credentials, one per consuming app. Only the hash is stored.
 CREATE TABLE IF NOT EXISTS api_keys (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,4 +144,5 @@ CREATE INDEX IF NOT EXISTS idx_jobs_type ON jobs(job_type);
 CREATE INDEX IF NOT EXISTS idx_jobs_updated ON jobs(updated_at);
 CREATE INDEX IF NOT EXISTS idx_job_assignments_job ON job_assignments(job_id);
 CREATE INDEX IF NOT EXISTS idx_job_assignments_person ON job_assignments(person_id);
+CREATE INDEX IF NOT EXISTS idx_job_comments_job ON job_comments(job_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_app ON api_keys(app);
