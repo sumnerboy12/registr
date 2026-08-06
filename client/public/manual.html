@@ -356,6 +356,7 @@
       <li><a href="#plant">Plant</a></li>
       <li><a href="#login-access">Login type &amp; app access</a></li>
       <li><a href="#api-keys">API keys</a></li>
+      <li><a href="#reports">Reports</a></li>
       <li><a href="#importing">Importing &amp; exporting</a></li>
       <li><a href="#data">Your data</a></li>
       <li><a href="#reference">Quick reference</a></li>
@@ -382,8 +383,8 @@
       <p>
         Open Registr in a browser and you'll land on the login screen. If your
         organisation's Microsoft 365 identity provider is connected, a
-        <strong>Sign in with SSO</strong> button leads — that's the everyday path. Below it,
-        a <strong>Sign in as admin instead</strong> link reveals a password field for the
+        <strong>Sign in with SSO</strong> button leads — that's the everyday path. A small
+        <strong>Admin</strong> link, off to the side, reveals a password field for the
         break-glass login. If SSO isn't connected, that password field shows directly.
       </p>
       <p>
@@ -432,85 +433,159 @@
         never drifts out of sync with what's printed on paperwork, invoices, and so on.
       </p>
       <p class="dim">
-        Codes are generated automatically: <strong>YYXX</strong> for a Contract job (e.g.
-        "2601" — the year, then the next unused number that year) or
-        <strong>MYYXX</strong> for Minor Works (e.g. "M2601") — each type counts its own
-        sequence, so a Contract and a Minor Works job created the same year can both be
-        "…01". Only admins can override the suggested code, and only while creating the job.
+        Codes are generated automatically: <strong>YYXXX</strong> for a Contract job (e.g.
+        "26001" — the year, then the next unused number that year), <strong>MYYXXX</strong>
+        for Minor Works (e.g. "M26001"), or <strong>RYYXXX</strong> for Remedial (e.g.
+        "R26001") — each type counts its own sequence, so a Contract, a Minor Works and a
+        Remedial job created the same year can all be "…001". Only admins can override the
+        suggested code, and only while creating the job.
       </p>
       <p class="dim">
         A job's own page lives at a URL built straight from its code (e.g.
-        <code class="path">/jobs/2601</code>), so it's safe to type, bookmark or paste one
+        <code class="path">/jobs/26001</code>), so it's safe to type, bookmark or paste one
         into an email or another system without looking anything up first — the code being
-        locked in for good (see below) is exactly what makes that safe to rely on.
+        locked in for good is exactly what makes that safe to rely on.
       </p>
 
       <h3>Type and status</h3>
       <p>
-        Every job is either a <strong>Contract</strong> or <strong>Minor Works</strong>,
-        and carries one status:
+        Every job is a <strong>Contract</strong>, <strong>Minor Works</strong> or
+        <strong>Remedial</strong> job, and carries one status:
       </p>
       <div class="status-pills">
         <span class="status-pill">Tendering</span>
         <span class="status-pill">Awarded</span>
-        <span class="status-pill">Active</span>
+        <span class="status-pill">In Progress</span>
         <span class="status-pill">On Hold</span>
         <span class="status-pill">Practical Completion</span>
-        <span class="status-pill">Closed</span>
+        <span class="status-pill">Awaiting Retentions</span>
+        <span class="status-pill">Completed</span>
+        <span class="status-pill">Lost</span>
       </div>
       <p class="dim">
-        Registr never hard-deletes a job — <strong>Closed</strong> is how one is
-        archived. Closed jobs drop out of the default list and search, but aren't gone;
-        tick <span class="kbd">All statuses</span> off the status filter, or ask for
-        archived ones specifically, to see them again.
+        Registr never hard-deletes a job — <strong>Completed</strong> or
+        <strong>Lost</strong> is how one is archived. <strong>Practical Completion</strong>
+        and <strong>Awaiting Retentions</strong> are the retentions-scheme pair and only make
+        sense on Contract jobs — they're hidden from a Minor Works or Remedial job's own
+        Status field, and from the status filter/board unless Contract is part of the current
+        Type selection (see "Filtering and the Board view" below).
       </p>
+      <div class="callout">
+        <span class="label">There's no delete</span>
+        <p>
+          A job can't be deleted from Registr, by anyone — <strong>Completed</strong>/
+          <strong>Lost</strong> is the only way to archive one that's done or didn't happen.
+        </p>
+      </div>
 
       <h3>Working with a job</h3>
       <ol class="steps">
-        <li>Click <span class="kbd">+ New Job</span> — name is the only field required up
-          front; code is filled in for you (see above) and updates if you change Type before
-          saving. Site address, client, status, value and notes stay optional.</li>
+        <li>Click <span class="kbd">+ Add Job</span> — name is the only field required up
+          front; code is filled in for you (see above). Site address, client, contact,
+          status, value and notes stay optional.</li>
         <li>Click any job in the list to open its detail page and edit any of those
-          fields, including re-linking its client or changing its status — except Code and
-          Type, which are locked as soon as the job is created (see below).</li>
-        <li><strong>Value</strong> is free-form and independent of type — leave it
-          blank while a job's still tendering, or whenever there isn't a fixed
-          figure yet, but a minor works job can carry one too.</li>
+          fields, including re-linking its client or changing its status — except Code,
+          which is locked as soon as the job is created (<strong>Type</strong> can still
+          change later, e.g. a job quoted as Minor Works that turns out to need a full
+          Contract — its code's prefix just stops matching, which is cosmetic only).</li>
+        <li>No client in the list yet? Leave <strong>Client</strong> blank and a
+          <strong>Client name</strong> field appears — a free-text placeholder for a
+          prospect, cleared automatically the moment you link a real client instead. A job
+          also carries its own <strong>Contact name</strong>/<strong>Contact email</strong>,
+          independent of the linked client's own contact details.</li>
+        <li><strong>Value</strong> is a currency field, free-form and independent of type —
+          leave it blank while a job's still tendering, or whenever there isn't a fixed
+          figure yet. It's hidden entirely (not just optional) on a <strong>Remedial</strong>
+          job, since remedial work isn't billed as one fixed sum.</li>
       </ol>
       <div class="callout">
-        <span class="label">Code and Type are locked once created</span>
+        <span class="label">Code is locked once created</span>
         <p>
-          Neither can be changed after the job is saved, by anyone — not even an admin;
-          delete and recreate the job if one was genuinely wrong. While still creating a new
-          job, Editors and read-only users see the auto-filled code but can't change it —
-          only an admin can type over the suggestion. Type has no such restriction while
-          creating: anyone with write access can pick it, it just can't be changed afterwards.
+          It can't be changed after the job is saved, by anyone — not even an admin. While
+          still creating a new job, Editors and read-only users see the auto-filled code but
+          can't change it — only an admin can type over the suggestion.
         </p>
       </div>
 
       <h3>Assignments</h3>
       <p>
-        A job's detail page also lists who's assigned to it and in what role —
-        <strong>Project Manager</strong>, <strong>Site Supervisor</strong>,
-        <strong>Estimator</strong> or <strong>QS</strong>. Pick a person (from active People) and a role and click
-        <span class="kbd">Add</span>; the same person can hold more than one role on the same
-        job, but not the same role twice. <span class="kbd">Remove</span> next to any row
-        takes them off that role.
+        A job's detail page shows who's assigned to it and in what role, as a row of compact
+        pills — <strong>Project Manager</strong>, <strong>Site Supervisor</strong>,
+        <strong>Estimator</strong> or <strong>QS</strong> — each linking to a
+        <code class="path">mailto:</code> for that person if they have an email on file.
+        Click <span class="kbd">Add role</span> to pick a person (from active People) and a
+        role; the same person can hold more than one role on the same job, but not the same
+        role twice. The <strong>×</strong> on any pill removes that assignment.
       </p>
-      <p class="dim">
-        Search filters by code, name or client; the status and type dropdowns narrow the list
-        further. The list is always sorted by code.
+
+      <h3>Comments</h3>
+      <p>
+        Each job has its own comment thread, furthest down its detail page — a running,
+        timestamped conversation rather than a single notes field. Your own comments show
+        tinted and right-aligned to tell them apart from everyone else's at a glance.
+        <span class="kbd">Edit</span> and <span class="kbd">Delete</span> only appear on
+        comments you posted yourself; anyone with write access can post a new one.
+      </p>
+
+      <h3>Attachments</h3>
+      <p>
+        <span class="kbd">+ Add</span> under Attachments uploads a file of any kind against
+        the job — a site photo, a signed PDF, a spreadsheet, whatever's relevant. Images get
+        an inline thumbnail; anything else just shows its name, size, who uploaded it and
+        when. <span class="kbd">Delete</span> removes one.
+      </p>
+      <div class="callout warn">
+        <span class="label">Attachments live on disk, not in the database</span>
+        <p>
+          Unlike everything else in Registr, attachment files are stored under
+          <code class="path">data/attachments/</code> next to the SQLite database, not
+          inside it. A backup that only copies <code class="path">registr.db</code> misses
+          them — back up the whole <code class="path">data/</code> folder (see
+          <a href="#data">chapter 10</a>).
+        </p>
+      </div>
+
+      <h3>Filtering and the Board view</h3>
+      <p>
+        Search filters by code, name or client. The <strong>status</strong> filter is a
+        multi-select checklist with <span class="kbd">All</span>/<span class="kbd">Active</span>/
+        <span class="kbd">None</span> shortcuts (<em>Active</em> excludes On Hold, Completed
+        and Lost); the <strong>type</strong> filter is three toggle buttons, Contract/Minor
+        Works/Remedial. Both remember your last selection per browser. The list itself sorts
+        by client name, then code.
+      </p>
+      <p>
+        <span class="kbd">List</span>/<span class="kbd">Board</span> switches between a
+        table and a <strong>kanban board</strong> — one column per status, jobs as cards you
+        can drag between columns to change status directly (saved immediately; a rejected
+        change snaps the card back). Dragging a card to the board's left or right edge
+        auto-scrolls it into view; clicking and dragging empty board space pans around
+        instead of needing a visible scrollbar. Your last-used view, and both filters, are
+        remembered per browser.
+      </p>
+
+      <h3>Importing and exporting</h3>
+      <p>
+        <span class="kbd">Import</span> and <span class="kbd">Export</span> work the same
+        way as People/Clients/Plant (see <a href="#importing">chapter 9</a>) — a row matches
+        an existing job by <strong>code</strong>, not name. A code starting with
+        <strong>M</strong> or <strong>R</strong> sets Minor Works/Remedial type regardless of
+        what the Type column says; common status synonyms are recognised too ("Pipeline"/
+        "Quoted" → Tendering, "Confirmed" → Awarded). The four assignment-role columns
+        (Project Manager, Site Supervisor, Estimator, QS) match a person by name — a name
+        that doesn't match any active person is silently skipped, same as an unmatched
+        Client.
       </p>
 
       <h3>ThinkSafe</h3>
       <p class="dim">
         A <strong>ThinkSafe</strong> badge next to a job's name means that job's code has a
         site configured in ThinkSafe (Wayman's H&amp;S system) — registr checks in the
-        background every 15 minutes, or immediately via <span class="kbd">Sync now</span>
-        next to the List/Board toggle (this same sync also covers People's own ThinkSafe
-        badge — see <a href="#people">chapter 4</a>). Read-only: nothing done in registr
-        ever changes anything in ThinkSafe. Only shows up at all once whoever manages the
-        server has set <span class="kbd">THINKSAFE_API_URL</span>/
+        background every 15 minutes (this same sync also covers People's own ThinkSafe
+        badge — see <a href="#people">chapter 4</a>); there's no manual refresh in the UI, so
+        a brand-new site can take up to 15 minutes to show up. Read-only: nothing done in
+        registr ever changes anything in ThinkSafe. Only shows up at all once whoever manages
+        the server has set <span class="kbd">THINKSAFE_API_URL</span>/
         <span class="kbd">THINKSAFE_API_KEY</span> — see the README.
       </p>
     </section>
@@ -545,7 +620,7 @@
         above the list to see them.
         <span class="kbd">Import</span> pastes a client list in from a spreadsheet,
         <span class="kbd">Export</span> downloads whatever's currently listed and searched —
-        see <a href="#importing">chapter 8</a>.
+        see <a href="#importing">chapter 9</a>.
       </p>
     </section>
 
@@ -567,7 +642,10 @@
             from a job's own assignment roles (chapter 2).</td></tr>
           <tr><td class="name">Phone</td><td>Optional.</td></tr>
           <tr><td class="name">Date of birth / Employment start &amp; end date</td><td>Optional
-            record-keeping fields.</td></tr>
+            record-keeping fields — but not purely passive: every day at 3am, Registr
+            automatically deactivates anyone whose employment end date has passed (which
+            also revokes their SSO access), and emails a summary to every admin with an
+            email on file if the server's mail is configured.</td></tr>
           <tr><td class="name">Employment type</td><td><strong>Wage</strong>,
             <strong>Temp</strong> or <strong>Salary</strong> — a payroll/HR classification.
             Registr is just the master list of WRS employees; it has no bearing on whether
@@ -586,7 +664,7 @@
         tick <span class="kbd">Show inactive</span> to see them — and a second dropdown
         narrows the list to one employment type. <span class="kbd">Import</span> and
         <span class="kbd">Export</span> work the same way as on Clients — see
-        <a href="#importing">chapter 8</a>. Imported people default to the <strong>None</strong>
+        <a href="#importing">chapter 9</a>. Imported people default to the <strong>None</strong>
         login type (see the next chapter), since a bulk import is usually a contact list, not a
         batch of new logins.
       </p>
@@ -595,12 +673,12 @@
       <p class="dim">
         A <strong>ThinkSafe</strong> badge next to a person's name means their name matches a
         user in ThinkSafe (Wayman's H&amp;S system), checked case-insensitively — registr
-        checks in the background every 15 minutes, or immediately via
-        <span class="kbd">Sync now</span> above the list (the same sync as the Jobs screen's
-        own ThinkSafe badge — see <a href="#jobs">chapter 2</a>). Read-only: nothing done in
-        registr ever changes anything in ThinkSafe. Only shows up at all once whoever manages
-        the server has set <span class="kbd">THINKSAFE_API_URL</span>/
-        <span class="kbd">THINKSAFE_API_KEY</span> — see the README.
+        checks in the background every 15 minutes (the same sync as the Jobs screen's own
+        ThinkSafe badge — see <a href="#jobs">chapter 2</a>); there's no manual refresh in the
+        UI. Read-only: nothing done in registr ever changes anything in ThinkSafe. Only shows
+        up at all once whoever manages the server has set
+        <span class="kbd">THINKSAFE_API_URL</span>/<span class="kbd">THINKSAFE_API_KEY</span>
+        — see the README.
       </p>
     </section>
 
@@ -635,7 +713,7 @@
       <p class="dim">
         Inactive plant is hidden by default — tick <span class="kbd">Show inactive</span> to see
         it. <span class="kbd">Import</span> and <span class="kbd">Export</span> work the same
-        way as People/Clients — see <a href="#importing">chapter 8</a>.
+        way as People/Clients — see <a href="#importing">chapter 9</a>.
       </p>
     </section>
 
@@ -721,13 +799,31 @@
       </div>
     </section>
 
-    <section class="chapter" id="importing">
+    <section class="chapter" id="reports">
       <div class="chapter-num">08</div>
+      <h2>Reports</h2>
+      <p>
+        A growing menu of read-only summaries, separate from the day-to-day screens above —
+        reachable from <strong>Reports</strong> on the main toolbar. Everyone can view them,
+        regardless of role.
+      </p>
+      <h3>Job Value</h3>
+      <p>
+        Total job <strong>value</strong> (see <a href="#jobs">chapter 2</a>), and how many
+        jobs make up that total, broken down by <strong>type</strong> down the columns and
+        <strong>status</strong> along the rows — with a Total row and column. A blank cell
+        means no jobs exist in that combination; jobs with no value set are counted (the
+        number in brackets) but don't add to the total shown.
+      </p>
+    </section>
+
+    <section class="chapter" id="importing">
+      <div class="chapter-num">09</div>
       <h2>Importing &amp; exporting</h2>
       <p>
-        The People, Clients and Plant screens each have <span class="kbd">Import</span> and
-        <span class="kbd">Export</span> buttons for working with a spreadsheet you already
-        keep, instead of retyping everything by hand.
+        The Jobs, People, Clients and Plant screens each have <span class="kbd">Import</span>
+        and <span class="kbd">Export</span> buttons for working with a spreadsheet you
+        already keep, instead of retyping everything by hand.
       </p>
       <ol class="steps">
         <li>Select and copy the rows in Excel or Google Sheets — <strong>include the header
@@ -740,12 +836,13 @@
           unmapped.</li>
       </ol>
       <p class="dim">
-        A row matching an existing record — by email for People, by name for Clients/Plant —
-        or an earlier row in the same paste, is skipped as a <strong>duplicate</strong> rather
-        than re-created; the result summary counts these separately from actual failures. A row
-        that genuinely fails (e.g. a missing required field) is listed with the reason
-        afterwards; everything else still imports, so one bad row won't block the rest of the
-        batch.
+        A row matching an existing record — by email for People, by name for Clients/Plant,
+        by code for Jobs — or an earlier row in the same paste, is skipped as a
+        <strong>duplicate</strong> rather than re-created; the result summary counts these
+        separately from actual failures. A row that genuinely fails (e.g. a missing required
+        field) is listed with the reason afterwards; everything else still imports, so one bad
+        row won't block the rest of the batch. See <a href="#jobs">chapter 2</a> for Jobs
+        import's own quirks (code-prefix-implies-type, status synonyms, assignment columns).
       </p>
       <p class="dim">
         <span class="kbd">Export</span> downloads a CSV of whatever's currently listed and
@@ -755,28 +852,32 @@
         <span class="label">Doubles as backup/restore</span>
         <p>
           Export now covers every field on a record, not just the obvious ones, so re-importing
-          the same file reproduces each person/client/plant item faithfully — that's the
-          "restore" half. This is per-entity (People, Clients and Plant each export/import their
-          own CSV), not one combined whole-database file, and a restored record gets a new
-          internal ID — a person's app-access grants (chapter 6) aren't part of the export and
-          need re-setting by hand afterwards.
+          the same file reproduces each job/person/client/plant item faithfully — that's the
+          "restore" half. This is per-entity (Jobs, People, Clients and Plant each
+          export/import their own CSV), not one combined whole-database file, and a restored
+          record gets a new internal ID — a person's app-access grants (chapter 6), and a
+          job's comments/attachments, aren't part of the export and need re-setting by hand
+          afterwards.
         </p>
       </div>
     </section>
 
     <section class="chapter" id="data">
-      <div class="chapter-num">09</div>
+      <div class="chapter-num">10</div>
       <h2>Your data</h2>
       <p>
         Every job, person, client and API key lives in one SQLite database file on
-        whichever machine hosts Registr — there's no cloud copy behind it.
+        whichever machine hosts Registr — there's no cloud copy behind it. The one exception
+        is job <strong>attachments</strong> (see <a href="#jobs">chapter 2</a>), which live as
+        plain files alongside that database, not inside it.
       </p>
       <div class="callout danger">
         <span class="label">Back it up</span>
         <p>
-          Ask whoever manages the server to back up that database file periodically. If
-          the host machine is lost without a backup, the data goes with it — this is worth
-          confirming with them rather than assuming it's automatic.
+          Ask whoever manages the server to back up the whole data folder — the database file
+          and the attachments alongside it — periodically. If the host machine is lost without
+          a backup, the data goes with it — this is worth confirming with them rather than
+          assuming it's automatic.
         </p>
       </div>
       <p class="dim">
@@ -788,14 +889,14 @@
     </section>
 
     <section class="chapter" id="reference">
-      <div class="chapter-num">10</div>
+      <div class="chapter-num">11</div>
       <h2>Quick reference</h2>
       <div class="cheat-grid">
         <span class="kbd">Access</span><span class="action">SSO people list button (admin only) — grant or revoke sign-in to Registr and every other app, per person</span>
         <span class="kbd">SSO</span><span class="action">login type — signs in via M365, matched by email</span>
         <span class="kbd">None</span><span class="action">login type — can't sign in anywhere; email is still used for notifications</span>
         <span class="kbd">admin</span><span class="action">break-glass login — password only, set by the server's ADMIN_PASSWORD, not tied to any person</span>
-        <span class="kbd">Closed</span><span class="action">job status — how a job is archived; never hard-deleted</span>
+        <span class="kbd">Completed / Lost</span><span class="action">job statuses — how a job is archived; never hard-deleted</span>
         <span class="kbd">Employment type</span><span class="action">Wage / Temp / Salary — a payroll classification on People; doesn't decide rostr scheduling</span>
       </div>
     </section>

@@ -73,9 +73,15 @@ The SQLite database lives in a `data/` folder created next to
 persists across container restarts and rebuilds — back up that `data/`
 folder periodically, there is no other copy.
 
-**Schema changes ship with a migration** (see `server/src/db/index.js`) —
-Registr is a production system, so a code update never needs the database
-wiped or recreated.
+**There is currently no migration system.** `server/src/db/index.js` applies
+`schema.sql` via `CREATE TABLE IF NOT EXISTS`, which is a no-op against an
+existing database — so as things stand, a schema change (new column,
+changed status list, etc.) won't reach an already-populated production
+database on its own. Registr's database was reset to empty alongside the
+commit that removed the old migration system; once real data has landed on
+top of it again, the old pattern needs to come back — every `schema.sql`
+change from then on needs a matching migration in `server/src/db/index.js`,
+guarded by a `PRAGMA table_info`/`sqlite_master` check.
 
 ### Updating after a code change
 
@@ -103,7 +109,7 @@ This break-glass login isn't tied to any person record, so it's unaffected
 by anything you do under People — it's always there as a fallback, on top
 of SSO once that's configured (see below). Once SSO is set up, the login
 screen leads with "Sign in with SSO" and tucks the admin password form
-behind a "Sign in as admin instead" link, so the break-glass path stays out
+behind a small "Admin" link, so the break-glass path stays out
 of the way of routine day-to-day sign-in. Once you're in, add real people
 and, from the **Access** button on each SSO person's row, grant or revoke
 sign-in to Registr and every other app.
@@ -125,20 +131,30 @@ server. Leave it blank (or `production`) on the real deployment.
 ## How it works
 
 - **Jobs** — every job Registr tracks, identified by a human **code**,
-  generated automatically as `YYXX` for Contract jobs (e.g. "2601") or
-  `MYYXX` for Minor Works (e.g. "M2601") — `YY` is the year, `XX` the next
-  unused number that year, counted separately per type. Only admins can
-  override the suggested code, and only while creating the job — both code
-  and **type** (Contract or Minor Works) are locked for good as soon as the
-  job is saved, for every role including admin. Each job also carries a
-  **status** (Tendering / Awarded / Active / On Hold / Practical Completion
-  / Closed — Registr never hard-deletes a job, Closed is how one is
-  archived), an optional linked client, site address, value and notes,
-  plus a list of people **assigned** to it (Project Manager, Site
-  Supervisor, Estimator, QS — the same person can hold more than one role).
-  A job also shows a **ThinkSafe** badge if that job's code has a site
-  configured in ThinkSafe (Wayman's H&S system) — see "Integrating
-  ThinkSafe" below.
+  generated automatically as `YYXXX` for Contract jobs (e.g. "26001"),
+  `MYYXXX` for Minor Works (e.g. "M26001"), or `RYYXXX` for Remedial (e.g.
+  "R26001") — `YY` is the year, `XXX` the next unused number that year,
+  counted separately per type. Only admins can override the suggested code,
+  and only while creating the job — the **code** is locked for good as soon
+  as the job is saved, for every role including admin (**type** isn't: a
+  job originally quoted as Minor Works can later become a full Contract,
+  its code's prefix just stops matching — cosmetic, not functional). Each
+  job also carries a **status** — Tendering, Awarded, In Progress, On Hold,
+  Practical Completion, Awaiting Retentions, Completed, or Lost (Registr
+  never hard-deletes a job, Completed/Lost is how one is archived); the
+  retentions pair (Practical Completion, Awaiting Retentions) only applies
+  to Contract jobs. A job can link to a client, or carry a free-text
+  **client name** instead for a prospect not yet in Clients, plus its own
+  **contact name/email**, a site address, **value** (hidden for Remedial
+  jobs) and notes, a list of people **assigned** (Project Manager, Site
+  Supervisor, Estimator, QS — the same person can hold more than one role),
+  threaded **comments**, and **file attachments** (stored on disk under
+  `data/attachments/`, not in the SQLite database — back that folder up
+  too). The Jobs screen offers a **List** or **Board** (drag-and-drop
+  kanban, one column per status) view, multi-select Status/Type filters
+  (remembered per browser), and **Import**/**Export**. A job also shows a
+  **ThinkSafe** badge if that job's code has a site configured in ThinkSafe
+  (Wayman's H&S system) — see "Integrating ThinkSafe" below.
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)
@@ -157,7 +173,12 @@ server. Leave it blank (or `production`) on the real deployment.
   people default to the **None** login type, since a bulk import is usually
   a contact list, not a batch of new logins. A person also shows a
   **ThinkSafe** badge if their name matches a user in ThinkSafe — see
-  "Integrating ThinkSafe" below.
+  "Integrating ThinkSafe" below. Every day at 3am, Registr automatically
+  deactivates anyone whose **employment end date** has passed (which also
+  revokes their SSO access) and, if SMTP is configured, emails every admin
+  with an email on file a summary of who — see
+  `server/src/lib/employmentCheck.js`; admins can also trigger this check
+  on demand via `POST /api/v1/people/check-employment`.
 - **Plant** — Registr's master list of WRS-owned equipment/machinery (name,
   optional rego, notes, colour, active). Hired-in gear is deliberately not
   tracked here — that's a rostr-only concept, tied to a specific job and
@@ -173,16 +194,26 @@ server. Leave it blank (or `production`) on the real deployment.
   and costr use to ask Registr whether a signed-in email is allowed into
   that app. Generate one per app; the plaintext is shown once, at creation.
   Revoking deletes a key permanently.
+- **Reports** — a growing menu of read-only summaries, separate from the
+  day-to-day screens above. Currently just **Job Value**: total job value
+  (and job count) broken down by type and status, with row/column totals —
+  see `server/src/routes/reports.js`.
 
 **Import/Export doubles as backup/restore.** Each entity's Export CSV covers
 every field on that entity (not just the obvious ones), so re-importing the
 same file reproduces every record faithfully. A row matching an existing
-record (by email for People, by name for Clients/Plant) — or an earlier row
-in the same paste — is skipped as a duplicate rather than re-created, and
-reported separately from actual failures. This isn't a single combined
-"whole database" backup: People, Clients and Plant each export/import their
-own CSV, and a restore doesn't recreate a record's internal ID or (for
-People) its app-access grants — those need re-setting by hand afterwards.
+record (by email for People, by name for Clients/Plant, by **code** for
+Jobs) — or an earlier row in the same paste — is skipped as a duplicate
+rather than re-created, and reported separately from actual failures. This
+isn't a single combined "whole database" backup: People, Clients, Plant and
+Jobs each export/import their own CSV, and a restore doesn't recreate a
+record's internal ID, (for People) its app-access grants, or (for Jobs) its
+comments/attachments — those need re-setting by hand afterwards. Jobs
+import has a couple of its own quirks: a code starting with `M`/`R` forces
+Minor Works/Remedial type regardless of the Type column, common status
+synonyms are normalised ("Pipeline"/"Quoted" → Tendering, "Confirmed" →
+Awarded), and the four assignment-role columns resolve to a person by name,
+silently skipping a name that doesn't match any active person.
 
 ## Signing in with SSO (optional)
 
@@ -246,11 +277,11 @@ Registr fetches ThinkSafe's full site and user lists (there's no per-job or
 per-person endpoint cheap enough to call for every row on the Jobs/People
 lists) every 15 minutes in the background, caches which job codes have a
 site and which names have a user, and shows a **ThinkSafe** badge next to
-any match — see `server/src/lib/thinksafeSync.js`. A **Sync now** control
-(only shown once configured) on the Jobs and People toolbars re-fetches
-both immediately instead of waiting for the next tick — one shared sync
-behind the scenes, via `GET/POST /api/v1/thinksafe/status` and `/refresh`
-(see `server/src/routes/thinksafe.js`).
+any match — see `server/src/lib/thinksafeSync.js`. There's no manual
+refresh in the UI (the badge only ever updates on that 15-minute tick), but
+`GET/POST /api/v1/thinksafe/status` and `/refresh` (see
+`server/src/routes/thinksafe.js`) both still work if you want to trigger or
+check a sync some other way.
 
 Verified against a live key: pagination is offset-based (`limit`/`offset`/
 `returned`/`has_more`, not page numbers), each site's job number comes back
