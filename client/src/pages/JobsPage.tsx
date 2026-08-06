@@ -96,7 +96,7 @@ const JOB_TYPE_ROW_TINT: Record<JobType, string> = {
 };
 
 export default function JobsPage() {
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -325,15 +325,15 @@ export default function JobsPage() {
           <button className="btn" onClick={exportCsv}>
             Export
           </button>
+          {isAdmin && (
+            <button className="btn" onClick={() => setShowImport(true)}>
+              Import
+            </button>
+          )}
           {!isReadOnly && (
-            <>
-              <button className="btn" onClick={() => setShowImport(true)}>
-                Import
-              </button>
-              <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
-                + Add Job
-              </button>
-            </>
+            <button className="btn btn-primary" onClick={() => navigate('/jobs/new')}>
+              + Add Job
+            </button>
           )}
         </div>
       </div>

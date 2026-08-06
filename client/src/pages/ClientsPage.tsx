@@ -22,7 +22,7 @@ const CLIENT_IMPORT_FIELDS: ImportField[] = [
 ];
 
 export default function ClientsPage() {
-  const { isReadOnly } = useAuth();
+  const { isReadOnly, isAdmin } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
@@ -68,15 +68,15 @@ export default function ClientsPage() {
           <button className="btn" onClick={exportCsv}>
             Export
           </button>
+          {isAdmin && (
+            <button className="btn" onClick={() => setShowImport(true)}>
+              Import
+            </button>
+          )}
           {!isReadOnly && (
-            <>
-              <button className="btn" onClick={() => setShowImport(true)}>
-                Import
-              </button>
-              <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-                + Add Client
-              </button>
-            </>
+            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+              + Add Client
+            </button>
           )}
         </div>
       </div>

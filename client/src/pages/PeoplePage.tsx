@@ -101,15 +101,15 @@ export default function PeoplePage() {
           <button className="btn" onClick={exportCsv}>
             Export
           </button>
+          {isAdmin && (
+            <button className="btn" onClick={() => setShowImport(true)}>
+              Import
+            </button>
+          )}
           {!isReadOnly && (
-            <>
-              <button className="btn" onClick={() => setShowImport(true)}>
-                Import
-              </button>
-              <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-                + Add Person
-              </button>
-            </>
+            <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
+              + Add Person
+            </button>
           )}
         </div>
       </div>
