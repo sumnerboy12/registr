@@ -14,6 +14,8 @@ import type {
   JobStatus,
   JobType,
   JobValueSummaryRow,
+  ReportTypeOption,
+  ScheduledReport,
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -126,6 +128,22 @@ export const api = {
     request<void>(`/v1/jobs/${jobId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
   getJobValueSummary: () => request<JobValueSummaryRow[]>('/v1/reports/job-value'),
+
+  getReportTypes: () => request<ReportTypeOption[]>('/v1/scheduled-reports/report-types'),
+  getScheduledReports: () => request<ScheduledReport[]>('/v1/scheduled-reports'),
+  createScheduledReport: (
+    data: Partial<Pick<ScheduledReport, 'report_type' | 'enabled' | 'day_of_week' | 'time' | 'period'>> & {
+      recipient_person_ids: number[];
+    }
+  ) => request<ScheduledReport>('/v1/scheduled-reports', { method: 'POST', body: JSON.stringify(data) }),
+  updateScheduledReport: (
+    id: number,
+    data: Partial<Pick<ScheduledReport, 'report_type' | 'enabled' | 'day_of_week' | 'time' | 'period'>> & {
+      recipient_person_ids: number[];
+    }
+  ) => request<ScheduledReport>(`/v1/scheduled-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteScheduledReport: (id: number) => request<void>(`/v1/scheduled-reports/${id}`, { method: 'DELETE' }),
+  sendScheduledReportNow: (id: number) => request<{ sent: true }>(`/v1/scheduled-reports/${id}/send-now`, { method: 'POST' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

@@ -23,6 +23,8 @@ const navStyle = ({ isActive }: { isActive: boolean }) => ({
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const reportsItems =
+    user?.role === 'admin' ? [...REPORTS_ITEMS, { to: '/scheduled-reports', label: 'Scheduled Reports', divider: true }] : REPORTS_ITEMS;
   const [commit, setCommit] = useState<string | null>(null);
   const [env, setEnv] = useState<string | null>(null);
 
@@ -72,7 +74,7 @@ export default function Layout() {
           <NavLink to="/plant" style={navStyle}>
             Plant
           </NavLink>
-          <NavDropdown label="Reports" items={REPORTS_ITEMS} />
+          <NavDropdown label="Reports" items={reportsItems} />
           {user?.role === 'admin' && (
             <NavLink to="/api-keys" style={navStyle}>
               API Keys

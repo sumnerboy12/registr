@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dataDir } from './db/index.js';
 import { startThinkSafeSyncScheduler } from './lib/thinksafeSync.js';
 import { startEmploymentCheckScheduler } from './lib/employmentCheck.js';
+import { startScheduledReportsScheduler } from './lib/scheduledReportsScheduler.js';
 
 import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
@@ -20,6 +21,7 @@ import apiKeysRouter from './routes/apiKeys.js';
 import emailRouter from './routes/email.js';
 import thinksafeRouter from './routes/thinksafe.js';
 import reportsRouter from './routes/reports.js';
+import scheduledReportsRouter from './routes/scheduledReports.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -51,6 +53,7 @@ app.use('/api/v1/api-keys', apiKeysRouter);
 app.use('/api/v1/email', emailRouter);
 app.use('/api/v1/thinksafe', thinksafeRouter);
 app.use('/api/v1/reports', reportsRouter);
+app.use('/api/v1/scheduled-reports', scheduledReportsRouter);
 
 // Defaults to "production" so a deployment only shows the dev/test banner
 // (see client/src/components/EnvBadge.tsx) if someone deliberately opts in
@@ -81,3 +84,4 @@ app.listen(PORT, '0.0.0.0', () => {
 
 startThinkSafeSyncScheduler();
 startEmploymentCheckScheduler();
+startScheduledReportsScheduler();

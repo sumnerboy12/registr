@@ -9,6 +9,7 @@ import PeoplePage from './pages/PeoplePage';
 import PlantPage from './pages/PlantPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import JobValueReportPage from './pages/JobValueReportPage';
+import ScheduledReportsPage from './pages/ScheduledReportsPage';
 
 function Gate() {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ function Gate() {
         <Route path="plant" element={<PlantPage />} />
         <Route path="reports/job-value" element={<JobValueReportPage />} />
         {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
+        {user.role === 'admin' && <Route path="scheduled-reports" element={<ScheduledReportsPage />} />}
       </Route>
       {/* /login?error=... is a real URL (server-side OIDC-failure redirect) — once
           logged in there's no route for it, so send it back to the jobs list. */}

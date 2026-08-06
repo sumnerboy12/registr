@@ -144,6 +144,37 @@ CREATE TABLE IF NOT EXISTS job_attachments (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- One row per configured "run this report on a schedule and email it" job
+-- (see lib/reports/index.js for the report_type registry — empty for now,
+-- ported as infrastructure ahead of any actual report types). Multiple rows
+-- can share a report_type — e.g. two schedules with different days/
+-- recipients for the same report.
+CREATE TABLE IF NOT EXISTS scheduled_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  report_type TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  day_of_week INTEGER NOT NULL DEFAULT 1 CHECK (day_of_week BETWEEN 0 AND 6),
+  time TEXT NOT NULL DEFAULT '08:00',
+  period TEXT NOT NULL DEFAULT 'next_week' CHECK (period IN ('this_week', 'next_week', 'next_two_weeks')),
+  -- Calendar date (YYYY-MM-DD, server-local) this schedule last fired on —
+  -- see lib/scheduledReportsScheduler.js's shouldFireNow for why a single
+  -- date is enough (day_of_week is fixed per row).
+  last_sent_date TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- A real local FK, unlike rostr's own version of this table — registr is
+-- the people source of truth, so there's no remote id to re-resolve.
+CREATE TABLE IF NOT EXISTS scheduled_report_recipients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  scheduled_report_id INTEGER NOT NULL REFERENCES scheduled_reports(id) ON DELETE CASCADE,
+  person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  UNIQUE(scheduled_report_id, person_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_report_recipients_report ON scheduled_report_recipients(scheduled_report_id);
+
 -- Server-to-server credentials, one per consuming app. Only the hash is stored.
 CREATE TABLE IF NOT EXISTS api_keys (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

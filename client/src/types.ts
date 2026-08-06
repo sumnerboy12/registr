@@ -205,3 +205,31 @@ export interface JobValueSummaryRow {
   count: number;
   total_value: number;
 }
+
+export type ReportPeriod = 'this_week' | 'next_week' | 'next_two_weeks';
+
+// Empty registry for now (see server/src/lib/reports/index.js) — ported as
+// infrastructure ahead of any actual registr report types.
+export interface ReportTypeOption {
+  key: string;
+  label: string;
+}
+
+export interface ScheduledReportRecipient {
+  id: number;
+  name: string;
+  email: string | null;
+  role: string | null;
+}
+
+export interface ScheduledReport {
+  id: number;
+  report_type: string;
+  label: string;
+  enabled: boolean;
+  day_of_week: number;
+  time: string;
+  period: ReportPeriod;
+  last_sent_date: string | null;
+  recipients: ScheduledReportRecipient[];
+}

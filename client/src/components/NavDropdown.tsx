@@ -4,6 +4,9 @@ import { NavLink, useLocation } from 'react-router-dom';
 interface Item {
   to: string;
   label: string;
+  // Renders a separator line above this item — for setting an item apart
+  // from the rest of the list (e.g. an admin-only item at the bottom).
+  divider?: boolean;
 }
 
 export default function NavDropdown({ label, items }: { label: string; items: Item[] }) {
@@ -59,23 +62,25 @@ export default function NavDropdown({ label, items }: { label: string; items: It
           }}
         >
           {items.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              style={({ isActive: linkActive }) => ({
-                display: 'block',
-                padding: '8px 12px',
-                borderRadius: 4,
-                color: linkActive ? 'white' : 'var(--text)',
-                background: linkActive ? 'var(--nav-accent)' : 'transparent',
-                textDecoration: 'none',
-                fontWeight: linkActive ? 600 : 500,
-                fontSize: 14,
-              })}
-            >
-              {item.label}
-            </NavLink>
+            <div key={item.to}>
+              {item.divider && <div style={{ height: 1, background: 'var(--border)', margin: '4px 4px' }} />}
+              <NavLink
+                to={item.to}
+                onClick={() => setOpen(false)}
+                style={({ isActive: linkActive }) => ({
+                  display: 'block',
+                  padding: '8px 12px',
+                  borderRadius: 4,
+                  color: linkActive ? 'white' : 'var(--text)',
+                  background: linkActive ? 'var(--nav-accent)' : 'transparent',
+                  textDecoration: 'none',
+                  fontWeight: linkActive ? 600 : 500,
+                  fontSize: 14,
+                })}
+              >
+                {item.label}
+              </NavLink>
+            </div>
           ))}
         </div>
       )}
