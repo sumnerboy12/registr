@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { Client, Person, Job, JobComment, JobStatus, JobType } from '../types';
+import type { Client, Person, Job, JobAttachment, JobComment, JobStatus, JobType } from '../types';
 import { ASSIGNMENT_ROLE_LABELS, CONTRACT_ONLY_STATUSES, JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { useAuth } from '../auth/AuthContext';
 import ThinkSafeBadge from '../components/ThinkSafeBadge';
@@ -18,6 +18,12 @@ function formatCurrencyInput(raw: string): string {
   const [intPart, decPart] = raw.split('.');
   const formattedInt = intPart === '' ? '' : Number(intPart).toLocaleString('en-US');
   return decPart !== undefined ? `${formattedInt}.${decPart}` : formattedInt;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function JobDetailPage() {
@@ -56,6 +62,10 @@ export default function JobDetailPage() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editCommentBody, setEditCommentBody] = useState('');
+
+  const [attachments, setAttachments] = useState<JobAttachment[]>([]);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     api.getClients({ active: true }).then(setClients);
@@ -100,6 +110,7 @@ export default function JobDetailPage() {
       applyJobToForm(j);
       setLoading(false);
       api.getJobComments(j.id).then(setComments);
+      api.getJobAttachments(j.id).then(setAttachments);
     });
   }, [codeParam, isNew]);
 
@@ -200,6 +211,33 @@ export default function JobDetailPage() {
       setError(e instanceof Error ? e.message : 'Failed to delete comment');
     } finally {
       setCommentBusy(false);
+    }
+  };
+
+  const uploadAttachment = async (file: File) => {
+    if (!job) return;
+    setAttachmentBusy(true);
+    try {
+      const attachment = await api.uploadJobAttachment(job.id, file);
+      setAttachments((prev) => [attachment, ...prev]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to upload attachment');
+    } finally {
+      setAttachmentBusy(false);
+    }
+  };
+
+  const deleteAttachment = async (attachmentId: number) => {
+    if (!job) return;
+    if (!confirm('Delete this attachment? This can\'t be undone.')) return;
+    setAttachmentBusy(true);
+    try {
+      await api.deleteJobAttachment(job.id, attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete attachment');
+    } finally {
+      setAttachmentBusy(false);
     }
   };
 
@@ -392,6 +430,77 @@ export default function JobDetailPage() {
 
       {!isNew && job && (
         <>
+        <div className="card" style={{ padding: 20, marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <h2 style={{ fontSize: 16, margin: 0 }}>Attachments</h2>
+            {!isReadOnly && (
+              <>
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAttachment(file);
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  className="btn"
+                  style={{ padding: '2px 8px', fontSize: 12 }}
+                  onClick={() => attachmentInputRef.current?.click()}
+                  disabled={attachmentBusy}
+                >
+                  {attachmentBusy ? 'Uploading…' : '+ Add'}
+                </button>
+              </>
+            )}
+          </div>
+
+          {attachments.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>No attachments yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {attachments.map((a) => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  {a.content_type.startsWith('image/') && (
+                    <img
+                      src={`/api/v1/jobs/${job.id}/attachments/${a.id}`}
+                      alt=""
+                      style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
+                    />
+                  )}
+                  <a href={`/api/v1/jobs/${job.id}/attachments/${a.id}`} style={{ color: 'var(--accent)' }}>
+                    {a.original_name}
+                  </a>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
+                    · {formatFileSize(a.size)} · {a.uploaded_by_name} ·{' '}
+                    <span title={formatDateTime(a.created_at)}>{formatRelativeTime(a.created_at)}</span>
+                  </span>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => deleteAttachment(a.id)}
+                      disabled={attachmentBusy}
+                      style={{
+                        marginLeft: 'auto',
+                        background: 'none',
+                        border: 'none',
+                        padding: 0,
+                        fontSize: 11,
+                        color: 'var(--danger)',
+                        opacity: 0.6,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="card" style={{ padding: 20, marginTop: 20 }}>
           <h2 style={{ fontSize: 16, marginTop: 0 }}>Comments</h2>
 

@@ -126,6 +126,24 @@ CREATE TABLE IF NOT EXISTS job_comments (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- File attachments (photos, PDFs, etc). The actual bytes live on disk under
+-- data/attachments/<job_id>/<stored_filename> (see routes/jobs.js) — kept
+-- out of SQLite so the db file stays small and fast; `filename` is a
+-- generated, collision-proof name on disk, `original_name` is what the
+-- uploader called it (shown/downloaded-as in the UI). uploaded_by_name is a
+-- snapshot for the same reason job_comments.author_name is.
+CREATE TABLE IF NOT EXISTS job_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  uploaded_by_person_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+  uploaded_by_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Server-to-server credentials, one per consuming app. Only the hash is stored.
 CREATE TABLE IF NOT EXISTS api_keys (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,4 +163,5 @@ CREATE INDEX IF NOT EXISTS idx_jobs_updated ON jobs(updated_at);
 CREATE INDEX IF NOT EXISTS idx_job_assignments_job ON job_assignments(job_id);
 CREATE INDEX IF NOT EXISTS idx_job_assignments_person ON job_assignments(person_id);
 CREATE INDEX IF NOT EXISTS idx_job_comments_job ON job_comments(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_attachments_job ON job_attachments(job_id);
 CREATE INDEX IF NOT EXISTS idx_api_keys_app ON api_keys(app);

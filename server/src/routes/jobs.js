@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import db from '../db/index.js';
 import { requireAuth, requireWrite } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 import { hasThinkSafeSite } from '../lib/thinksafeSync.js';
+import { uploadAttachment, attachmentFilePath } from '../lib/attachments.js';
 
 const router = Router();
 
@@ -327,6 +329,62 @@ router.delete('/:id/comments/:commentId', requireAuth, requireWrite, (req, res) 
     return res.status(403).json({ error: 'You can only delete your own comments' });
   }
   db.prepare('DELETE FROM job_comments WHERE id = ?').run(Number(req.params.commentId));
+  res.status(204).end();
+});
+
+// Most recent first, metadata only — no file bytes in this response (see
+// GET /:id/attachments/:attachmentId for the actual download).
+router.get('/:id/attachments', requireAuthOrApiKey, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+  const rows = db
+    .prepare(
+      `SELECT id, original_name, content_type, size, uploaded_by_name, created_at FROM job_attachments
+       WHERE job_id = ? ORDER BY created_at DESC, id DESC`
+    )
+    .all(job.id);
+  res.json(rows);
+});
+
+router.post('/:id/attachments', requireAuth, requireWrite, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+
+  uploadAttachment(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const result = db
+      .prepare(
+        `INSERT INTO job_attachments (job_id, filename, original_name, content_type, size, uploaded_by_person_id, uploaded_by_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(job.id, req.file.filename, req.file.originalname, req.file.mimetype, req.file.size, req.person.id, req.person.name);
+    const row = db
+      .prepare('SELECT id, original_name, content_type, size, uploaded_by_name, created_at FROM job_attachments WHERE id = ?')
+      .get(result.lastInsertRowid);
+    res.status(201).json(row);
+  });
+});
+
+router.get('/:id/attachments/:attachmentId', requireAuthOrApiKey, (req, res) => {
+  const attachment = db
+    .prepare('SELECT * FROM job_attachments WHERE id = ? AND job_id = ?')
+    .get(Number(req.params.attachmentId), req.params.id);
+  if (!attachment) return res.status(404).json({ error: 'not found' });
+  const filePath = attachmentFilePath(attachment.job_id, attachment.filename);
+  res.download(filePath, attachment.original_name, (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'File missing on disk' });
+  });
+});
+
+router.delete('/:id/attachments/:attachmentId', requireAuth, requireWrite, (req, res) => {
+  const attachment = db
+    .prepare('SELECT * FROM job_attachments WHERE id = ? AND job_id = ?')
+    .get(Number(req.params.attachmentId), req.params.id);
+  if (!attachment) return res.status(404).json({ error: 'not found' });
+  db.prepare('DELETE FROM job_attachments WHERE id = ?').run(attachment.id);
+  fs.unlink(attachmentFilePath(attachment.job_id, attachment.filename), () => {});
   res.status(204).end();
 });
 

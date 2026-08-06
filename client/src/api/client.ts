@@ -9,6 +9,7 @@ import type {
   Plant,
   Job,
   JobAssignment,
+  JobAttachment,
   JobComment,
   JobStatus,
   JobType,
@@ -26,6 +27,22 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw err;
   }
   if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+// Separate from request() — a FormData body needs the browser to set its
+// own multipart Content-Type (with boundary), which request()'s hardcoded
+// 'application/json' header would stomp on.
+async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`/api${path}`, { method: 'POST', body: formData });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error(body.error || `Request failed: ${res.status}`) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 
@@ -102,6 +119,10 @@ export const api = {
     request<JobComment>(`/v1/jobs/${jobId}/comments/${commentId}`, { method: 'PATCH', body: JSON.stringify({ body }) }),
   deleteJobComment: (jobId: string, commentId: number) =>
     request<void>(`/v1/jobs/${jobId}/comments/${commentId}`, { method: 'DELETE' }),
+  getJobAttachments: (jobId: string) => request<JobAttachment[]>(`/v1/jobs/${jobId}/attachments`),
+  uploadJobAttachment: (jobId: string, file: File) => uploadFile<JobAttachment>(`/v1/jobs/${jobId}/attachments`, file),
+  deleteJobAttachment: (jobId: string, attachmentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

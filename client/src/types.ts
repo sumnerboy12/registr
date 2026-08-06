@@ -163,6 +163,15 @@ export interface JobComment {
   created_at: string;
 }
 
+export interface JobAttachment {
+  id: number;
+  original_name: string;
+  content_type: string;
+  size: number;
+  uploaded_by_name: string;
+  created_at: string;
+}
+
 export interface Job {
   id: string;
   code: string;
