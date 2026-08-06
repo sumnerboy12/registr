@@ -1,3 +1,5 @@
+[![Build and publish Docker image](https://github.com/sumnerboy12/registr/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sumnerboy12/registr/actions/workflows/docker-publish.yml)
+
 # Registr
 
 The system of record for job identity, plus the people and clients that
