@@ -13,6 +13,7 @@ import type {
   JobComment,
   JobStatus,
   JobType,
+  JobValueSummaryRow,
 } from '../types';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -123,6 +124,8 @@ export const api = {
   uploadJobAttachment: (jobId: string, file: File) => uploadFile<JobAttachment>(`/v1/jobs/${jobId}/attachments`, file),
   deleteJobAttachment: (jobId: string, attachmentId: number) =>
     request<void>(`/v1/jobs/${jobId}/attachments/${attachmentId}`, { method: 'DELETE' }),
+
+  getJobValueSummary: () => request<JobValueSummaryRow[]>('/v1/reports/job-value'),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

@@ -19,6 +19,7 @@ import jobsRouter from './routes/jobs.js';
 import apiKeysRouter from './routes/apiKeys.js';
 import emailRouter from './routes/email.js';
 import thinksafeRouter from './routes/thinksafe.js';
+import reportsRouter from './routes/reports.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/v1/jobs', jobsRouter);
 app.use('/api/v1/api-keys', apiKeysRouter);
 app.use('/api/v1/email', emailRouter);
 app.use('/api/v1/thinksafe', thinksafeRouter);
+app.use('/api/v1/reports', reportsRouter);
 
 // Defaults to "production" so a deployment only shows the dev/test banner
 // (see client/src/components/EnvBadge.tsx) if someone deliberately opts in

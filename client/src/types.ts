@@ -195,3 +195,13 @@ export interface Job {
   thinksafe_site: boolean;
   assignments?: JobAssignment[];
 }
+
+// One row per job_type/status combination that has at least one job — see
+// server/src/routes/reports.js. The client fills in zero for any
+// combination missing here (see JobValueReportPage.tsx).
+export interface JobValueSummaryRow {
+  job_type: JobType;
+  status: JobStatus;
+  count: number;
+  total_value: number;
+}

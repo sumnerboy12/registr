@@ -4,9 +4,12 @@ import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/client';
 import UserMenu from './UserMenu';
 import EnvBadge from './EnvBadge';
+import NavDropdown from './NavDropdown';
 
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
 const MANUAL_URL = '/manual.html';
+
+const REPORTS_ITEMS = [{ to: '/reports/job-value', label: 'Job Value' }];
 
 const navStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '10px 16px',
@@ -69,6 +72,7 @@ export default function Layout() {
           <NavLink to="/plant" style={navStyle}>
             Plant
           </NavLink>
+          <NavDropdown label="Reports" items={REPORTS_ITEMS} />
           {user?.role === 'admin' && (
             <NavLink to="/api-keys" style={navStyle}>
               API Keys
