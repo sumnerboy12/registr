@@ -114,22 +114,22 @@ export default function LoginPage() {
         {error && !adminFormVisible && <div style={{ color: 'var(--danger)', marginTop: 12 }}>{error}</div>}
 
         {status.oidcEnabled && status.adminLoginEnabled && !showAdminForm && (
-          <button
-            type="button"
-            onClick={() => setShowAdminForm(true)}
-            style={{
-              marginTop: 14,
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-dim)',
-              fontSize: 12,
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              width: '100%',
-            }}
-          >
-            Sign in as admin instead
-          </button>
+          <div style={{ marginTop: 14, textAlign: 'right' }}>
+            <button
+              type="button"
+              onClick={() => setShowAdminForm(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-dim)',
+                fontSize: 12,
+                textDecoration: 'underline',
+                cursor: 'pointer',
+              }}
+            >
+              Admin
+            </button>
+          </div>
         )}
       </div>
     </div>
