@@ -83,9 +83,14 @@ export default function JobDetailPage() {
 
   // If Type switches away from Contract while a retentions-scheme status is
   // set, that status no longer applies — fall back to Tendering rather than
-  // silently submitting an invalid combination.
+  // silently submitting an invalid combination. Persisted immediately too
+  // (not just the local field), same as any other edit on an existing job.
   useEffect(() => {
-    if (jobType !== 'contract' && CONTRACT_ONLY_STATUSES.includes(status)) setStatus('tendering');
+    if (jobType !== 'contract' && CONTRACT_ONLY_STATUSES.includes(status)) {
+      setStatus('tendering');
+      if (!isNew && job) patchField({ status: 'tendering' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobType, status]);
 
   // Populates every editable field from a loaded job.
@@ -114,36 +119,45 @@ export default function JobDetailPage() {
     });
   }, [codeParam, isNew]);
 
-  const handleCancel = () => navigate('/');
+  const handleBackToJobs = () => navigate('/');
 
-  const handleSave = async () => {
+  const handleCreate = async () => {
     if (!code.trim()) return setError('Job code is required');
     if (!name.trim()) return setError('Job name is required');
     setSaving(true);
     setError(null);
-    const data = {
-      code,
-      name,
-      client_id: clientId === '' ? null : clientId,
-      client_name: clientId === '' ? clientName || null : null,
-      contact_name: contactName || null,
-      contact_email: contactEmail || null,
-      job_type: jobType,
-      status,
-      site_address: siteAddress || null,
-      value: jobValue === '' ? null : Number(jobValue),
-      notes: notes || null,
-    };
     try {
-      if (isNew) {
-        await api.createJob(data);
-      } else {
-        await api.updateJob(job!.id, data);
-      }
+      await api.createJob({
+        code,
+        name,
+        client_id: clientId === '' ? null : clientId,
+        client_name: clientId === '' ? clientName || null : null,
+        contact_name: contactName || null,
+        contact_email: contactEmail || null,
+        job_type: jobType,
+        status,
+        site_address: siteAddress || null,
+        value: jobValue === '' ? null : Number(jobValue),
+        notes: notes || null,
+      });
       navigate('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
       setSaving(false);
+    }
+  };
+
+  // Every field on an existing job saves itself the moment it changes —
+  // there's no separate Save step (see handleCreate above for the one case
+  // that still needs one: a job that doesn't exist yet to patch).
+  const patchField = async (partial: Partial<Job>) => {
+    if (!job) return;
+    setError(null);
+    try {
+      const updated = await api.updateJob(job.id, partial);
+      setJob(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save');
     }
   };
 
@@ -250,13 +264,24 @@ export default function JobDetailPage() {
           <span>{isNew ? 'New Job' : job && `${job.code} - ${job.name}`}</span>
           {job?.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
         </h1>
+        <button className="btn" onClick={handleBackToJobs}>
+          Back to jobs
+        </button>
       </div>
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <div className="row">
           <div className="field">
             <label>Type</label>
-            <select value={jobType} onChange={(e) => setJobType(e.target.value as JobType)} disabled={isReadOnly}>
+            <select
+              value={jobType}
+              onChange={(e) => {
+                const next = e.target.value as JobType;
+                setJobType(next);
+                if (!isNew) patchField({ job_type: next });
+              }}
+              disabled={isReadOnly}
+            >
               {Object.entries(JOB_TYPE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -273,11 +298,28 @@ export default function JobDetailPage() {
         <div className="row">
           <div className="field">
             <label>Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} disabled={isReadOnly} />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => {
+                if (isNew) return;
+                if (!name.trim()) return setError('Job name is required');
+                patchField({ name: name.trim() });
+              }}
+              disabled={isReadOnly}
+            />
           </div>
           <div className="field">
             <label>Client</label>
-            <select value={clientId} onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : '')} disabled={isReadOnly}>
+            <select
+              value={clientId}
+              onChange={(e) => {
+                const next = e.target.value ? Number(e.target.value) : '';
+                setClientId(next);
+                if (!isNew) patchField({ client_id: next === '' ? null : next });
+              }}
+              disabled={isReadOnly}
+            >
               <option value="">—</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -291,30 +333,66 @@ export default function JobDetailPage() {
         {clientId === '' && (
           <div className="field">
             <label>Client name (not in the list above)</label>
-            <input value={clientName} onChange={(e) => setClientName(e.target.value)} disabled={isReadOnly} />
+            <input
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              onBlur={() => {
+                if (!isNew) patchField({ client_name: clientName || null });
+              }}
+              disabled={isReadOnly}
+            />
           </div>
         )}
 
         <div className="row">
           <div className="field">
             <label>Contact name</label>
-            <input value={contactName} onChange={(e) => setContactName(e.target.value)} disabled={isReadOnly} />
+            <input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              onBlur={() => {
+                if (!isNew) patchField({ contact_name: contactName || null });
+              }}
+              disabled={isReadOnly}
+            />
           </div>
           <div className="field">
             <label>Contact email</label>
-            <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} disabled={isReadOnly} />
+            <input
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              onBlur={() => {
+                if (!isNew) patchField({ contact_email: contactEmail || null });
+              }}
+              disabled={isReadOnly}
+            />
           </div>
         </div>
 
         <div className="field">
           <label>Site address</label>
-          <input value={siteAddress} onChange={(e) => setSiteAddress(e.target.value)} disabled={isReadOnly} />
+          <input
+            value={siteAddress}
+            onChange={(e) => setSiteAddress(e.target.value)}
+            onBlur={() => {
+              if (!isNew) patchField({ site_address: siteAddress || null });
+            }}
+            disabled={isReadOnly}
+          />
         </div>
 
         <div className="row">
           <div className="field">
             <label>Status</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)} disabled={isReadOnly}>
+            <select
+              value={status}
+              onChange={(e) => {
+                const next = e.target.value as JobStatus;
+                setStatus(next);
+                if (!isNew) patchField({ status: next });
+              }}
+              disabled={isReadOnly}
+            >
               {Object.entries(JOB_STATUS_LABELS)
                 .filter(([value]) => jobType === 'contract' || !CONTRACT_ONLY_STATUSES.includes(value as JobStatus))
                 .map(([value, label]) => (
@@ -358,6 +436,9 @@ export default function JobDetailPage() {
                     }
                     setJobValue(cleaned);
                   }}
+                  onBlur={() => {
+                    if (!isNew) patchField({ value: jobValue === '' ? null : Number(jobValue) });
+                  }}
                   disabled={isReadOnly}
                   style={{ paddingLeft: 20, width: '100%', boxSizing: 'border-box' }}
                 />
@@ -368,7 +449,15 @@ export default function JobDetailPage() {
 
         <div className="field">
           <label>Notes</label>
-          <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} disabled={isReadOnly} />
+          <textarea
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={() => {
+              if (!isNew) patchField({ notes: notes || null });
+            }}
+            disabled={isReadOnly}
+          />
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
@@ -411,19 +500,10 @@ export default function JobDetailPage() {
             )}
           </div>
 
-          {isReadOnly ? (
-            <button className="btn" style={{ flexShrink: 0 }} onClick={() => navigate('/')}>
-              Close
+          {isNew && !isReadOnly && (
+            <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleCreate} disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
             </button>
-          ) : (
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <button className="btn" onClick={handleCancel} disabled={saving}>
-                Cancel
-              </button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : 'Save'}
-              </button>
-            </div>
           )}
         </div>
       </div>
