@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { dataDir } from './db/index.js';
 import { startThinkSafeSyncScheduler } from './lib/thinksafeSync.js';
+import { startEmploymentCheckScheduler } from './lib/employmentCheck.js';
 
 import authRouter from './routes/auth.js';
 import peopleRouter from './routes/people.js';
@@ -77,3 +78,4 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 startThinkSafeSyncScheduler();
+startEmploymentCheckScheduler();

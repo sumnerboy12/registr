@@ -3,6 +3,7 @@ import db from '../db/index.js';
 import { requireAuth, requireWrite, requireAdmin } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 import { hasThinkSafeUser } from '../lib/thinksafeSync.js';
+import { deactivateExpiredEmployment } from '../lib/employmentCheck.js';
 
 const router = Router();
 
@@ -175,6 +176,17 @@ router.post('/:id/app-access', requireAuth, requireAdmin, (req, res) => {
 
   const access = db.prepare('SELECT app, role FROM person_app_access WHERE person_id = ? ORDER BY app').all(personId);
   res.status(201).json(access);
+});
+
+// Same check startEmploymentCheckScheduler() runs daily at 3am (see
+// lib/employmentCheck.js) — exposed here for on-demand/testing use.
+router.post('/check-employment', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const result = await deactivateExpiredEmployment();
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Blocks revoking your own registr access — the one grant that would lock
