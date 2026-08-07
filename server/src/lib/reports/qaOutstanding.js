@@ -2,11 +2,13 @@ import db from '../../db/index.js';
 import { CHECKLIST_ITEM_COMPLETE_STATUSES } from '../checklistStatuses.js';
 
 // Every job with at least one checklist item that isn't Done or Won't Do
-// yet, for the QA Outstanding report (routes/reports.js) — lets a PM or QA
-// reviewer see what's left across their jobs rather than opening each job
+// yet, for the QA Outstanding report (routes/reports.js) — lets whoever's
+// on a job, or a QA reviewer, see what's left rather than opening each job
 // individually. Optionally narrowed to one job status, one job type, and/or
-// just the jobs a given person is the project manager on.
-export function buildQaOutstandingRows({ status, jobType, mine, pmPersonId } = {}) {
+// just the jobs a given person is assigned to (any role — PM, site
+// supervisor, estimator, or QS — same breadth as the Jobs page's own "My
+// Jobs" filter, see routes/jobs.js).
+export function buildQaOutstandingRows({ status, jobType, mine, personId } = {}) {
   const completePlaceholders = CHECKLIST_ITEM_COMPLETE_STATUSES.map(() => '?').join(', ');
   const clauses = [`jci.status NOT IN (${completePlaceholders})`];
   const params = [...CHECKLIST_ITEM_COMPLETE_STATUSES];
@@ -19,16 +21,14 @@ export function buildQaOutstandingRows({ status, jobType, mine, pmPersonId } = {
     clauses.push('jobs.job_type = ?');
     params.push(jobType);
   }
-  // mine is a separate flag from pmPersonId (rather than inferring "filter
-  // requested" from pmPersonId being non-null) because the break-glass
-  // admin login has no person_id at all — pmPersonId is legitimately null
-  // there, and that still has to filter down to nothing, not turn into "no
-  // PM filter" the way `pmPersonId != null` would.
+  // mine is a separate flag from personId (rather than inferring "filter
+  // requested" from personId being non-null) because the break-glass admin
+  // login has no person_id at all — personId is legitimately null there,
+  // and that still has to filter down to nothing, not turn into "no
+  // assignment filter" the way `personId != null` would.
   if (mine) {
-    clauses.push(
-      `EXISTS (SELECT 1 FROM job_assignments ja WHERE ja.job_id = jobs.id AND ja.role = 'project_manager' AND ja.person_id = ?)`
-    );
-    params.push(pmPersonId);
+    clauses.push('EXISTS (SELECT 1 FROM job_assignments ja WHERE ja.job_id = jobs.id AND ja.person_id = ?)');
+    params.push(personId);
   }
 
   // DISTINCT collapses the join back down to one row per job — every

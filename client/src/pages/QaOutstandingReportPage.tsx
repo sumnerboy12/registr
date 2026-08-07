@@ -10,11 +10,13 @@ import {
   JOB_STATUS_LABELS,
   JOB_TYPE_LABELS,
 } from '../types';
+import { useAuth } from '../auth/AuthContext';
 
 const STATUSES = Object.keys(JOB_STATUS_LABELS) as JobStatus[];
 const TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 
 export default function QaOutstandingReportPage() {
+  const { user } = useAuth();
   const [jobs, setJobs] = useState<QaOutstandingJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<JobStatus | ''>('');
@@ -53,10 +55,12 @@ export default function QaOutstandingReportPage() {
             </option>
           ))}
         </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
-          <input type="checkbox" style={{ width: 'auto' }} checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
-          Only jobs where I'm the PM
-        </label>
+        {user?.id != null && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+            <input type="checkbox" style={{ width: 'auto' }} checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
+            My Jobs
+          </label>
+        )}
       </div>
 
       {loading ? (

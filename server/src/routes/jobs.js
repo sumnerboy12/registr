@@ -90,9 +90,20 @@ function generateJobCode(jobType) {
 }
 
 router.get('/', requireAuthOrApiKey, (req, res) => {
-  const { status, type, client_id, q, updated_since, include, archived } = req.query;
+  const { status, type, client_id, q, updated_since, include, archived, mine } = req.query;
   const clauses = [];
   const params = [];
+
+  // Assigned to any role (PM/site supervisor/estimator/QS), not just PM —
+  // broader than the QA Outstanding report's own "mine" filter (see
+  // lib/reports/qaOutstanding.js), which is deliberately PM-only. req.person
+  // is only set for a signed-in session (requireAuth), not an API-key
+  // caller (requireApiKey) — mine is simply ignored for the latter, since
+  // it's a UI-only filter no consuming app has a reason to send.
+  if (mine === '1' && req.person) {
+    clauses.push('EXISTS (SELECT 1 FROM job_assignments ja WHERE ja.job_id = jobs.id AND ja.person_id = ?)');
+    params.push(req.person.id);
+  }
 
   if (status) {
     if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });

@@ -96,7 +96,7 @@ const JOB_TYPE_ROW_TINT: Record<JobType, string> = {
 };
 
 export default function JobsPage() {
-  const { isReadOnly, isAdmin } = useAuth();
+  const { user, isReadOnly, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -107,6 +107,11 @@ export default function JobsPage() {
     loadPersistedFilter(STATUS_FILTER_KEY, ALL_STATUSES, ALL_STATUSES)
   );
   const [typeFilter, setTypeFilter] = useState<JobType[]>(() => loadPersistedFilter(TYPE_FILTER_KEY, ALL_JOB_TYPES, ALL_JOB_TYPES));
+  // Server-side (unlike status/type, which filter the already-fetched list
+  // client-side) — matches every role, not just PM, unlike the QA
+  // Outstanding report's own PM-only "mine". Not persisted like the other
+  // filters; always starts unchecked.
+  const [mineOnly, setMineOnly] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [view, setView] = useState<'list' | 'board'>(loadPersistedView);
   const [dragOverStatus, setDragOverStatus] = useState<JobStatus | null>(null);
@@ -213,9 +218,10 @@ export default function JobsPage() {
     setLoading(true);
     // archived: true so closed jobs are fetched too — status/type filtering
     // is all client-side now (see sortedJobs below), to support the
-    // multi-select Status/JobTypeFilterDropdowns.
+    // multi-select Status/JobTypeFilterDropdowns. mine, unlike those, is
+    // applied server-side (see routes/jobs.js).
     return api
-      .getJobs({ q: q || undefined, archived: true })
+      .getJobs({ q: q || undefined, archived: true, mine: mineOnly })
       .then((data) => {
         setJobs(data);
         setLoading(false);
@@ -228,7 +234,7 @@ export default function JobsPage() {
   }, []);
   useEffect(() => {
     loadJobs();
-  }, [q]);
+  }, [q, mineOnly]);
 
   const clientFor = (id: number | null) => (id != null ? clients.find((c) => c.id === id) : undefined);
 
@@ -343,6 +349,12 @@ export default function JobsPage() {
           <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
           <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />
           <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
+          {user?.id != null && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+              <input type="checkbox" style={{ width: 'auto' }} checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
+              My Jobs
+            </label>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div style={{ display: 'flex', gap: 4 }}>

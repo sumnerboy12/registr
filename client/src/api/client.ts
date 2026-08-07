@@ -102,13 +102,14 @@ export const api = {
   revokeAppAccess: (personId: number, app: string) =>
     request<void>(`/v1/people/${personId}/app-access/${app}`, { method: 'DELETE' }),
 
-  getJobs: (params?: { status?: JobStatus; type?: JobType; client_id?: number; q?: string; archived?: boolean }) => {
+  getJobs: (params?: { status?: JobStatus; type?: JobType; client_id?: number; q?: string; archived?: boolean; mine?: boolean }) => {
     const qs = new URLSearchParams();
     if (params?.status) qs.set('status', params.status);
     if (params?.type) qs.set('type', params.type);
     if (params?.client_id) qs.set('client_id', String(params.client_id));
     if (params?.q) qs.set('q', params.q);
     if (params?.archived) qs.set('archived', '1');
+    if (params?.mine) qs.set('mine', '1');
     const suffix = qs.toString() ? `?${qs}` : '';
     return request<Job[]>(`/v1/jobs${suffix}`);
   },
