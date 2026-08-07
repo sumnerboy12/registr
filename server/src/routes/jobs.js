@@ -76,22 +76,23 @@ function publicJob(row, { includeAssignments } = {}) {
   return job;
 }
 
-// Contract: YYXXX (e.g. "26001"). Minor works: MYYXXX (e.g. "M26001").
-// Remedial: RYYXXX (e.g. "R26001") — same shape, just prefixed, and counted
-// separately: a contract/minor works/remedial job created the same year
-// can all be "…001". XXX is the lowest unused number for that year/type,
-// looking at every job ever coded that year (including Closed) so a number
-// is never reused once assigned.
-const TYPE_PREFIXES = { minor_works: 'M', remedial: 'R' };
+// Contract: CYYXXX (e.g. "C26001"). Minor works: MYYXXX (e.g. "M26001").
+// Remedial: RYYXXX (e.g. "R26001") — same shape, just prefixed. XXX is one
+// shared sequence across all three types for that year (not counted
+// separately per type — see the one-time renumbering migration in
+// db/index.js), looking at every job ever coded that year (including
+// Closed) so a number is never reused once assigned.
+const TYPE_PREFIXES = { contract: 'C', minor_works: 'M', remedial: 'R' };
+const CODE_RE = /^[CMR]?(\d{2})(\d{3})$/;
 function generateJobCode(jobType) {
   const yy = String(new Date().getFullYear() % 100).padStart(2, '0');
-  const prefix = `${TYPE_PREFIXES[jobType] ?? ''}${yy}`;
-  const rows = db.prepare('SELECT code FROM jobs WHERE code LIKE ?').all(`${prefix}%`);
+  const rows = db.prepare('SELECT code FROM jobs').all();
   let max = 0;
   for (const { code } of rows) {
-    const suffix = code.slice(prefix.length);
-    if (/^\d{3}$/.test(suffix)) max = Math.max(max, Number(suffix));
+    const m = CODE_RE.exec(code);
+    if (m && m[1] === yy) max = Math.max(max, Number(m[2]));
   }
+  const prefix = `${TYPE_PREFIXES[jobType] ?? ''}${yy}`;
   return `${prefix}${String(max + 1).padStart(3, '0')}`;
 }
 

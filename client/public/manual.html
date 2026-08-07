@@ -433,16 +433,17 @@
         never drifts out of sync with what's printed on paperwork, invoices, and so on.
       </p>
       <p class="dim">
-        Codes are generated automatically: <strong>YYXXX</strong> for a Contract job (e.g.
-        "26001" — the year, then the next unused number that year), <strong>MYYXXX</strong>
+        Codes are generated automatically: <strong>CYYXXX</strong> for a Contract job (e.g.
+        "C26001" — the year, then the next unused number that year), <strong>MYYXXX</strong>
         for Minor Works (e.g. "M26001"), or <strong>RYYXXX</strong> for Remedial (e.g.
-        "R26001") — each type counts its own sequence, so a Contract, a Minor Works and a
-        Remedial job created the same year can all be "…001". Only admins can override the
-        suggested code, and only while creating the job.
+        "R26001") — all three types share one sequence, so the number alone tells you
+        creation order regardless of type; a Contract, a Minor Works and a Remedial job
+        created the same year never collide on the same number. Only admins can override
+        the suggested code, and only while creating the job.
       </p>
       <p class="dim">
         A job's own page lives at a URL built straight from its code (e.g.
-        <code class="path">/jobs/26001</code>), so it's safe to type, bookmark or paste one
+        <code class="path">/jobs/C26001</code>), so it's safe to type, bookmark or paste one
         into an email or another system without looking anything up first — the code being
         locked in for good is exactly what makes that safe to rely on.
       </p>

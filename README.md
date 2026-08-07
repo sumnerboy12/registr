@@ -133,10 +133,12 @@ server. Leave it blank (or `production`) on the real deployment.
 ## How it works
 
 - **Jobs** — every job Registr tracks, identified by a human **code**,
-  generated automatically as `YYXXX` for Contract jobs (e.g. "26001"),
+  generated automatically as `CYYXXX` for Contract jobs (e.g. "C26001"),
   `MYYXXX` for Minor Works (e.g. "M26001"), or `RYYXXX` for Remedial (e.g.
   "R26001") — `YY` is the year, `XXX` the next unused number that year,
-  counted separately per type. Only admins can override the suggested code,
+  shared across all three types (not counted separately per type) so the
+  number alone tells you creation order regardless of type. Only admins can
+  override the suggested code,
   and only while creating the job — the **code** is locked for good as soon
   as the job is saved, for every role including admin (**type** isn't: a
   job originally quoted as Minor Works can later become a full Contract,
