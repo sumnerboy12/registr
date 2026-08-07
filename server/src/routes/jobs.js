@@ -95,9 +95,9 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
   const params = [];
 
   // Assigned to any role (PM/site supervisor/estimator/QS), not just PM —
-  // broader than the QA Outstanding report's own "mine" filter (see
-  // lib/reports/qaOutstanding.js), which is deliberately PM-only. req.person
-  // is only set for a signed-in session (requireAuth), not an API-key
+  // same breadth as the QA Check report's own "mine" filter (see
+  // lib/reports/qaOutstanding.js). req.person is only set for a signed-in
+  // session (requireAuth), not an API-key
   // caller (requireApiKey) — mine is simply ignored for the latter, since
   // it's a UI-only filter no consuming app has a reason to send.
   if (mine === '1' && req.person) {

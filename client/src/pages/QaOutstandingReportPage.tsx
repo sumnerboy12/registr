@@ -33,7 +33,7 @@ export default function QaOutstandingReportPage() {
 
   return (
     <div style={{ padding: 20, maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>QA Outstanding</h1>
+      <h1 style={{ fontSize: 20, margin: '0 0 4px' }}>QA Check</h1>
       <p style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 0, marginBottom: 16 }}>
         Every job with at least one checklist item that isn't Done or Won't Do yet.
       </p>

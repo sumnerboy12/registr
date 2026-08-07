@@ -11,7 +11,7 @@ const MANUAL_URL = '/manual.html';
 
 const REPORTS_ITEMS = [
   { to: '/reports/job-value', label: 'Job Value' },
-  { to: '/reports/qa-checklist', label: 'QA Outstanding' },
+  { to: '/reports/qa-check', label: 'QA Check' },
 ];
 const ADMIN_ITEMS = [
   { to: '/api-keys', label: 'API Keys' },

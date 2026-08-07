@@ -2,8 +2,8 @@ import db from '../../db/index.js';
 import { CHECKLIST_ITEM_COMPLETE_STATUSES } from '../checklistStatuses.js';
 
 // Every job with at least one checklist item that isn't Done or Won't Do
-// yet, for the QA Outstanding report (routes/reports.js) — lets whoever's
-// on a job, or a QA reviewer, see what's left rather than opening each job
+// yet, for the QA Check report (routes/reports.js) — lets whoever's on a
+// job, or a QA reviewer, see what's left rather than opening each job
 // individually. Optionally narrowed to one job status, one job type, and/or
 // just the jobs a given person is assigned to (any role — PM, site
 // supervisor, estimator, or QS — same breadth as the Jobs page's own "My

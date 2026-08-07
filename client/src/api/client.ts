@@ -142,7 +142,7 @@ export const api = {
     if (params?.type) qs.set('type', params.type);
     if (params?.mine) qs.set('mine', '1');
     const suffix = qs.toString() ? `?${qs}` : '';
-    return request<QaOutstandingJob[]>(`/v1/reports/qa-checklist${suffix}`);
+    return request<QaOutstandingJob[]>(`/v1/reports/qa-check${suffix}`);
   },
 
   getReportTypes: () => request<ReportTypeOption[]>('/v1/scheduled-reports/report-types'),

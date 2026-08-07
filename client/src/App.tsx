@@ -33,7 +33,7 @@ function Gate() {
         <Route path="people" element={<PeoplePage />} />
         <Route path="plant" element={<PlantPage />} />
         <Route path="reports/job-value" element={<JobValueReportPage />} />
-        <Route path="reports/qa-checklist" element={<QaOutstandingReportPage />} />
+        <Route path="reports/qa-check" element={<QaOutstandingReportPage />} />
         {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
         {user.role === 'admin' && <Route path="scheduled-reports" element={<ScheduledReportsPage />} />}
         {user.role === 'admin' && <Route path="checklist-template" element={<ChecklistTemplatesPage />} />}

@@ -326,7 +326,7 @@ export interface ChecklistItemAttachment {
 }
 
 // One outstanding (not Done or Won't Do) checklist item, as returned by the
-// QA Outstanding report — see server/src/lib/reports/qaOutstanding.js.
+// QA Check report — see server/src/lib/reports/qaOutstanding.js.
 export interface QaOutstandingItem {
   stage: ChecklistStage;
   label: string;
