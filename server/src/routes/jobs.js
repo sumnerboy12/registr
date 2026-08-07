@@ -8,7 +8,7 @@ import { hasThinkSafeSite } from '../lib/thinksafeSync.js';
 import { uploadAttachment, attachmentFilePath, uploadChecklistItemAttachment, checklistItemAttachmentFilePath } from '../lib/attachments.js';
 import { CHECKLIST_STAGES } from '../lib/checklistStages.js';
 import { CHECKLIST_ITEM_STATUSES } from '../lib/checklistStatuses.js';
-import { JOB_TYPES as TYPES } from '../lib/jobTypes.js';
+import { JOB_TYPES as TYPES, JOB_TYPE_COLORS } from '../lib/jobTypes.js';
 import { JOB_STATUSES as STATUSES } from '../lib/jobStatuses.js';
 
 const router = Router();
@@ -72,6 +72,7 @@ function listChecklistItems(jobId) {
 function publicJob(row, { includeAssignments } = {}) {
   const job = { ...row };
   job.thinksafe_site = hasThinkSafeSite(row.code);
+  job.job_type_color = JOB_TYPE_COLORS[row.job_type];
   if (includeAssignments) job.assignments = loadAssignments(row.id);
   return job;
 }

@@ -88,16 +88,11 @@ function savePersistedFilter(key: string, values: string[]) {
 
 // A very faint row tint per job type — just enough to scan the list by
 // type at a glance, without competing with the Type pill or hurting
-// readability of the row's own text.
-const JOB_TYPE_ROW_TINT: Record<JobType, string> = {
-  contract: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-  // Fuchsia, at a stronger mix than the other two — a cool violet at the
-  // same low opacity as --accent's teal still washed into a similar
-  // grayish smear; warm-vs-cool contrast (like remedial's amber) reads far
-  // more clearly than two cool hues against each other.
-  minor_works: 'color-mix(in srgb, #d946ef 16%, transparent)',
-  remedial: 'color-mix(in srgb, var(--warn) 10%, transparent)',
-};
+// readability of the row's own text. The colour itself is server-computed
+// (job.job_type_color, see JOB_TYPE_COLORS in server/src/lib/jobTypes.js) so
+// every app that lists jobs — rostr included — tints a job's row the same
+// way instead of each maintaining its own copy of the colour choice.
+const jobTypeRowTint = (job: Job) => `color-mix(in srgb, ${job.job_type_color} 12%, transparent)`;
 
 export default function JobsPage() {
   const { user, isReadOnly, isAdmin } = useAuth();
@@ -443,7 +438,7 @@ export default function JobsPage() {
                           padding: 10,
                           borderRadius: 6,
                           border: '1px solid var(--border)',
-                          background: JOB_TYPE_ROW_TINT[job.job_type],
+                          background: jobTypeRowTint(job),
                           opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
                         }}
                       >
@@ -503,7 +498,7 @@ export default function JobsPage() {
                   key={job.id}
                   style={{
                     opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
-                    background: JOB_TYPE_ROW_TINT[job.job_type],
+                    background: jobTypeRowTint(job),
                   }}
                 >
                   <td>
