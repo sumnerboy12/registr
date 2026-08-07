@@ -14,6 +14,7 @@ import type {
 } from '../types';
 import {
   ASSIGNMENT_ROLE_LABELS,
+  CHECKLIST_ITEM_COMPLETE_STATUSES,
   CHECKLIST_ITEM_STATUSES,
   CHECKLIST_ITEM_STATUS_COLORS,
   CHECKLIST_ITEM_STATUS_LABELS,
@@ -105,7 +106,7 @@ export default function JobDetailPage() {
     const justReopened: ChecklistStage[] = [];
     for (const stage of CHECKLIST_STAGES) {
       const stageItems = checklist.filter((i) => i.stage === stage);
-      const allDone = stageItems.length > 0 && stageItems.every((i) => i.status === 'done');
+      const allDone = stageItems.length > 0 && stageItems.every((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status));
       next[stage] = allDone;
       if (allDone && !prev[stage]) justCompleted.push(stage);
       // A stage that was fully done and no longer is (an item reopened, or a
@@ -331,7 +332,7 @@ export default function JobDetailPage() {
   };
 
   // Quick single-click status advance for fast data entry against a long
-  // checklist — Open -> In Progress -> Done -> Not Done -> Open. Opening the
+  // checklist — Open -> In Progress -> Done -> Won't Do -> Open. Opening the
   // item's modal offers the same four statuses as explicit buttons for when
   // reviewing rather than just clicking through.
   const cycleChecklistStatus = async (item: JobChecklistItem) => {
@@ -635,7 +636,10 @@ export default function JobDetailPage() {
         <div className="card" style={{ padding: 20, marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h2 style={{ fontSize: 16, margin: 0 }}>
-              QA Checklist{checklist.length > 0 ? ` (${checklist.filter((i) => i.status === 'done').length}/${checklist.length})` : ''}
+              QA Checklist
+              {checklist.length > 0
+                ? ` (${checklist.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length}/${checklist.length})`
+                : ''}
             </h2>
             {!isReadOnly && (
               <div style={{ display: 'flex', gap: 8 }}>
@@ -656,7 +660,7 @@ export default function JobDetailPage() {
               const stageItems = checklist.filter((i) => i.stage === stage).sort((a, b) => a.sequence - b.sequence);
               if (stageItems.length === 0) return null;
               const isCollapsed = collapsedStages.has(stage);
-              const doneCount = stageItems.filter((i) => i.status === 'done').length;
+              const doneCount = stageItems.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length;
               return (
                 <div key={stage} style={{ marginBottom: 14 }}>
                   <button
@@ -726,7 +730,6 @@ export default function JobDetailPage() {
                             fontSize: 14,
                             textAlign: 'left',
                             cursor: 'pointer',
-                            color: item.status === 'not_done' ? 'var(--danger)' : undefined,
                           }}
                         >
                           {item.label}

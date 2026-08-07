@@ -9,7 +9,10 @@ import NavDropdown from './NavDropdown';
 const REPO_URL = 'https://github.com/sumnerboy12/registr';
 const MANUAL_URL = '/manual.html';
 
-const REPORTS_ITEMS = [{ to: '/reports/job-value', label: 'Job Value' }];
+const REPORTS_ITEMS = [
+  { to: '/reports/job-value', label: 'Job Value' },
+  { to: '/reports/qa-checklist', label: 'QA Outstanding' },
+];
 const ADMIN_ITEMS = [
   { to: '/api-keys', label: 'API Keys' },
   { to: '/checklist-template', label: 'QA Checklist' },

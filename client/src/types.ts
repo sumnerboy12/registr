@@ -270,8 +270,14 @@ export const CHECKLIST_ITEM_STATUS_LABELS: Record<ChecklistItemStatus, string> =
   open: 'Open',
   in_progress: 'In Progress',
   done: 'Done',
-  not_done: 'Not Done',
+  not_done: "Won't Do",
 };
+
+// Statuses that count as the item being finished — Won't Do is a deliberate
+// resolution (the task doesn't apply / was decided against) same as Done,
+// not an outstanding item. Used anywhere "is this item complete?" matters:
+// progress counts, stage auto-collapse, the QA outstanding-items report.
+export const CHECKLIST_ITEM_COMPLETE_STATUSES: ChecklistItemStatus[] = ['done', 'not_done'];
 
 // Colors for the status badge/select — kept alongside the labels above
 // rather than computed in the component so every place that renders a
@@ -317,4 +323,24 @@ export interface ChecklistItemAttachment {
   size: number;
   uploaded_by_name: string;
   created_at: string;
+}
+
+// One outstanding (not Done or Won't Do) checklist item, as returned by the
+// QA Outstanding report — see server/src/lib/reports/qaOutstanding.js.
+export interface QaOutstandingItem {
+  stage: ChecklistStage;
+  label: string;
+  status: ChecklistItemStatus;
+}
+
+// One job with at least one outstanding checklist item.
+export interface QaOutstandingJob {
+  id: string;
+  code: string;
+  name: string;
+  job_type: JobType;
+  status: JobStatus;
+  client_name: string | null;
+  pm_name: string | null;
+  items: QaOutstandingItem[];
 }

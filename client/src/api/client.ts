@@ -20,6 +20,7 @@ import type {
   ChecklistItemStatus,
   ChecklistItemComment,
   ChecklistItemAttachment,
+  QaOutstandingJob,
   ReportTypeOption,
   ScheduledReport,
 } from '../types';
@@ -134,6 +135,14 @@ export const api = {
     request<void>(`/v1/jobs/${jobId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
   getJobValueSummary: () => request<JobValueSummaryRow[]>('/v1/reports/job-value'),
+  getQaOutstandingReport: (params?: { status?: JobStatus; type?: JobType; mine?: boolean }) => {
+    const qs = new URLSearchParams();
+    if (params?.status) qs.set('status', params.status);
+    if (params?.type) qs.set('type', params.type);
+    if (params?.mine) qs.set('mine', '1');
+    const suffix = qs.toString() ? `?${qs}` : '';
+    return request<QaOutstandingJob[]>(`/v1/reports/qa-checklist${suffix}`);
+  },
 
   getReportTypes: () => request<ReportTypeOption[]>('/v1/scheduled-reports/report-types'),
   getScheduledReports: () => request<ScheduledReport[]>('/v1/scheduled-reports'),

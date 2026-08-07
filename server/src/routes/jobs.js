@@ -9,18 +9,9 @@ import { uploadAttachment, attachmentFilePath, uploadChecklistItemAttachment, ch
 import { CHECKLIST_STAGES } from '../lib/checklistStages.js';
 import { CHECKLIST_ITEM_STATUSES } from '../lib/checklistStatuses.js';
 import { JOB_TYPES as TYPES } from '../lib/jobTypes.js';
+import { JOB_STATUSES as STATUSES } from '../lib/jobStatuses.js';
 
 const router = Router();
-const STATUSES = [
-  'tendering',
-  'awarded',
-  'active',
-  'on_hold',
-  'practical_completion',
-  'awaiting_retentions',
-  'closed',
-  'lost',
-];
 const ASSIGNMENT_ROLES = ['project_manager', 'site_supervisor', 'estimator', 'qs'];
 
 // Practical Completion / Awaiting Retentions are retentions-scheme statuses

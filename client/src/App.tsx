@@ -9,6 +9,7 @@ import PeoplePage from './pages/PeoplePage';
 import PlantPage from './pages/PlantPage';
 import ApiKeysPage from './pages/ApiKeysPage';
 import JobValueReportPage from './pages/JobValueReportPage';
+import QaOutstandingReportPage from './pages/QaOutstandingReportPage';
 import ScheduledReportsPage from './pages/ScheduledReportsPage';
 import ChecklistTemplatesPage from './pages/ChecklistTemplatesPage';
 
@@ -28,6 +29,7 @@ function Gate() {
         <Route path="people" element={<PeoplePage />} />
         <Route path="plant" element={<PlantPage />} />
         <Route path="reports/job-value" element={<JobValueReportPage />} />
+        <Route path="reports/qa-checklist" element={<QaOutstandingReportPage />} />
         {user.role === 'admin' && <Route path="api-keys" element={<ApiKeysPage />} />}
         {user.role === 'admin' && <Route path="scheduled-reports" element={<ScheduledReportsPage />} />}
         {user.role === 'admin' && <Route path="checklist-template" element={<ChecklistTemplatesPage />} />}
