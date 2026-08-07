@@ -241,7 +241,7 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
                     e.target.value = '';
                   }}
                 />
-                <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => attachmentInputRef.current?.click()} disabled={busy}>
+                <button className="btn" onClick={() => attachmentInputRef.current?.click()} disabled={busy}>
                   {busy ? 'Uploading…' : '+ Add'}
                 </button>
               </>

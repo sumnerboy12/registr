@@ -642,19 +642,15 @@ export default function JobDetailPage() {
                 : ''}
             </h2>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="btn"
-                style={{ padding: '2px 8px', fontSize: 12 }}
-                onClick={() => window.open(`/jobs/${job.code}/qa-report`, '_blank')}
-              >
+              <button className="btn" onClick={() => window.open(`/jobs/${job.code}/qa-report`, '_blank')}>
                 Export PDF
               </button>
               {!isReadOnly && (
                 <>
-                  <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={syncChecklist} disabled={checklistBusy}>
+                  <button className="btn" onClick={syncChecklist} disabled={checklistBusy}>
                     Sync template
                   </button>
-                  <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setShowAddChecklistItem(true)}>
+                  <button className="btn" onClick={() => setShowAddChecklistItem(true)}>
                     + Add
                   </button>
                 </>
@@ -826,12 +822,7 @@ export default function JobDetailPage() {
                     e.target.value = '';
                   }}
                 />
-                <button
-                  className="btn"
-                  style={{ padding: '2px 8px', fontSize: 12 }}
-                  onClick={() => attachmentInputRef.current?.click()}
-                  disabled={attachmentBusy}
-                >
+                <button className="btn" onClick={() => attachmentInputRef.current?.click()} disabled={attachmentBusy}>
                   {attachmentBusy ? 'Uploading…' : '+ Add'}
                 </button>
               </>
@@ -906,7 +897,7 @@ export default function JobDetailPage() {
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
               />
               {composerFocused && (
-                <button className="btn btn-primary" onClick={postComment} disabled={commentBusy || !newComment.trim()}>
+                <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={postComment} disabled={commentBusy || !newComment.trim()}>
                   {commentBusy ? 'Posting…' : 'Add comment'}
                 </button>
               )}
