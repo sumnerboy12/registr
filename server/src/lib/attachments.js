@@ -33,3 +33,30 @@ const storage = multer.diskStorage({
 // No content-type whitelist — a jobsite might reasonably attach anything
 // from a site photo to a signed PDF to a spreadsheet. Just capped on size.
 export const uploadAttachment = multer({ storage, limits: { fileSize: MAX_ATTACHMENT_SIZE } }).single('file');
+
+// Same pattern, one level deeper — a checklist item's own attachments (see
+// schema.sql's job_checklist_item_attachments), keyed by job id (folder
+// grouping, matches the rest of the job's attachments on disk) and item id.
+function checklistItemAttachmentDir(jobId, itemId) {
+  return path.join(jobAttachmentDir(jobId), 'checklist', String(itemId));
+}
+
+export function checklistItemAttachmentFilePath(jobId, itemId, filename) {
+  return path.join(checklistItemAttachmentDir(jobId, itemId), filename);
+}
+
+const checklistItemStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = checklistItemAttachmentDir(req.params.id, req.params.itemId);
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${crypto.randomUUID()}${path.extname(file.originalname)}`);
+  },
+});
+
+export const uploadChecklistItemAttachment = multer({
+  storage: checklistItemStorage,
+  limits: { fileSize: MAX_ATTACHMENT_SIZE },
+}).single('file');

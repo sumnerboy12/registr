@@ -5,11 +5,12 @@ import db from '../db/index.js';
 import { requireAuth, requireWrite } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 import { hasThinkSafeSite } from '../lib/thinksafeSync.js';
-import { uploadAttachment, attachmentFilePath } from '../lib/attachments.js';
+import { uploadAttachment, attachmentFilePath, uploadChecklistItemAttachment, checklistItemAttachmentFilePath } from '../lib/attachments.js';
+import { CHECKLIST_STAGES } from '../lib/checklistStages.js';
+import { CHECKLIST_ITEM_STATUSES } from '../lib/checklistStatuses.js';
+import { JOB_TYPES as TYPES } from '../lib/jobTypes.js';
 
 const router = Router();
-
-const TYPES = ['contract', 'minor_works', 'remedial'];
 const STATUSES = [
   'tendering',
   'awarded',
@@ -42,6 +43,33 @@ function loadAssignments(jobId) {
       role: a.role,
       person: { id: a.person_id, name: a.person_name, email: a.person_email },
     }));
+}
+
+// Copies the given (already-filtered) checklist_templates rows onto a job
+// as its own snapshot copy — used both at job creation (every active
+// template item) and by POST /:id/checklist/sync (just the ones missing).
+function copyChecklistTemplateToJob(jobId, templateRows) {
+  const insert = db.prepare(
+    `INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence) VALUES (?, ?, ?, ?, ?)`
+  );
+  for (const t of templateRows) insert.run(jobId, t.id, t.stage, t.label, t.sequence);
+}
+
+// comment_count/attachment_count are computed here (rather than loaded
+// separately per item) so the checklist list view can show them without a
+// round trip per item — important once a job's checklist gets long.
+const CHECKLIST_ITEM_COLUMNS = `jci.*,
+  (SELECT COUNT(*) FROM job_checklist_item_comments c WHERE c.item_id = jci.id) AS comment_count,
+  (SELECT COUNT(*) FROM job_checklist_item_attachments a WHERE a.item_id = jci.id) AS attachment_count`;
+
+function getChecklistItem(itemId) {
+  return db.prepare(`SELECT ${CHECKLIST_ITEM_COLUMNS} FROM job_checklist_items jci WHERE jci.id = ?`).get(itemId);
+}
+
+function listChecklistItems(jobId) {
+  return db
+    .prepare(`SELECT ${CHECKLIST_ITEM_COLUMNS} FROM job_checklist_items jci WHERE jci.job_id = ? ORDER BY jci.stage, jci.sequence, jci.id`)
+    .all(jobId);
 }
 
 function publicJob(row, { includeAssignments } = {}) {
@@ -189,6 +217,14 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
     value ?? null,
     notes || null
   );
+
+  // Every new job starts with its own copy of the current active QA
+  // checklist template for its job type — see copyChecklistTemplateToJob
+  // above. job_type IS NULL means an item common to every job type.
+  const templates = db
+    .prepare('SELECT * FROM checklist_templates WHERE active = 1 AND (job_type = ? OR job_type IS NULL) ORDER BY stage, sequence, id')
+    .all(job_type);
+  copyChecklistTemplateToJob(id, templates);
 
   const row = db.prepare('SELECT * FROM jobs WHERE id = ?').get(id);
   res.status(201).json(publicJob(row, { includeAssignments: true }));
@@ -385,6 +421,199 @@ router.delete('/:id/attachments/:attachmentId', requireAuth, requireWrite, (req,
   if (!attachment) return res.status(404).json({ error: 'not found' });
   db.prepare('DELETE FROM job_attachments WHERE id = ?').run(attachment.id);
   fs.unlink(attachmentFilePath(attachment.job_id, attachment.filename), () => {});
+  res.status(204).end();
+});
+
+router.get('/:id/checklist', requireAuthOrApiKey, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+  res.json(listChecklistItems(job.id));
+});
+
+// Pulls in any active template item this job doesn't already have a copy
+// of (matched via template_id) — lets a template change (a new QA step
+// added company-wide) reach jobs that were created before it existed,
+// without duplicating anything the job already has.
+router.post('/:id/checklist/sync', requireAuth, requireWrite, (req, res) => {
+  const job = db.prepare('SELECT id, job_type FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+
+  const existingTemplateIds = new Set(
+    db
+      .prepare('SELECT template_id FROM job_checklist_items WHERE job_id = ? AND template_id IS NOT NULL')
+      .all(job.id)
+      .map((r) => r.template_id)
+  );
+  const missing = db
+    .prepare('SELECT * FROM checklist_templates WHERE active = 1 AND (job_type = ? OR job_type IS NULL) ORDER BY stage, sequence, id')
+    .all(job.job_type)
+    .filter((t) => !existingTemplateIds.has(t.id));
+  copyChecklistTemplateToJob(job.id, missing);
+
+  res.json(listChecklistItems(job.id));
+});
+
+// A job-specific, ad-hoc item with no template counterpart (template_id NULL).
+router.post('/:id/checklist', requireAuth, requireWrite, (req, res) => {
+  const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'not found' });
+
+  const { stage, label } = req.body;
+  if (!CHECKLIST_STAGES.includes(stage)) return res.status(400).json({ error: 'Invalid stage' });
+  if (!label || !label.trim()) return res.status(400).json({ error: 'label is required' });
+
+  const { n: nextSequence } = db
+    .prepare('SELECT COALESCE(MAX(sequence), -1) + 1 AS n FROM job_checklist_items WHERE job_id = ? AND stage = ?')
+    .get(job.id, stage);
+  const result = db
+    .prepare('INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence) VALUES (?, NULL, ?, ?, ?)')
+    .run(job.id, stage, label.trim(), nextSequence);
+  res.status(201).json(getChecklistItem(result.lastInsertRowid));
+});
+
+router.patch('/:id/checklist/:itemId', requireAuth, requireWrite, (req, res) => {
+  const item = db
+    .prepare('SELECT * FROM job_checklist_items WHERE id = ? AND job_id = ?')
+    .get(Number(req.params.itemId), req.params.id);
+  if (!item) return res.status(404).json({ error: 'not found' });
+
+  const { status, label, notes } = req.body;
+  if (status != null) {
+    if (!CHECKLIST_ITEM_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+    db.prepare(
+      `UPDATE job_checklist_items SET status = ?, status_by_person_id = ?, status_by_name = ?, status_at = datetime('now') WHERE id = ?`
+    ).run(status, req.person.id, req.person.name, item.id);
+  }
+  if (label !== undefined) {
+    if (!label.trim()) return res.status(400).json({ error: 'label is required' });
+    db.prepare('UPDATE job_checklist_items SET label = ? WHERE id = ?').run(label.trim(), item.id);
+  }
+  if (notes !== undefined) {
+    db.prepare('UPDATE job_checklist_items SET notes = ? WHERE id = ?').run(notes ? notes.trim() || null : null, item.id);
+  }
+
+  res.json(getChecklistItem(item.id));
+});
+
+router.delete('/:id/checklist/:itemId', requireAuth, requireWrite, (req, res) => {
+  db.prepare('DELETE FROM job_checklist_items WHERE id = ? AND job_id = ?').run(Number(req.params.itemId), req.params.id);
+  res.status(204).end();
+});
+
+// Most recent first, same shape/rules as job-level comments (see
+// POST/PATCH/DELETE /:id/comments above) but scoped to one checklist item.
+router.get('/:id/checklist/:itemId/comments', requireAuthOrApiKey, (req, res) => {
+  const item = db.prepare('SELECT id FROM job_checklist_items WHERE id = ? AND job_id = ?').get(Number(req.params.itemId), req.params.id);
+  if (!item) return res.status(404).json({ error: 'not found' });
+  const rows = db
+    .prepare(
+      `SELECT id, author_person_id, author_name, body, created_at FROM job_checklist_item_comments
+       WHERE item_id = ? ORDER BY created_at DESC, id DESC`
+    )
+    .all(item.id);
+  res.json(rows);
+});
+
+router.post('/:id/checklist/:itemId/comments', requireAuth, requireWrite, (req, res) => {
+  const item = db.prepare('SELECT id FROM job_checklist_items WHERE id = ? AND job_id = ?').get(Number(req.params.itemId), req.params.id);
+  if (!item) return res.status(404).json({ error: 'not found' });
+
+  const body = (req.body.body ?? '').trim();
+  if (!body) return res.status(400).json({ error: 'Comment body is required' });
+
+  const result = db
+    .prepare('INSERT INTO job_checklist_item_comments (item_id, author_person_id, author_name, body) VALUES (?, ?, ?, ?)')
+    .run(item.id, req.person.id, req.person.name, body);
+  const row = db
+    .prepare('SELECT id, author_person_id, author_name, body, created_at FROM job_checklist_item_comments WHERE id = ?')
+    .get(result.lastInsertRowid);
+  res.status(201).json(row);
+});
+
+// Own comments only — see the equivalent job-level comment routes above for
+// why a NULL-authored (break-glass admin) comment is scoped the same way.
+router.patch('/:id/checklist/:itemId/comments/:commentId', requireAuth, requireWrite, (req, res) => {
+  const comment = db
+    .prepare('SELECT author_person_id FROM job_checklist_item_comments WHERE id = ? AND item_id = ?')
+    .get(Number(req.params.commentId), Number(req.params.itemId));
+  if (!comment) return res.status(404).json({ error: 'not found' });
+  if (comment.author_person_id !== req.person.id) {
+    return res.status(403).json({ error: 'You can only edit your own comments' });
+  }
+  const body = (req.body.body ?? '').trim();
+  if (!body) return res.status(400).json({ error: 'Comment body is required' });
+  db.prepare('UPDATE job_checklist_item_comments SET body = ? WHERE id = ?').run(body, Number(req.params.commentId));
+  const row = db
+    .prepare('SELECT id, author_person_id, author_name, body, created_at FROM job_checklist_item_comments WHERE id = ?')
+    .get(Number(req.params.commentId));
+  res.json(row);
+});
+
+router.delete('/:id/checklist/:itemId/comments/:commentId', requireAuth, requireWrite, (req, res) => {
+  const comment = db
+    .prepare('SELECT author_person_id FROM job_checklist_item_comments WHERE id = ? AND item_id = ?')
+    .get(Number(req.params.commentId), Number(req.params.itemId));
+  if (!comment) return res.status(404).json({ error: 'not found' });
+  if (comment.author_person_id !== req.person.id) {
+    return res.status(403).json({ error: 'You can only delete your own comments' });
+  }
+  db.prepare('DELETE FROM job_checklist_item_comments WHERE id = ?').run(Number(req.params.commentId));
+  res.status(204).end();
+});
+
+// Most recent first, metadata only — same shape/rules as job-level
+// attachments (see /:id/attachments above) but scoped to one checklist item.
+router.get('/:id/checklist/:itemId/attachments', requireAuthOrApiKey, (req, res) => {
+  const item = db.prepare('SELECT id FROM job_checklist_items WHERE id = ? AND job_id = ?').get(Number(req.params.itemId), req.params.id);
+  if (!item) return res.status(404).json({ error: 'not found' });
+  const rows = db
+    .prepare(
+      `SELECT id, original_name, content_type, size, uploaded_by_name, created_at FROM job_checklist_item_attachments
+       WHERE item_id = ? ORDER BY created_at DESC, id DESC`
+    )
+    .all(item.id);
+  res.json(rows);
+});
+
+router.post('/:id/checklist/:itemId/attachments', requireAuth, requireWrite, (req, res) => {
+  const item = db.prepare('SELECT id FROM job_checklist_items WHERE id = ? AND job_id = ?').get(Number(req.params.itemId), req.params.id);
+  if (!item) return res.status(404).json({ error: 'not found' });
+
+  uploadChecklistItemAttachment(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const result = db
+      .prepare(
+        `INSERT INTO job_checklist_item_attachments (item_id, filename, original_name, content_type, size, uploaded_by_person_id, uploaded_by_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(item.id, req.file.filename, req.file.originalname, req.file.mimetype, req.file.size, req.person.id, req.person.name);
+    const row = db
+      .prepare('SELECT id, original_name, content_type, size, uploaded_by_name, created_at FROM job_checklist_item_attachments WHERE id = ?')
+      .get(result.lastInsertRowid);
+    res.status(201).json(row);
+  });
+});
+
+router.get('/:id/checklist/:itemId/attachments/:attachmentId', requireAuthOrApiKey, (req, res) => {
+  const attachment = db
+    .prepare('SELECT * FROM job_checklist_item_attachments WHERE id = ? AND item_id = ?')
+    .get(Number(req.params.attachmentId), Number(req.params.itemId));
+  if (!attachment) return res.status(404).json({ error: 'not found' });
+  const filePath = checklistItemAttachmentFilePath(req.params.id, req.params.itemId, attachment.filename);
+  res.download(filePath, attachment.original_name, (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'File missing on disk' });
+  });
+});
+
+router.delete('/:id/checklist/:itemId/attachments/:attachmentId', requireAuth, requireWrite, (req, res) => {
+  const attachment = db
+    .prepare('SELECT * FROM job_checklist_item_attachments WHERE id = ? AND item_id = ?')
+    .get(Number(req.params.attachmentId), Number(req.params.itemId));
+  if (!attachment) return res.status(404).json({ error: 'not found' });
+  db.prepare('DELETE FROM job_checklist_item_attachments WHERE id = ?').run(attachment.id);
+  fs.unlink(checklistItemAttachmentFilePath(req.params.id, req.params.itemId, attachment.filename), () => {});
   res.status(204).end();
 });
 

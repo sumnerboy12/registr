@@ -144,6 +144,86 @@ CREATE TABLE IF NOT EXISTS job_attachments (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Master list of QA checklist tasks, admin-maintained (see
+-- routes/checklistTemplates.js) — copied onto each new job's own checklist
+-- (job_checklist_items below) rather than referenced live, so editing or
+-- removing a template item never changes a job's already-recorded QA
+-- history. stage places a task somewhere across the job's lifecycle, from
+-- creation through to completion and warranty. job_type scopes an item to
+-- one job type (Contract/Minor Works/Remedial); NULL applies to every job
+-- type — see the job_type filter in routes/jobs.js's checklist copy/sync.
+CREATE TABLE IF NOT EXISTS checklist_templates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  stage TEXT NOT NULL CHECK (stage IN ('pre_start', 'in_progress', 'completion', 'warranty')),
+  job_type TEXT CHECK (job_type IN ('contract', 'minor_works', 'remedial')),
+  label TEXT NOT NULL,
+  sequence INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Per-job QA checklist — a snapshot copy of checklist_templates taken when
+-- each item was added to the job (on job creation, or via POST
+-- /:id/checklist/sync — see routes/jobs.js), not a live reference, so
+-- editing the template never retroactively changes a job's own record.
+-- template_id is kept (nullable) purely so "sync missing items" can tell
+-- which template items a job already has; NULL means a job-specific ad-hoc
+-- item with no template counterpart. status_by_name is a snapshot for the
+-- same reason job_comments.author_name is — whoever last changed status,
+-- regardless of which status they set it to. notes is free-text QA detail
+-- against this one job's item (e.g. why something failed, what was found)
+-- — job-specific, so it's never copied from or back to the template. For a
+-- fuller back-and-forth, see job_checklist_item_comments/_attachments below.
+CREATE TABLE IF NOT EXISTS job_checklist_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  template_id INTEGER REFERENCES checklist_templates(id) ON DELETE SET NULL,
+  stage TEXT NOT NULL CHECK (stage IN ('pre_start', 'in_progress', 'completion', 'warranty')),
+  label TEXT NOT NULL,
+  sequence INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'done', 'not_done')),
+  status_by_person_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+  status_by_name TEXT,
+  status_at TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- A discussion thread on one checklist item — separate from the single
+-- notes field above for the same reason a job has both its own notes field
+-- and a full job_comments thread (see JobDetailPage.tsx). author_name is a
+-- snapshot for the same reason job_comments.author_name is.
+CREATE TABLE IF NOT EXISTS job_checklist_item_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id INTEGER NOT NULL REFERENCES job_checklist_items(id) ON DELETE CASCADE,
+  author_person_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+  author_name TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_checklist_item_comments_item ON job_checklist_item_comments(item_id);
+
+-- File attachments on one checklist item — same pattern as job_attachments
+-- (bytes on disk under data/attachments/<job_id>/checklist/<item_id>/, see
+-- lib/attachments.js), just scoped one level deeper.
+CREATE TABLE IF NOT EXISTS job_checklist_item_attachments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id INTEGER NOT NULL REFERENCES job_checklist_items(id) ON DELETE CASCADE,
+  filename TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  uploaded_by_person_id INTEGER REFERENCES people(id) ON DELETE SET NULL,
+  uploaded_by_name TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_job_checklist_item_attachments_item ON job_checklist_item_attachments(item_id);
+
+CREATE INDEX IF NOT EXISTS idx_job_checklist_items_job ON job_checklist_items(job_id);
+
 -- One row per configured "run this report on a schedule and email it" job
 -- (see lib/reports/index.js for the report_type registry — empty for now,
 -- ported as infrastructure ahead of any actual report types). Multiple rows

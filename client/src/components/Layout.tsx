@@ -10,6 +10,10 @@ const REPO_URL = 'https://github.com/sumnerboy12/registr';
 const MANUAL_URL = '/manual.html';
 
 const REPORTS_ITEMS = [{ to: '/reports/job-value', label: 'Job Value' }];
+const ADMIN_ITEMS = [
+  { to: '/api-keys', label: 'API Keys' },
+  { to: '/checklist-template', label: 'QA Checklist' },
+];
 
 const navStyle = ({ isActive }: { isActive: boolean }) => ({
   padding: '10px 16px',
@@ -75,11 +79,7 @@ export default function Layout() {
             Plant
           </NavLink>
           <NavDropdown label="Reports" items={reportsItems} />
-          {user?.role === 'admin' && (
-            <NavLink to="/api-keys" style={navStyle}>
-              API Keys
-            </NavLink>
-          )}
+          {user?.role === 'admin' && <NavDropdown label="Admin" items={ADMIN_ITEMS} />}
         </nav>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
           <a

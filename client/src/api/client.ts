@@ -10,10 +10,16 @@ import type {
   Job,
   JobAssignment,
   JobAttachment,
+  JobChecklistItem,
   JobComment,
   JobStatus,
   JobType,
   JobValueSummaryRow,
+  ChecklistTemplateItem,
+  ChecklistStage,
+  ChecklistItemStatus,
+  ChecklistItemComment,
+  ChecklistItemAttachment,
   ReportTypeOption,
   ScheduledReport,
 } from '../types';
@@ -144,6 +150,49 @@ export const api = {
   ) => request<ScheduledReport>(`/v1/scheduled-reports/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteScheduledReport: (id: number) => request<void>(`/v1/scheduled-reports/${id}`, { method: 'DELETE' }),
   sendScheduledReportNow: (id: number) => request<{ sent: true }>(`/v1/scheduled-reports/${id}/send-now`, { method: 'POST' }),
+
+  getChecklistTemplates: () => request<ChecklistTemplateItem[]>('/v1/checklist-templates'),
+  createChecklistTemplateItem: (data: { stage: ChecklistStage; job_type: JobType | null; label: string }) =>
+    request<ChecklistTemplateItem>('/v1/checklist-templates', { method: 'POST', body: JSON.stringify(data) }),
+  updateChecklistTemplateItem: (
+    id: number,
+    data: Partial<Pick<ChecklistTemplateItem, 'stage' | 'job_type' | 'label' | 'sequence' | 'active'>>
+  ) => request<ChecklistTemplateItem>(`/v1/checklist-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteChecklistTemplateItem: (id: number) => request<void>(`/v1/checklist-templates/${id}`, { method: 'DELETE' }),
+
+  getJobChecklist: (jobId: string) => request<JobChecklistItem[]>(`/v1/jobs/${jobId}/checklist`),
+  syncJobChecklist: (jobId: string) => request<JobChecklistItem[]>(`/v1/jobs/${jobId}/checklist/sync`, { method: 'POST' }),
+  addJobChecklistItem: (jobId: string, data: { stage: ChecklistStage; label: string }) =>
+    request<JobChecklistItem>(`/v1/jobs/${jobId}/checklist`, { method: 'POST', body: JSON.stringify(data) }),
+  updateJobChecklistItem: (
+    jobId: string,
+    itemId: number,
+    data: { status?: ChecklistItemStatus; label?: string; notes?: string | null }
+  ) => request<JobChecklistItem>(`/v1/jobs/${jobId}/checklist/${itemId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteJobChecklistItem: (jobId: string, itemId: number) =>
+    request<void>(`/v1/jobs/${jobId}/checklist/${itemId}`, { method: 'DELETE' }),
+
+  getChecklistItemComments: (jobId: string, itemId: number) =>
+    request<ChecklistItemComment[]>(`/v1/jobs/${jobId}/checklist/${itemId}/comments`),
+  addChecklistItemComment: (jobId: string, itemId: number, body: string) =>
+    request<ChecklistItemComment>(`/v1/jobs/${jobId}/checklist/${itemId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  updateChecklistItemComment: (jobId: string, itemId: number, commentId: number, body: string) =>
+    request<ChecklistItemComment>(`/v1/jobs/${jobId}/checklist/${itemId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ body }),
+    }),
+  deleteChecklistItemComment: (jobId: string, itemId: number, commentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/checklist/${itemId}/comments/${commentId}`, { method: 'DELETE' }),
+
+  getChecklistItemAttachments: (jobId: string, itemId: number) =>
+    request<ChecklistItemAttachment[]>(`/v1/jobs/${jobId}/checklist/${itemId}/attachments`),
+  uploadChecklistItemAttachment: (jobId: string, itemId: number, file: File) =>
+    uploadFile<ChecklistItemAttachment>(`/v1/jobs/${jobId}/checklist/${itemId}/attachments`, file),
+  deleteChecklistItemAttachment: (jobId: string, itemId: number, attachmentId: number) =>
+    request<void>(`/v1/jobs/${jobId}/checklist/${itemId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 
   getApiKeys: () => request<ApiKey[]>('/v1/api-keys'),
   // key is only ever present in this one response — never returned again.

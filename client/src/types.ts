@@ -233,3 +233,88 @@ export interface ScheduledReport {
   last_sent_date: string | null;
   recipients: ScheduledReportRecipient[];
 }
+
+// A job's QA checklist, from creation through to completion and warranty
+// docs — see server/src/lib/checklistStages.js.
+export type ChecklistStage = 'pre_start' | 'in_progress' | 'completion' | 'warranty';
+
+export const CHECKLIST_STAGES: ChecklistStage[] = ['pre_start', 'in_progress', 'completion', 'warranty'];
+
+export const CHECKLIST_STAGE_LABELS: Record<ChecklistStage, string> = {
+  pre_start: 'Pre-Start',
+  in_progress: 'In Progress',
+  completion: 'Completion',
+  warranty: 'Warranty',
+};
+
+// Admin-maintained master list (see ChecklistTemplatesPage.tsx) — copied
+// onto each job's own checklist rather than referenced live, see
+// JobChecklistItem below. job_type scopes an item to one job type; null
+// applies to every job type.
+export interface ChecklistTemplateItem {
+  id: number;
+  stage: ChecklistStage;
+  job_type: JobType | null;
+  label: string;
+  sequence: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChecklistItemStatus = 'open' | 'in_progress' | 'done' | 'not_done';
+
+export const CHECKLIST_ITEM_STATUSES: ChecklistItemStatus[] = ['open', 'in_progress', 'done', 'not_done'];
+
+export const CHECKLIST_ITEM_STATUS_LABELS: Record<ChecklistItemStatus, string> = {
+  open: 'Open',
+  in_progress: 'In Progress',
+  done: 'Done',
+  not_done: 'Not Done',
+};
+
+// Colors for the status badge/select — kept alongside the labels above
+// rather than computed in the component so every place that renders a
+// status (list row, modal) stays visually consistent.
+export const CHECKLIST_ITEM_STATUS_COLORS: Record<ChecklistItemStatus, string> = {
+  open: 'var(--text-dim)',
+  in_progress: '#b8860b',
+  done: '#2e7d32',
+  not_done: 'var(--danger)',
+};
+
+export interface JobChecklistItem {
+  id: number;
+  template_id: number | null;
+  stage: ChecklistStage;
+  label: string;
+  sequence: number;
+  status: ChecklistItemStatus;
+  status_by_person_id: number | null;
+  status_by_name: string | null;
+  status_at: string | null;
+  notes: string | null;
+  comment_count: number;
+  attachment_count: number;
+  created_at: string;
+}
+
+// A discussion thread on one checklist item — see JobComment for the
+// job-level equivalent this mirrors.
+export interface ChecklistItemComment {
+  id: number;
+  author_person_id: number | null;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
+
+// See JobAttachment for the job-level equivalent this mirrors.
+export interface ChecklistItemAttachment {
+  id: number;
+  original_name: string;
+  content_type: string;
+  size: number;
+  uploaded_by_name: string;
+  created_at: string;
+}

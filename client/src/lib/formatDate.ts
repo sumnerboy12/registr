@@ -30,3 +30,9 @@ export function formatRelativeTime(utc: string): string {
   if (diffSeconds < YEAR) return plural(Math.floor(diffSeconds / MONTH), 'month');
   return plural(Math.floor(diffSeconds / YEAR), 'year');
 }
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
