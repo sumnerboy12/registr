@@ -11,9 +11,13 @@ function publicClient(row) {
   return { ...row, active: !!row.active };
 }
 
+// job_count lets the UI know up front whether a client is eligible for
+// deletion (see DELETE /:id below) without a separate round trip.
+const CLIENT_SELECT = `SELECT clients.*, (SELECT COUNT(*) FROM jobs WHERE jobs.client_id = clients.id) AS job_count FROM clients`;
+
 router.get('/', requireAuthOrApiKey, (req, res) => {
   const { active, q } = req.query;
-  let rows = db.prepare('SELECT * FROM clients ORDER BY name COLLATE NOCASE').all();
+  let rows = db.prepare(`${CLIENT_SELECT} ORDER BY name COLLATE NOCASE`).all();
   if (active === '1') rows = rows.filter((c) => c.active);
   if (q) {
     const needle = String(q).toLowerCase();
@@ -23,7 +27,7 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
 });
 
 router.get('/:id', requireAuthOrApiKey, (req, res) => {
-  const row = db.prepare('SELECT * FROM clients WHERE id = ?').get(Number(req.params.id));
+  const row = db.prepare(`${CLIENT_SELECT} WHERE clients.id = ?`).get(Number(req.params.id));
   if (!row) return res.status(404).json({ error: 'not found' });
   res.json(publicClient(row));
 });
@@ -49,7 +53,7 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
       notes || null
     );
 
-  const row = db.prepare('SELECT * FROM clients WHERE id = ?').get(result.lastInsertRowid);
+  const row = db.prepare(`${CLIENT_SELECT} WHERE clients.id = ?`).get(result.lastInsertRowid);
   res.status(201).json(publicClient(row));
 });
 
@@ -79,7 +83,7 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
     id
   );
 
-  const row = db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
+  const row = db.prepare(`${CLIENT_SELECT} WHERE clients.id = ?`).get(id);
   res.json(publicClient(row));
 });
 

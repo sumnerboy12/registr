@@ -593,7 +593,7 @@ export default function JobDetailPage() {
                 <span
                   key={a.id}
                   className="badge"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', fontSize: 13 }}
                 >
                   {a.person.email ? (
                     <a href={`mailto:${a.person.email}`} title={`Email ${a.person.name}`} style={{ color: 'inherit', textDecoration: 'none' }}>

@@ -136,7 +136,7 @@ export default function ClientModal({ client, onClose, onSave, onDelete, isAdmin
 
         <div className="modal-actions">
           <div>
-            {client && isAdmin && onDelete && !readOnly && (
+            {client && isAdmin && onDelete && !readOnly && client.job_count === 0 && (
               <button className="btn btn-danger" onClick={handleDelete} disabled={saving}>
                 Delete
               </button>

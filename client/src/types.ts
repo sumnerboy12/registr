@@ -96,6 +96,9 @@ export interface Client {
   active: boolean;
   color: string;
   notes: string | null;
+  // How many jobs currently link to this client — deletion is blocked
+  // server-side (see routes/clients.js) whenever this is above 0.
+  job_count: number;
 }
 
 // WRS-owned equipment only — hired-in gear is a rostr-only concept, not
