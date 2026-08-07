@@ -462,7 +462,9 @@ export default function JobsPage() {
                           {client?.name ?? job.client_name ?? 'No client'}
                         </span>
                         <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{job.code}</span>
+                          <span>
+                            {JOB_TYPE_LABELS[job.job_type]} &middot; {job.code}
+                          </span>
                           <span>{job.job_type !== 'remedial' && job.value != null ? `$${job.value.toLocaleString('en-US')}` : ''}</span>
                         </div>
                       </div>
