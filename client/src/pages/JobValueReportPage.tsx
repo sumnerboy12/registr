@@ -8,7 +8,7 @@ import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 const STATUSES = Object.keys(JOB_STATUS_LABELS) as JobStatus[];
 const TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
 
-const formatValue = (value: number) => (value > 0 ? `$${value.toLocaleString('en-US')}` : '—');
+const formatValue = (value: number) => (value > 0 ? `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—');
 
 export default function JobValueReportPage() {
   const [rows, setRows] = useState<JobValueSummaryRow[]>([]);
