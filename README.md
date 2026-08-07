@@ -133,16 +133,13 @@ server. Leave it blank (or `production`) on the real deployment.
 ## How it works
 
 - **Jobs** — every job Registr tracks, identified by a human **code**,
-  generated automatically as `CYYXXX` for Contract jobs (e.g. "C26001"),
-  `MYYXXX` for Minor Works (e.g. "M26001"), or `RYYXXX` for Remedial (e.g.
-  "R26001") — `YY` is the year, `XXX` the next unused number that year,
-  shared across all three types (not counted separately per type) so the
-  number alone tells you creation order regardless of type. Only admins can
-  override the suggested code,
-  and only while creating the job — the **code** is locked for good as soon
-  as the job is saved, for every role including admin (**type** isn't: a
-  job originally quoted as Minor Works can later become a full Contract,
-  its code's prefix just stops matching — cosmetic, not functional). Each
+  generated automatically as `YYXXX` (e.g. "26001") — `YY` is the year,
+  `XXX` the next unused number that year, shared across every job type (not
+  counted separately per type) so the number alone tells you creation order
+  regardless of type; job type is instead shown by a colour tint on each
+  row in the Jobs list, not a letter in the code. Only admins can override the suggested code, and only while
+  creating the job — the **code** is locked for good as soon as the job is
+  saved, for every role including admin. Each
   job also carries a **status** — Tendering, Awarded, In Progress, On Hold,
   Practical Completion, Awaiting Retentions, Completed, or Lost (Registr
   never hard-deletes a job, Completed/Lost is how one is archived); the
@@ -213,8 +210,8 @@ isn't a single combined "whole database" backup: People, Clients, Plant and
 Jobs each export/import their own CSV, and a restore doesn't recreate a
 record's internal ID, (for People) its app-access grants, or (for Jobs) its
 comments/attachments — those need re-setting by hand afterwards. Jobs
-import has a couple of its own quirks: a code starting with `M`/`R` forces
-Minor Works/Remedial type regardless of the Type column, common status
+import has a couple of its own quirks: type comes from the Type column
+(defaulting to Contract if it's blank or unrecognised), common status
 synonyms are normalised ("Pipeline"/"Quoted" → Tendering, "Confirmed" →
 Awarded), and the four assignment-role columns resolve to a person by name,
 silently skipping a name that doesn't match any active person.

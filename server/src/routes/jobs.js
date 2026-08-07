@@ -76,15 +76,14 @@ function publicJob(row, { includeAssignments } = {}) {
   return job;
 }
 
-// Contract: CYYXXX (e.g. "C26001"). Minor works: MYYXXX (e.g. "M26001").
-// Remedial: RYYXXX (e.g. "R26001") — same shape, just prefixed. XXX is one
-// shared sequence across all three types for that year (not counted
-// separately per type — see the one-time renumbering migration in
-// db/index.js), looking at every job ever coded that year (including
-// Closed) so a number is never reused once assigned.
-const TYPE_PREFIXES = { contract: 'C', minor_works: 'M', remedial: 'R' };
+// Bare YYXXX (e.g. "26001") — same shape and one shared sequence
+// regardless of job type (see the one-time normalization migration in
+// db/index.js); the UI conveys type by colour instead of a letter baked
+// into the code (see JOB_TYPE_ROW_TINT in JobsPage.tsx). XXX looks at every
+// job ever coded that year (including Closed) so a number is never reused
+// once assigned.
 const CODE_RE = /^[CMR]?(\d{2})(\d{3})$/;
-function generateJobCode(jobType) {
+function generateJobCode() {
   const yy = String(new Date().getFullYear() % 100).padStart(2, '0');
   const rows = db.prepare('SELECT code FROM jobs').all();
   let max = 0;
@@ -92,8 +91,7 @@ function generateJobCode(jobType) {
     const m = CODE_RE.exec(code);
     if (m && m[1] === yy) max = Math.max(max, Number(m[2]));
   }
-  const prefix = `${TYPE_PREFIXES[jobType] ?? ''}${yy}`;
-  return `${prefix}${String(max + 1).padStart(3, '0')}`;
+  return `${yy}${String(max + 1).padStart(3, '0')}`;
 }
 
 router.get('/', requireAuthOrApiKey, (req, res) => {
@@ -170,7 +168,7 @@ router.get('/', requireAuthOrApiKey, (req, res) => {
 router.get('/next-code', requireAuth, requireWrite, (req, res) => {
   const { job_type } = req.query;
   if (!TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
-  res.json({ code: generateJobCode(job_type) });
+  res.json({ code: generateJobCode() });
 });
 
 router.get('/by-code/:code', requireAuthOrApiKey, (req, res) => {
@@ -196,7 +194,7 @@ router.post('/', requireAuth, requireWrite, (req, res) => {
 
   // Code is admin-only to set by hand — anyone else gets the auto-generated
   // one regardless of what (if anything) they sent, same as PATCH below.
-  const finalCode = req.registrRole === 'admin' && code && code.trim() ? code.trim() : generateJobCode(job_type);
+  const finalCode = req.registrRole === 'admin' && code && code.trim() ? code.trim() : generateJobCode();
 
   // Only reachable via an admin-supplied code — generateJobCode never
   // produces a slash. The code is a URL path segment (GET /by-code/:code,
@@ -251,13 +249,11 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
   // form has it disabled here anyway.
   //
   // job_type CAN change (e.g. a job originally quoted as Minor Works turns
-  // out to need a full Contract) — its code doesn't follow along, so the
-  // code's M/R prefix (see generateJobCode) reflects the type at *creation*
-  // time, not necessarily the current one. That's a cosmetic mismatch, not
-  // a functional one: nothing besides generateJobCode's own numbering reads
-  // the prefix, and rostr's sync already treats job_type as a plain mutable
-  // field (see rostr's lib/jobSync.js) — it'll pick up the change on its
-  // next sync same as any other edit, no re-matching involved.
+  // out to need a full Contract) — the code itself is type-agnostic (see
+  // generateJobCode) so nothing about it needs to follow along, and rostr's
+  // sync already treats job_type as a plain mutable field (see rostr's
+  // lib/jobSync.js) — it'll pick up the change on its next sync same as any
+  // other edit, no re-matching involved.
   const { name, client_id, client_name, contact_name, contact_email, job_type, status, site_address, value, notes } = req.body;
   if (job_type != null && !TYPES.includes(job_type)) return res.status(400).json({ error: 'Invalid job_type' });
   if (status != null && !STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });

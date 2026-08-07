@@ -593,17 +593,7 @@ export default function JobsPage() {
           onClose={() => setShowImport(false)}
           onImportRow={async (values) => {
             const value = values.value.replace(/[^0-9.-]/g, '');
-            // A code starting with "M"/"R" is always Minor Works/Remedial,
-            // matching how generateJobCode itself prefixes them (see
-            // routes/jobs.js) — takes priority over the Type column when
-            // both are present.
-            const codePrefix = values.code.trim().toLowerCase().charAt(0);
-            const jobType =
-              codePrefix === 'm'
-                ? ('minor_works' as const)
-                : codePrefix === 'r'
-                  ? ('remedial' as const)
-                  : labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
+            const jobType = labelToKey(JOB_TYPE_LABELS, values.type) ?? 'contract';
             const jobStatus = STATUS_SYNONYMS[values.status.trim().toLowerCase()] ?? labelToKey(JOB_STATUS_LABELS, values.status);
             const clientId = resolveClientId(values.client);
             const created = await api.createJob({

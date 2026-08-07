@@ -60,75 +60,61 @@ if (!jobChecklistItemColumns.includes('internal')) {
   db.exec('ALTER TABLE job_checklist_items ADD COLUMN internal INTEGER NOT NULL DEFAULT 0');
 }
 
-// Job codes: generateJobCode (routes/jobs.js) used to number each job type
-// independently per year, so e.g. a Contract and a Minor Works job created
-// around the same time could both land on "001" — never a literal duplicate
-// (the M/R letter still makes the full code unique) but confusing, and no
-// longer how new codes are assigned now that the generator draws from one
-// shared per-year sequence across all types. Data-only fix, not a schema
-// change: Contract numbers are authoritative and never touched; any Minor
-// Works/Remedial job whose number collides with a Contract job (or, once
-// this has run once, with another Minor Works/Remedial job) of the same
-// year is renumbered to the next free number for that year, oldest job
-// first. Self-stabilizing — once every number is unique a later run finds
-// nothing left to reassign, so this is safe to leave running on every boot
-// rather than needing its own one-off "has this run" flag.
+// Job codes are always a bare YYXXX (e.g. "26001") now, regardless of job
+// type — the type is conveyed in the UI by colour (see JOB_TYPE_ROW_TINT in
+// JobsPage.tsx), not by a letter baked into the code itself. Converges two
+// historical states in one idempotent pass: (a) a type letter still on the
+// code (Contract briefly had its own "C", Minor Works "M", Remedial "R"),
+// and (b) each type having counted its own number independently per year,
+// so e.g. a Contract and a Minor Works job created the same year could both
+// be "…001". Contract numbers are treated as authoritative and never
+// renumbered; any Minor Works/Remedial job whose number collides with a
+// Contract job (or, once this has run once, another Minor Works/Remedial
+// job) of the same year is renumbered to the next free number, oldest job
+// first. Self-stabilizing — once every code is bare and every number is
+// unique, a later run finds nothing left to change, so this is safe to
+// leave running on every boot rather than needing its own one-off "has
+// this run" flag.
 {
   const codeRows = db.prepare("SELECT id, code, job_type FROM jobs WHERE code IS NOT NULL ORDER BY created_at").all();
-  // Matches the YYXXX/CYYXXX/MYYXXX/RYYXXX scheme (the leading letter
-  // optional, to also catch Contract's old unprefixed codes below) —
-  // legacy codes (e.g. a bare 4-digit "2612") don't fit this shape and are
-  // left alone, same as generateJobCode's own suffix-length check already
-  // ignores them.
-  const CODE_RE = /^([CMR]?)(\d{2})(\d{3})$/;
-
-  // Contract codes gain their own "C" prefix, same as Minor Works/Remedial
-  // already have "M"/"R" — Contract was previously the only type coded with
-  // no letter at all.
-  const addPrefix = [];
-  for (const row of codeRows) {
-    const m = CODE_RE.exec(row.code);
-    if (!m || row.job_type !== 'contract' || m[1] === 'C') continue;
-    addPrefix.push({ id: row.id, newCode: `C${row.code}` });
-  }
-  if (addPrefix.length > 0) {
-    const updateCode = db.prepare('UPDATE jobs SET code = ? WHERE id = ?');
-    for (const { id, newCode } of addPrefix) updateCode.run(newCode, id);
-    console.log(`[migration] added a "C" prefix to ${addPrefix.length} contract job code(s)`);
-    const renamed = new Map(addPrefix.map((u) => [u.id, u.newCode]));
-    for (const row of codeRows) if (renamed.has(row.id)) row.code = renamed.get(row.id);
-  }
+  // Tolerates an optional leading type letter so this still recognizes
+  // codes from either historical state above — legacy codes (e.g. a bare
+  // 4-digit "2612") don't fit this shape either way and are left alone,
+  // same as generateJobCode's own suffix-length check already ignores them.
+  const CODE_RE = /^[CMR]?(\d{2})(\d{3})$/;
 
   const claimedByYear = new Map(); // yy -> Set<number>
-
   for (const row of codeRows) {
     const m = CODE_RE.exec(row.code);
     if (!m || row.job_type !== 'contract') continue;
-    const yy = m[2];
+    const yy = m[1];
     if (!claimedByYear.has(yy)) claimedByYear.set(yy, new Set());
-    claimedByYear.get(yy).add(Number(m[3]));
+    claimedByYear.get(yy).add(Number(m[2]));
   }
 
-  const renumbers = [];
+  const updates = [];
   for (const row of codeRows) {
     const m = CODE_RE.exec(row.code);
-    if (!m || row.job_type === 'contract') continue;
-    const [, letter, yy, numStr] = m;
-    if (!claimedByYear.has(yy)) claimedByYear.set(yy, new Set());
-    const claimed = claimedByYear.get(yy);
+    if (!m) continue;
+    const [, yy, numStr] = m;
     let num = Number(numStr);
-    if (claimed.has(num)) {
-      num = 1;
-      while (claimed.has(num)) num++;
-      renumbers.push({ id: row.id, newCode: `${letter}${yy}${String(num).padStart(3, '0')}` });
+    if (row.job_type !== 'contract') {
+      if (!claimedByYear.has(yy)) claimedByYear.set(yy, new Set());
+      const claimed = claimedByYear.get(yy);
+      if (claimed.has(num)) {
+        num = 1;
+        while (claimed.has(num)) num++;
+      }
+      claimed.add(num);
     }
-    claimed.add(num);
+    const bareCode = `${yy}${String(num).padStart(3, '0')}`;
+    if (bareCode !== row.code) updates.push({ id: row.id, newCode: bareCode });
   }
 
-  if (renumbers.length > 0) {
+  if (updates.length > 0) {
     const updateCode = db.prepare('UPDATE jobs SET code = ? WHERE id = ?');
-    for (const { id, newCode } of renumbers) updateCode.run(newCode, id);
-    console.log(`[migration] renumbered ${renumbers.length} job code(s) to remove cross-type number collisions`);
+    for (const { id, newCode } of updates) updateCode.run(newCode, id);
+    console.log(`[migration] normalized ${updates.length} job code(s) to a bare, cross-type-unique YYXXX`);
   }
 }
 
