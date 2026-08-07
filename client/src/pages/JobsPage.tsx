@@ -346,7 +346,7 @@ export default function JobsPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
         <div style={{ display: 'flex', gap: 10 }}>
-          <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+          <input placeholder="Search by code, name or client…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} autoFocus />
           <StatusFilterDropdown value={statusFilter} onChange={setStatusFilter} statuses={visibleStatuses} />
           <JobTypeFilterDropdown value={typeFilter} onChange={setTypeFilter} />
           {user?.id != null && (

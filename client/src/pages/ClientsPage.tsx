@@ -82,7 +82,7 @@ export default function ClientsPage() {
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
-        <input placeholder="Search clients…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <input placeholder="Search clients…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} autoFocus />
         <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
           Show inactive
@@ -149,6 +149,11 @@ export default function ClientsPage() {
             await api.updateClient(editing.id, data);
             load();
           }}
+          onDelete={async () => {
+            await api.deleteClient(editing.id);
+            load();
+          }}
+          isAdmin={isAdmin}
           readOnly={isReadOnly}
         />
       )}

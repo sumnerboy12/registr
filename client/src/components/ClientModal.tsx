@@ -8,12 +8,16 @@ interface Props {
   client: Client | null;
   onClose: () => void;
   onSave: (data: Partial<Client>) => Promise<void>;
+  // Admin-only, and only offered for a client the server confirms is unused
+  // (see routes/clients.js) — omitted entirely for a new client.
+  onDelete?: () => Promise<void>;
+  isAdmin?: boolean;
   readOnly?: boolean;
 }
 
 const TYPES = Object.keys(CLIENT_TYPE_LABELS) as ClientType[];
 
-export default function ClientModal({ client, onClose, onSave, readOnly }: Props) {
+export default function ClientModal({ client, onClose, onSave, onDelete, isAdmin, readOnly }: Props) {
   const [name, setName] = useState(client?.name ?? '');
   const [type, setType] = useState<ClientType>(client?.type ?? 'direct');
   const [contactName, setContactName] = useState(client?.contact_name ?? '');
@@ -48,6 +52,20 @@ export default function ClientModal({ client, onClose, onSave, readOnly }: Props
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || !confirm(`Delete "${name}"? This can't be undone.`)) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onDelete();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete');
     } finally {
       setSaving(false);
     }
@@ -117,7 +135,13 @@ export default function ClientModal({ client, onClose, onSave, readOnly }: Props
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
         <div className="modal-actions">
-          <div />
+          <div>
+            {client && isAdmin && onDelete && !readOnly && (
+              <button className="btn btn-danger" onClick={handleDelete} disabled={saving}>
+                Delete
+              </button>
+            )}
+          </div>
           <div className="right">
             <button className="btn" onClick={onClose}>
               {readOnly ? 'Close' : 'Cancel'}

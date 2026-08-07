@@ -57,7 +57,7 @@ export default function AddChecklistItemModal({ jobId, onClose, onAdded }: Props
         <div className="field">
           <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <input type="checkbox" style={{ width: 'auto' }} checked={internal} onChange={(e) => setInternal(e.target.checked)} />
-            Internal (left out of the customer-facing PDF export)
+            Internal
           </label>
         </div>
 

@@ -597,11 +597,11 @@ export default function JobDetailPage() {
                 >
                   {a.person.email ? (
                     <a href={`mailto:${a.person.email}`} title={`Email ${a.person.name}`} style={{ color: 'inherit', textDecoration: 'none' }}>
-                      {ASSIGNMENT_ROLE_LABELS[a.role]}: {a.person.name}
+                      {ASSIGNMENT_ROLE_LABELS[a.role]}: <span style={{ textTransform: 'uppercase' }}>{a.person.name}</span>
                     </a>
                   ) : (
                     <span>
-                      {ASSIGNMENT_ROLE_LABELS[a.role]}: {a.person.name}
+                      {ASSIGNMENT_ROLE_LABELS[a.role]}: <span style={{ textTransform: 'uppercase' }}>{a.person.name}</span>
                     </span>
                   )}
                   {!isReadOnly && (

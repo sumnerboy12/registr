@@ -75,6 +75,7 @@ export const api = {
   createClient: (data: Partial<Client>) => request<Client>('/v1/clients', { method: 'POST', body: JSON.stringify(data) }),
   updateClient: (id: number, data: Partial<Client>) =>
     request<Client>(`/v1/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteClient: (id: number) => request<void>(`/v1/clients/${id}`, { method: 'DELETE' }),
 
   getPlant: (params?: { active?: boolean; q?: string }) => {
     const qs = new URLSearchParams();

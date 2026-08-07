@@ -115,7 +115,7 @@ export default function PeoplePage() {
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
-        <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <input placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} autoFocus />
         <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType | '')}>
           <option value="">All employment types</option>
           {Object.entries(EMPLOYMENT_TYPE_LABELS).map(([value, label]) => (

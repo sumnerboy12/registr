@@ -67,7 +67,7 @@ export default function PlantPage() {
       </div>
 
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
-        <input placeholder="Search plant…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} />
+        <input placeholder="Search plant…" value={q} onChange={(e) => setQ(e.target.value)} style={{ width: 280 }} autoFocus />
         <label style={{ fontSize: 13, color: 'var(--text-dim)', display: 'flex', gap: 6, alignItems: 'center' }}>
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: 'auto' }} />
           Show inactive

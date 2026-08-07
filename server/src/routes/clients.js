@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db/index.js';
-import { requireAuth, requireWrite } from '../middleware/auth.js';
+import { requireAuth, requireAdmin, requireWrite } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
 
 const router = Router();
@@ -81,6 +81,24 @@ router.patch('/:id', requireAuth, requireWrite, (req, res) => {
 
   const row = db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
   res.json(publicClient(row));
+});
+
+// Admin-only, and only when no job currently references this client — jobs.
+// client_id is ON DELETE SET NULL at the schema level, but silently
+// unlinking a client's jobs out from under someone isn't the right call
+// here; they should re-link those jobs (or a stand-in) first.
+router.delete('/:id', requireAuth, requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
+  if (!existing) return res.status(404).json({ error: 'not found' });
+
+  const { count } = db.prepare('SELECT COUNT(*) AS count FROM jobs WHERE client_id = ?').get(id);
+  if (count > 0) {
+    return res.status(409).json({ error: `Still linked to ${count} job${count === 1 ? '' : 's'} — re-link those first` });
+  }
+
+  db.prepare('DELETE FROM clients WHERE id = ?').run(id);
+  res.status(204).end();
 });
 
 export default router;

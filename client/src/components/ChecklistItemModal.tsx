@@ -179,7 +179,7 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
           />
         )}
 
-        <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
           {CHECKLIST_ITEM_STATUSES.map((s) => (
             <button
               key={s}
@@ -196,6 +196,19 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
               {CHECKLIST_ITEM_STATUS_LABELS[s]}
             </button>
           ))}
+          <label
+            title="Left out of the customer-facing PDF export — still shown everywhere else"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dim)', marginLeft: 'auto' }}
+          >
+            <input
+              type="checkbox"
+              style={{ width: 'auto' }}
+              checked={item.internal}
+              disabled={isReadOnly}
+              onChange={(e) => toggleInternal(e.target.checked)}
+            />
+            Internal
+          </label>
         </div>
         {item.status_by_name && item.status_at && (
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: -10, marginBottom: 16 }}>
@@ -204,26 +217,70 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
           </div>
         )}
 
-        <label
-          title="Left out of the customer-facing PDF export — still shown everywhere else"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}
-        >
-          <input
-            type="checkbox"
-            style={{ width: 'auto' }}
-            checked={item.internal}
-            disabled={isReadOnly}
-            onChange={(e) => toggleInternal(e.target.checked)}
-          />
-          Internal
-        </label>
-
         <div className="field">
           <label>Note</label>
           {isReadOnly ? (
             <div style={{ fontSize: 14, whiteSpace: 'pre-wrap' }}>{item.notes || <span style={{ color: 'var(--text-dim)' }}>—</span>}</div>
           ) : (
             <textarea defaultValue={item.notes ?? ''} rows={2} placeholder="Note…" onBlur={(e) => saveNotes(e.target.value)} />
+          )}
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <h3 style={{ fontSize: 14, margin: 0 }}>Attachments</h3>
+            {!isReadOnly && (
+              <>
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAttachment(file);
+                    e.target.value = '';
+                  }}
+                />
+                <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => attachmentInputRef.current?.click()} disabled={busy}>
+                  {busy ? 'Uploading…' : '+ Add'}
+                </button>
+              </>
+            )}
+          </div>
+          {attachmentsLoading ? (
+            <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Loading…</div>
+          ) : attachments.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>No attachments yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {attachments.map((a) => (
+                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  {a.content_type.startsWith('image/') && (
+                    <img
+                      src={`/api/v1/jobs/${jobId}/checklist/${item.id}/attachments/${a.id}`}
+                      alt=""
+                      style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
+                    />
+                  )}
+                  <a href={`/api/v1/jobs/${jobId}/checklist/${item.id}/attachments/${a.id}`} style={{ color: 'var(--accent)' }}>
+                    {a.original_name}
+                  </a>
+                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
+                    · {formatFileSize(a.size)} · {a.uploaded_by_name} ·{' '}
+                    <span title={formatDateTime(a.created_at)}>{formatRelativeTime(a.created_at)}</span>
+                  </span>
+                  {!isReadOnly && (
+                    <button
+                      onClick={() => deleteAttachment(a.id)}
+                      disabled={busy}
+                      style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 11, color: 'var(--danger)', opacity: 0.6, cursor: 'pointer' }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -246,7 +303,7 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
               />
               {composerFocused && (
-                <button className="btn btn-primary" onClick={postComment} disabled={busy || !newComment.trim()}>
+                <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={postComment} disabled={busy || !newComment.trim()}>
                   {busy ? 'Posting…' : 'Add comment'}
                 </button>
               )}
@@ -352,64 +409,6 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
                   </div>
                 );
               })}
-            </div>
-          )}
-        </div>
-
-        <div style={{ marginTop: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <h3 style={{ fontSize: 14, margin: 0 }}>Attachments</h3>
-            {!isReadOnly && (
-              <>
-                <input
-                  ref={attachmentInputRef}
-                  type="file"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) uploadAttachment(file);
-                    e.target.value = '';
-                  }}
-                />
-                <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => attachmentInputRef.current?.click()} disabled={busy}>
-                  {busy ? 'Uploading…' : '+ Add'}
-                </button>
-              </>
-            )}
-          </div>
-          {attachmentsLoading ? (
-            <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>Loading…</div>
-          ) : attachments.length === 0 ? (
-            <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>No attachments yet.</div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {attachments.map((a) => (
-                <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                  {a.content_type.startsWith('image/') && (
-                    <img
-                      src={`/api/v1/jobs/${jobId}/checklist/${item.id}/attachments/${a.id}`}
-                      alt=""
-                      style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, flexShrink: 0 }}
-                    />
-                  )}
-                  <a href={`/api/v1/jobs/${jobId}/checklist/${item.id}/attachments/${a.id}`} style={{ color: 'var(--accent)' }}>
-                    {a.original_name}
-                  </a>
-                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-                    · {formatFileSize(a.size)} · {a.uploaded_by_name} ·{' '}
-                    <span title={formatDateTime(a.created_at)}>{formatRelativeTime(a.created_at)}</span>
-                  </span>
-                  {!isReadOnly && (
-                    <button
-                      onClick={() => deleteAttachment(a.id)}
-                      disabled={busy}
-                      style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 0, fontSize: 11, color: 'var(--danger)', opacity: 0.6, cursor: 'pointer' }}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              ))}
             </div>
           )}
         </div>
