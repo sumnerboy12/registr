@@ -616,13 +616,13 @@ export default function JobDetailPage() {
                   )}
                 </span>
               ))}
-            {!isNew && job && !isReadOnly && (
-              <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setShowAddAssignment(true)}>
-                Add role
-              </button>
-            )}
           </div>
 
+          {!isNew && job && !isReadOnly && (
+            <button className="btn" style={{ flexShrink: 0 }} onClick={() => setShowAddAssignment(true)}>
+              Add role
+            </button>
+          )}
           {isNew && !isReadOnly && (
             <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleCreate} disabled={saving}>
               {saving ? 'Creating…' : 'Create'}
@@ -897,7 +897,7 @@ export default function JobDetailPage() {
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
               />
               {composerFocused && (
-                <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={postComment} disabled={commentBusy || !newComment.trim()}>
+                <button className="btn btn-primary" onClick={postComment} disabled={commentBusy || !newComment.trim()}>
                   {commentBusy ? 'Posting…' : 'Add comment'}
                 </button>
               )}

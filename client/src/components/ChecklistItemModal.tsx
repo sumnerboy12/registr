@@ -303,7 +303,7 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
                 style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginBottom: 8 }}
               />
               {composerFocused && (
-                <button className="btn btn-primary" style={{ fontSize: 12 }} onClick={postComment} disabled={busy || !newComment.trim()}>
+                <button className="btn btn-primary" onClick={postComment} disabled={busy || !newComment.trim()}>
                   {busy ? 'Posting…' : 'Add comment'}
                 </button>
               )}
