@@ -91,7 +91,11 @@ function savePersistedFilter(key: string, values: string[]) {
 // readability of the row's own text.
 const JOB_TYPE_ROW_TINT: Record<JobType, string> = {
   contract: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-  minor_works: 'color-mix(in srgb, #3b82f6 8%, transparent)',
+  // Fuchsia, at a stronger mix than the other two — a cool violet at the
+  // same low opacity as --accent's teal still washed into a similar
+  // grayish smear; warm-vs-cool contrast (like remedial's amber) reads far
+  // more clearly than two cool hues against each other.
+  minor_works: 'color-mix(in srgb, #d946ef 16%, transparent)',
   remedial: 'color-mix(in srgb, var(--warn) 10%, transparent)',
 };
 
