@@ -28,6 +28,12 @@ export default function ChecklistTemplatesPage() {
     completion: '',
     warranty: '',
   });
+  const [newInternal, setNewInternal] = useState<Record<ChecklistStage, boolean>>({
+    pre_start: false,
+    in_progress: false,
+    completion: false,
+    warranty: false,
+  });
 
   const load = () => {
     setLoading(true);
@@ -51,7 +57,10 @@ export default function ChecklistTemplatesPage() {
       .filter((i) => filterJobType === 'all' || i.job_type === filterJobType || i.job_type == null)
       .sort((a, b) => a.sequence - b.sequence);
 
-  const patchItem = async (id: number, data: Partial<Pick<ChecklistTemplateItem, 'label' | 'active' | 'sequence' | 'job_type'>>) => {
+  const patchItem = async (
+    id: number,
+    data: Partial<Pick<ChecklistTemplateItem, 'label' | 'active' | 'sequence' | 'job_type' | 'internal'>>
+  ) => {
     setError(null);
     try {
       const updated = await api.updateChecklistTemplateItem(id, data);
@@ -77,10 +86,16 @@ export default function ChecklistTemplatesPage() {
     if (!label) return;
     setError(null);
     try {
-      const created = await api.createChecklistTemplateItem({ stage, label, job_type: newJobType[stage] || null });
+      const created = await api.createChecklistTemplateItem({
+        stage,
+        label,
+        job_type: newJobType[stage] || null,
+        internal: newInternal[stage],
+      });
       setItems((prev) => [...prev, created]);
       setNewLabel((prev) => ({ ...prev, [stage]: '' }));
       setNewJobType((prev) => ({ ...prev, [stage]: '' }));
+      setNewInternal((prev) => ({ ...prev, [stage]: false }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to add item');
     }
@@ -186,6 +201,18 @@ export default function ChecklistTemplatesPage() {
                       />
                       Active
                     </label>
+                    <label
+                      title="Left out of the customer-facing PDF export — still shown everywhere else"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dim)' }}
+                    >
+                      <input
+                        type="checkbox"
+                        style={{ width: 'auto' }}
+                        checked={item.internal}
+                        onChange={(e) => patchItem(item.id, { internal: e.target.checked })}
+                      />
+                      Internal
+                    </label>
                     <button className="btn btn-danger" style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => deleteItem(item.id)}>
                       Delete
                     </button>
@@ -211,6 +238,18 @@ export default function ChecklistTemplatesPage() {
                   <option value="minor_works">{JOB_TYPE_LABELS.minor_works}</option>
                   <option value="remedial">{JOB_TYPE_LABELS.remedial}</option>
                 </select>
+                <label
+                  title="Left out of the customer-facing PDF export — still shown everywhere else"
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dim)' }}
+                >
+                  <input
+                    type="checkbox"
+                    style={{ width: 'auto' }}
+                    checked={newInternal[stage]}
+                    onChange={(e) => setNewInternal((prev) => ({ ...prev, [stage]: e.target.checked }))}
+                  />
+                  Internal
+                </label>
                 <button className="btn" onClick={() => addItem(stage)} disabled={!newLabel[stage].trim()}>
                   Add
                 </button>

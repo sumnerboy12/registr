@@ -159,6 +159,11 @@ CREATE TABLE IF NOT EXISTS checklist_templates (
   label TEXT NOT NULL,
   sequence INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1,
+  -- Copied onto each job item at creation/sync time, same as stage/label —
+  -- an internal item is left out of the customer-facing PDF export (see
+  -- JobQaReportPage.tsx) but still tracked/shown everywhere internal, same
+  -- as any other item.
+  internal INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -187,6 +192,11 @@ CREATE TABLE IF NOT EXISTS job_checklist_items (
   status_by_name TEXT,
   status_at TEXT,
   notes TEXT,
+  -- Excluded from the customer-facing PDF export (see JobQaReportPage.tsx)
+  -- — everything else (the QA Check report, the job's own Checklist card)
+  -- still shows it. Copied from the template item at creation/sync time,
+  -- but independently toggleable per job same as any ad-hoc item.
+  internal INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

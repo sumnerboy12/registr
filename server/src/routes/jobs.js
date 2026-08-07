@@ -41,9 +41,9 @@ function loadAssignments(jobId) {
 // template item) and by POST /:id/checklist/sync (just the ones missing).
 function copyChecklistTemplateToJob(jobId, templateRows) {
   const insert = db.prepare(
-    `INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence) VALUES (?, ?, ?, ?, ?)`
+    `INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence, internal) VALUES (?, ?, ?, ?, ?, ?)`
   );
-  for (const t of templateRows) insert.run(jobId, t.id, t.stage, t.label, t.sequence);
+  for (const t of templateRows) insert.run(jobId, t.id, t.stage, t.label, t.sequence, t.internal);
 }
 
 // comment_count/attachment_count are computed here (rather than loaded
@@ -53,14 +53,20 @@ const CHECKLIST_ITEM_COLUMNS = `jci.*,
   (SELECT COUNT(*) FROM job_checklist_item_comments c WHERE c.item_id = jci.id) AS comment_count,
   (SELECT COUNT(*) FROM job_checklist_item_attachments a WHERE a.item_id = jci.id) AS attachment_count`;
 
+function publicChecklistItem(row) {
+  return { ...row, internal: !!row.internal };
+}
+
 function getChecklistItem(itemId) {
-  return db.prepare(`SELECT ${CHECKLIST_ITEM_COLUMNS} FROM job_checklist_items jci WHERE jci.id = ?`).get(itemId);
+  const row = db.prepare(`SELECT ${CHECKLIST_ITEM_COLUMNS} FROM job_checklist_items jci WHERE jci.id = ?`).get(itemId);
+  return publicChecklistItem(row);
 }
 
 function listChecklistItems(jobId) {
   return db
     .prepare(`SELECT ${CHECKLIST_ITEM_COLUMNS} FROM job_checklist_items jci WHERE jci.job_id = ? ORDER BY jci.stage, jci.sequence, jci.id`)
-    .all(jobId);
+    .all(jobId)
+    .map(publicChecklistItem);
 }
 
 function publicJob(row, { includeAssignments } = {}) {
@@ -460,7 +466,7 @@ router.post('/:id/checklist', requireAuth, requireWrite, (req, res) => {
   const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(req.params.id);
   if (!job) return res.status(404).json({ error: 'not found' });
 
-  const { stage, label } = req.body;
+  const { stage, label, internal } = req.body;
   if (!CHECKLIST_STAGES.includes(stage)) return res.status(400).json({ error: 'Invalid stage' });
   if (!label || !label.trim()) return res.status(400).json({ error: 'label is required' });
 
@@ -468,8 +474,8 @@ router.post('/:id/checklist', requireAuth, requireWrite, (req, res) => {
     .prepare('SELECT COALESCE(MAX(sequence), -1) + 1 AS n FROM job_checklist_items WHERE job_id = ? AND stage = ?')
     .get(job.id, stage);
   const result = db
-    .prepare('INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence) VALUES (?, NULL, ?, ?, ?)')
-    .run(job.id, stage, label.trim(), nextSequence);
+    .prepare('INSERT INTO job_checklist_items (job_id, template_id, stage, label, sequence, internal) VALUES (?, NULL, ?, ?, ?, ?)')
+    .run(job.id, stage, label.trim(), nextSequence, internal ? 1 : 0);
   res.status(201).json(getChecklistItem(result.lastInsertRowid));
 });
 
@@ -479,7 +485,7 @@ router.patch('/:id/checklist/:itemId', requireAuth, requireWrite, (req, res) => 
     .get(Number(req.params.itemId), req.params.id);
   if (!item) return res.status(404).json({ error: 'not found' });
 
-  const { status, label, notes } = req.body;
+  const { status, label, notes, internal } = req.body;
   if (status != null) {
     if (!CHECKLIST_ITEM_STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
     db.prepare(
@@ -492,6 +498,9 @@ router.patch('/:id/checklist/:itemId', requireAuth, requireWrite, (req, res) => 
   }
   if (notes !== undefined) {
     db.prepare('UPDATE job_checklist_items SET notes = ? WHERE id = ?').run(notes ? notes.trim() || null : null, item.id);
+  }
+  if (internal != null) {
+    db.prepare('UPDATE job_checklist_items SET internal = ? WHERE id = ?').run(internal ? 1 : 0, item.id);
   }
 
   res.json(getChecklistItem(item.id));

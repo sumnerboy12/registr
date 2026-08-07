@@ -162,22 +162,22 @@ export const api = {
   sendScheduledReportNow: (id: number) => request<{ sent: true }>(`/v1/scheduled-reports/${id}/send-now`, { method: 'POST' }),
 
   getChecklistTemplates: () => request<ChecklistTemplateItem[]>('/v1/checklist-templates'),
-  createChecklistTemplateItem: (data: { stage: ChecklistStage; job_type: JobType | null; label: string }) =>
+  createChecklistTemplateItem: (data: { stage: ChecklistStage; job_type: JobType | null; label: string; internal?: boolean }) =>
     request<ChecklistTemplateItem>('/v1/checklist-templates', { method: 'POST', body: JSON.stringify(data) }),
   updateChecklistTemplateItem: (
     id: number,
-    data: Partial<Pick<ChecklistTemplateItem, 'stage' | 'job_type' | 'label' | 'sequence' | 'active'>>
+    data: Partial<Pick<ChecklistTemplateItem, 'stage' | 'job_type' | 'label' | 'sequence' | 'active' | 'internal'>>
   ) => request<ChecklistTemplateItem>(`/v1/checklist-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteChecklistTemplateItem: (id: number) => request<void>(`/v1/checklist-templates/${id}`, { method: 'DELETE' }),
 
   getJobChecklist: (jobId: string) => request<JobChecklistItem[]>(`/v1/jobs/${jobId}/checklist`),
   syncJobChecklist: (jobId: string) => request<JobChecklistItem[]>(`/v1/jobs/${jobId}/checklist/sync`, { method: 'POST' }),
-  addJobChecklistItem: (jobId: string, data: { stage: ChecklistStage; label: string }) =>
+  addJobChecklistItem: (jobId: string, data: { stage: ChecklistStage; label: string; internal?: boolean }) =>
     request<JobChecklistItem>(`/v1/jobs/${jobId}/checklist`, { method: 'POST', body: JSON.stringify(data) }),
   updateJobChecklistItem: (
     jobId: string,
     itemId: number,
-    data: { status?: ChecklistItemStatus; label?: string; notes?: string | null }
+    data: { status?: ChecklistItemStatus; label?: string; notes?: string | null; internal?: boolean }
   ) => request<JobChecklistItem>(`/v1/jobs/${jobId}/checklist/${itemId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteJobChecklistItem: (jobId: string, itemId: number) =>
     request<void>(`/v1/jobs/${jobId}/checklist/${itemId}`, { method: 'DELETE' }),

@@ -12,6 +12,7 @@ interface Props {
 export default function AddChecklistItemModal({ jobId, onClose, onAdded }: Props) {
   const [stage, setStage] = useState<ChecklistStage>('pre_start');
   const [label, setLabel] = useState('');
+  const [internal, setInternal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +21,7 @@ export default function AddChecklistItemModal({ jobId, onClose, onAdded }: Props
     setBusy(true);
     setError(null);
     try {
-      const created = await api.addJobChecklistItem(jobId, { stage, label: label.trim() });
+      const created = await api.addJobChecklistItem(jobId, { stage, label: label.trim(), internal });
       onAdded(created);
       onClose();
     } catch (e) {
@@ -52,6 +53,12 @@ export default function AddChecklistItemModal({ jobId, onClose, onAdded }: Props
             onChange={(e) => setLabel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
+        </div>
+        <div className="field">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" style={{ width: 'auto' }} checked={internal} onChange={(e) => setInternal(e.target.checked)} />
+            Internal (left out of the customer-facing PDF export)
+          </label>
         </div>
 
         {error && <div style={{ color: 'var(--danger)', fontSize: 13, marginBottom: 8 }}>{error}</div>}

@@ -81,6 +81,15 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
     }
   };
 
+  const toggleInternal = async (internal: boolean) => {
+    setError(null);
+    try {
+      onItemChange(await api.updateJobChecklistItem(jobId, item.id, { internal }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update');
+    }
+  };
+
   const postComment = async () => {
     if (!newComment.trim()) return;
     setBusy(true);
@@ -194,6 +203,20 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
             <span title={formatDateTime(item.status_at)}>{formatRelativeTime(item.status_at)}</span>
           </div>
         )}
+
+        <label
+          title="Left out of the customer-facing PDF export — still shown everywhere else"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-dim)', marginBottom: 16 }}
+        >
+          <input
+            type="checkbox"
+            style={{ width: 'auto' }}
+            checked={item.internal}
+            disabled={isReadOnly}
+            onChange={(e) => toggleInternal(e.target.checked)}
+          />
+          Internal
+        </label>
 
         <div className="field">
           <label>Note</label>

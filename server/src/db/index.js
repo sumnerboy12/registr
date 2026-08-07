@@ -51,5 +51,14 @@ if (!jobChecklistItemColumns.includes('status')) {
   `);
 }
 
+// checklist_templates.internal / job_checklist_items.internal — same
+// reasoning as job_type/notes above.
+if (!checklistTemplateColumns.includes('internal')) {
+  db.exec('ALTER TABLE checklist_templates ADD COLUMN internal INTEGER NOT NULL DEFAULT 0');
+}
+if (!jobChecklistItemColumns.includes('internal')) {
+  db.exec('ALTER TABLE job_checklist_items ADD COLUMN internal INTEGER NOT NULL DEFAULT 0');
+}
+
 export { dataDir };
 export default db;

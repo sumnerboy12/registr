@@ -258,6 +258,9 @@ export interface ChecklistTemplateItem {
   label: string;
   sequence: number;
   active: boolean;
+  // Copied onto each job item at creation/sync time — see JobChecklistItem
+  // below for what it means there.
+  internal: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -300,6 +303,10 @@ export interface JobChecklistItem {
   status_by_name: string | null;
   status_at: string | null;
   notes: string | null;
+  // Excluded from the customer-facing PDF export (JobQaReportPage.tsx) —
+  // still shown everywhere else (the job's own Checklist card, the QA
+  // Check report).
+  internal: boolean;
   comment_count: number;
   attachment_count: number;
   created_at: string;

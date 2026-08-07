@@ -743,6 +743,23 @@ export default function JobDetailPage() {
                         >
                           {item.label}
                         </button>
+                        {item.internal && (
+                          <span
+                            title="Left out of the customer-facing PDF export"
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.02em',
+                              padding: '1px 6px',
+                              borderRadius: 999,
+                              border: '1px solid var(--border)',
+                              color: 'var(--text-dim)',
+                            }}
+                          >
+                            Internal
+                          </span>
+                        )}
                         {(item.comment_count > 0 || item.attachment_count > 0 || item.notes) && (
                           <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
                             {item.notes && '📝'}

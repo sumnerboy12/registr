@@ -34,7 +34,9 @@ export default function JobQaReportPage() {
       .getJobByCode(code)
       .then(async (j) => {
         setJob(j);
-        const items = await api.getJobChecklist(j.id);
+        // Internal items are left out of this customer-facing export entirely
+        // — not shown, not counted, no point fetching their attachments.
+        const items = (await api.getJobChecklist(j.id)).filter((i) => !i.internal);
         setChecklist(items);
         const withAttachments = items.filter((i) => i.attachment_count > 0);
         const entries = await Promise.all(
