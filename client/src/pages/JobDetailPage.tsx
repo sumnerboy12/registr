@@ -641,16 +641,25 @@ export default function JobDetailPage() {
                 ? ` (${checklist.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length}/${checklist.length})`
                 : ''}
             </h2>
-            {!isReadOnly && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={syncChecklist} disabled={checklistBusy}>
-                  Sync from template
-                </button>
-                <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setShowAddChecklistItem(true)}>
-                  + Add item
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn"
+                style={{ padding: '2px 8px', fontSize: 12 }}
+                onClick={() => window.open(`/jobs/${job.code}/qa-report`, '_blank')}
+              >
+                Export PDF
+              </button>
+              {!isReadOnly && (
+                <>
+                  <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={syncChecklist} disabled={checklistBusy}>
+                    Sync template
+                  </button>
+                  <button className="btn" style={{ padding: '2px 8px', fontSize: 12 }} onClick={() => setShowAddChecklistItem(true)}>
+                    + Add
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {checklist.length === 0 ? (
