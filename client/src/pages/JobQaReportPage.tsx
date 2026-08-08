@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import type { ChecklistItemAttachment, Job, JobChecklistItem } from '../types';
+import type { ChecklistItemAttachment, Client, Job, JobChecklistItem } from '../types';
 import {
   CHECKLIST_ITEM_STATUS_COLORS,
   CHECKLIST_ITEM_STATUS_LABELS,
   CHECKLIST_STAGES,
   CHECKLIST_STAGE_LABELS,
-  JOB_STATUS_LABELS,
-  JOB_TYPE_LABELS,
 } from '../types';
+import { NO_CLIENT_COLOR } from '../lib/colors';
 
 // A standalone, print-friendly view of a job's full QA checklist — every
 // item regardless of status, with notes and (image-only) attachments, but
@@ -23,6 +22,7 @@ import {
 export default function JobQaReportPage() {
   const { code } = useParams();
   const [job, setJob] = useState<Job | null>(null);
+  const [client, setClient] = useState<Client | undefined>(undefined);
   const [checklist, setChecklist] = useState<JobChecklistItem[]>([]);
   const [imagesByItem, setImagesByItem] = useState<Record<number, ChecklistItemAttachment[]>>({});
   const [loading, setLoading] = useState(true);
@@ -34,6 +34,9 @@ export default function JobQaReportPage() {
       .getJobByCode(code)
       .then(async (j) => {
         setJob(j);
+        if (j.client_id != null) {
+          api.getClients().then((all) => setClient(all.find((c) => c.id === j.client_id)));
+        }
         // Internal items are left out of this customer-facing export entirely
         // — not shown, not counted, no point fetching their attachments.
         const items = (await api.getJobChecklist(j.id)).filter((i) => !i.internal);
@@ -67,9 +70,30 @@ export default function JobQaReportPage() {
       </button>
 
       <h1 style={{ fontSize: 22, marginBottom: 4 }}>QA Report — {job.name}</h1>
-      <div style={{ color: '#555', fontSize: 14, marginBottom: 28 }}>
-        {job.code} · {JOB_TYPE_LABELS[job.job_type]} · {JOB_STATUS_LABELS[job.status]}
-        {job.site_address && <> · {job.site_address}</>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#555', fontSize: 14, marginBottom: 28 }}>
+        <span
+          style={{
+            display: 'inline-block',
+            padding: '1px 7px',
+            borderRadius: 999,
+            fontSize: 10,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.02em',
+            background: client?.color ?? NO_CLIENT_COLOR,
+            color: '#fff',
+          }}
+        >
+          {client?.name ?? job.client_name ?? 'No client'}
+        </span>
+        <span>·</span>
+        <span>{job.code}</span>
+        {job.site_address && (
+          <>
+            <span>·</span>
+            <span>{job.site_address}</span>
+          </>
+        )}
       </div>
 
       {checklist.length === 0 ? (
@@ -94,6 +118,8 @@ export default function JobQaReportPage() {
                         background: CHECKLIST_ITEM_STATUS_COLORS[item.status],
                         borderRadius: 4,
                         padding: '2px 8px',
+                        minWidth: 90,
+                        textAlign: 'center',
                         flexShrink: 0,
                       }}
                     >
