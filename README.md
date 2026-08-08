@@ -156,6 +156,18 @@ server. Leave it blank (or `production`) on the real deployment.
   (remembered per browser), and **Import**/**Export**. A job also shows a
   **ThinkSafe** badge if that job's code has a site configured in ThinkSafe
   (Wayman's H&S system) — see "Integrating ThinkSafe" below.
+- **QA Checklist** — each job has its own checklist, opened from a **QA
+  Checklist** card on the job page (click anywhere on the card) which leads
+  to a dedicated full-page view at `/jobs/<code>/checklist` — kept
+  separate from the job page itself so a long checklist doesn't have to
+  compete for space with every other job field. Items are grouped into four
+  fixed stages (Pre-Start, In Progress, Completion, Warranty) and each can be
+  Open, In Progress, Done or Won't Do; a stage auto-collapses once every item
+  in it is done, and re-expands if an item in it is reopened or a new one is
+  added. **Sync template** copies in any admin-maintained template item (see
+  **Checklist Templates**, admin only) not already on the job, matched by
+  job type. **Export PDF** opens a print-friendly one-page summary
+  (`/jobs/<code>/qa-report`) suitable for handing to a client or filing.
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)

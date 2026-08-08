@@ -488,7 +488,8 @@
           fields, including re-linking its client or changing its status — except Code,
           which is locked as soon as the job is created (<strong>Type</strong> can still
           change later, e.g. a job quoted as Minor Works that turns out to need a full
-          Contract — its code's prefix just stops matching, which is cosmetic only).</li>
+          Contract — the code itself doesn't change, just the colour tint shown against
+          it).</li>
         <li>No client in the list yet? Leave <strong>Client</strong> blank and a
           <strong>Client name</strong> field appears — a free-text placeholder for a
           prospect, cleared automatically the moment you link a real client instead. A job
@@ -545,6 +546,28 @@
           <a href="#data">chapter 10</a>).
         </p>
       </div>
+
+      <h3>QA Checklist</h3>
+      <p>
+        Every job has its own checklist, summarised on a <strong>QA Checklist</strong> card
+        on the job's own page — click anywhere on that card to open the full checklist on its
+        own dedicated page, kept separate so a long list of items doesn't have to compete for
+        space with the rest of the job's fields, assignments and comments.
+      </p>
+      <p class="dim">
+        Items are grouped into four fixed stages — <strong>Pre-Start</strong>,
+        <strong>In Progress</strong>, <strong>Completion</strong>, <strong>Warranty</strong> —
+        and each can be <strong>Open</strong>, <strong>In Progress</strong>,
+        <strong>Done</strong> or <strong>Won't Do</strong> (the last two both count as
+        finished). A stage collapses itself automatically once every item in it is finished,
+        and reopens if an item in it is reopened or a new one is added to it. <span
+        class="kbd">Sync template</span> copies in any admin-maintained template item (see
+        <strong>Checklist Templates</strong> under the admin menu) not already on the job,
+        matched by job type — a new item added to the template later doesn't retroactively
+        appear on existing jobs until Sync template is clicked. <span
+        class="kbd">Export PDF</span> opens a print-friendly one-page summary of the checklist,
+        suitable for handing to a client or filing.
+      </p>
 
       <h3>Filtering and the Board view</h3>
       <p>

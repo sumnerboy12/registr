@@ -13,6 +13,7 @@ import QaOutstandingReportPage from './pages/QaOutstandingReportPage';
 import ScheduledReportsPage from './pages/ScheduledReportsPage';
 import ChecklistTemplatesPage from './pages/ChecklistTemplatesPage';
 import JobQaReportPage from './pages/JobQaReportPage';
+import JobChecklistPage from './pages/JobChecklistPage';
 
 function Gate() {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ function Gate() {
         <Route index element={<JobsPage />} />
         <Route path="jobs/new" element={<JobDetailPage />} />
         <Route path="jobs/:code" element={<JobDetailPage />} />
+        <Route path="jobs/:code/checklist" element={<JobChecklistPage />} />
         <Route path="clients" element={<ClientsPage />} />
         <Route path="people" element={<PeoplePage />} />
         <Route path="plant" element={<PlantPage />} />
