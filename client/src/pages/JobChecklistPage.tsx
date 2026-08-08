@@ -164,7 +164,7 @@ export default function JobChecklistPage() {
 
       <div className="card" style={{ padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <h2 style={{ fontSize: 16, margin: 0 }}>
+          <h2 style={{ fontSize: 20, margin: 0 }}>
             QA Checklist
             {checklist.length > 0
               ? ` (${checklist.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length}/${checklist.length})`

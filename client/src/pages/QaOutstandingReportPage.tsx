@@ -99,7 +99,7 @@ export default function QaOutstandingReportPage() {
                   <span>&middot;</span>
                   <span>{JOB_TYPE_LABELS[job.job_type]}</span>
                   <span>&middot;</span>
-                  <Link to={`/jobs/${job.code}`} style={{ color: 'var(--accent)' }}>
+                  <Link to={`/jobs/${job.code}`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
                     {job.code}
                   </Link>
                   {job.pm_name && (
