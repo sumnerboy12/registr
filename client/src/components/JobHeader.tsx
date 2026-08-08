@@ -8,11 +8,15 @@ interface JobHeaderProps {
   client?: Client;
   backLabel: string;
   onBack: () => void;
+  // An extra button shown before the back button — e.g. JobDetailPage's
+  // link through to the QA Checklist page, kept up here so it's visible
+  // without scrolling rather than buried among the page's other cards.
+  secondaryAction?: { label: string; onClick: () => void };
 }
 
 // Shared by JobDetailPage and JobChecklistPage so both show the exact same
 // job summary — name, then client/status/type/code/value all on one line.
-export default function JobHeader({ job, client, backLabel, onBack }: JobHeaderProps) {
+export default function JobHeader({ job, client, backLabel, onBack, secondaryAction }: JobHeaderProps) {
   const showValue = job.job_type !== 'remedial' && job.value != null;
   return (
     <div style={{ marginBottom: 16 }}>
@@ -21,9 +25,16 @@ export default function JobHeader({ job, client, backLabel, onBack }: JobHeaderP
           <span>{job.name}</span>
           {job.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
         </h1>
-        <button className="btn" onClick={onBack}>
-          {backLabel}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {secondaryAction && (
+            <button className="btn" onClick={secondaryAction.onClick}>
+              {secondaryAction.label}
+            </button>
+          )}
+          <button className="btn" onClick={onBack}>
+            {backLabel}
+          </button>
+        </div>
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <span

@@ -285,7 +285,20 @@ export default function JobDetailPage() {
           </button>
         </div>
       ) : (
-        <JobHeader job={job} client={clientFor(job.client_id)} backLabel="Back to jobs" onBack={handleBackToJobs} />
+        <JobHeader
+          job={job}
+          client={clientFor(job.client_id)}
+          backLabel="Back to jobs"
+          onBack={handleBackToJobs}
+          secondaryAction={{
+            label: `QA Checklist${
+              checklist.length > 0
+                ? ` (${checklist.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length}/${checklist.length})`
+                : ''
+            }`,
+            onClick: () => navigate(`/jobs/${job.code}/checklist`),
+          }}
+        />
       )}
 
       <div className="card" style={{ padding: 20, marginBottom: 20 }}>
@@ -529,22 +542,6 @@ export default function JobDetailPage() {
 
       {!isNew && job && (
         <>
-        <div
-          className="card"
-          style={{ padding: 20, marginTop: 20, cursor: 'pointer' }}
-          onClick={() => navigate(`/jobs/${job.code}/checklist`)}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: 16, margin: 0 }}>
-              QA Checklist
-              {checklist.length > 0
-                ? ` (${checklist.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length}/${checklist.length})`
-                : ''}
-            </h2>
-            <span style={{ fontSize: 20, color: '#999' }}>›</span>
-          </div>
-        </div>
-
         <div className="card" style={{ padding: 20, marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h2 style={{ fontSize: 16, margin: 0 }}>Attachments</h2>
