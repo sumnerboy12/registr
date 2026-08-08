@@ -78,7 +78,7 @@ export default function QaOutstandingReportPage() {
             <div key={job.id} className="card" style={{ padding: 16 }}>
               <div style={{ marginBottom: 8 }}>
                 <div style={{ fontSize: 16, fontWeight: 600 }}>{job.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                   <span
                     style={{
                       display: 'inline-block',
@@ -99,7 +99,7 @@ export default function QaOutstandingReportPage() {
                   <span>&middot;</span>
                   <span>{JOB_TYPE_LABELS[job.job_type]}</span>
                   <span>&middot;</span>
-                  <Link to={`/jobs/${job.code}`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                  <Link to={`/jobs/${job.code}/checklist`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
                     {job.code}
                   </Link>
                   {job.pm_name && (
