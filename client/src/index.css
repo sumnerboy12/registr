@@ -223,3 +223,7 @@ th {
 .color-swatch.selected {
   box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px white;
 }
+
+.checklist-item-row:hover {
+  background: var(--panel-alt);
+}

@@ -4,7 +4,6 @@ import { api } from '../api/client';
 import type { ChecklistStage, Client, Job, JobChecklistItem } from '../types';
 import {
   CHECKLIST_ITEM_COMPLETE_STATUSES,
-  CHECKLIST_ITEM_STATUSES,
   CHECKLIST_ITEM_STATUS_COLORS,
   CHECKLIST_ITEM_STATUS_LABELS,
   CHECKLIST_STAGES,
@@ -103,30 +102,13 @@ export default function JobChecklistPage() {
     setChecklist((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
   };
 
-  // Quick single-click status advance for fast data entry against a long
-  // checklist — Open -> In Progress -> Done -> Won't Do -> Open. Opening the
-  // item's modal offers the same four statuses as explicit buttons for when
-  // reviewing rather than just clicking through.
-  const cycleChecklistStatus = async (item: JobChecklistItem) => {
-    if (!job) return;
-    const nextStatus = CHECKLIST_ITEM_STATUSES[(CHECKLIST_ITEM_STATUSES.indexOf(item.status) + 1) % CHECKLIST_ITEM_STATUSES.length];
-    setChecklistBusy(true);
-    try {
-      updateChecklistItemInList(await api.updateJobChecklistItem(job.id, item.id, { status: nextStatus }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update checklist item');
-    } finally {
-      setChecklistBusy(false);
-    }
-  };
-
   const onChecklistItemAdded = (item: JobChecklistItem) => {
     setChecklist((prev) => [...prev, item]);
   };
 
   const deleteChecklistItem = async (itemId: number) => {
     if (!job) return;
-    if (!confirm('Remove this checklist item from the job?')) return;
+    if (!confirm('Delete this checklist item from the job?')) return;
     setChecklistBusy(true);
     try {
       await api.deleteJobChecklistItem(job.id, itemId);
@@ -154,7 +136,7 @@ export default function JobChecklistPage() {
   if (error || !job) return <div style={{ padding: 20, color: 'var(--danger)' }}>{error ?? 'Job not found'}</div>;
 
   return (
-    <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
       <JobHeader
         job={job}
         client={clientFor(job.client_id)}
@@ -162,8 +144,8 @@ export default function JobChecklistPage() {
         onBack={() => navigate(`/jobs/${job.code}`)}
       />
 
-      <div className="card" style={{ padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div className="card" style={{ padding: 28 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ fontSize: 20, margin: 0 }}>
             QA Checklist
             {checklist.length > 0
@@ -196,27 +178,27 @@ export default function JobChecklistPage() {
             const isCollapsed = collapsedStages.has(stage);
             const doneCount = stageItems.filter((i) => CHECKLIST_ITEM_COMPLETE_STATUSES.includes(i.status)).length;
             return (
-              <div key={stage} style={{ marginBottom: 14 }}>
+              <div key={stage} style={{ marginBottom: 24 }}>
                 <button
                   onClick={() => toggleStageCollapsed(stage)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 6,
+                    gap: 8,
                     width: '100%',
                     background: 'none',
                     border: 'none',
                     padding: 0,
-                    marginBottom: 6,
+                    marginBottom: 10,
                     cursor: 'pointer',
                     font: 'inherit',
                     textAlign: 'left',
                   }}
                 >
-                  <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 10 }}>{isCollapsed ? '▶' : '▼'}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-dim)', width: 10 }}>{isCollapsed ? '▶' : '▼'}</span>
                   <span
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       fontWeight: 600,
                       color: 'var(--text-dim)',
                       textTransform: 'uppercase',
@@ -225,49 +207,35 @@ export default function JobChecklistPage() {
                   >
                     {CHECKLIST_STAGE_LABELS[stage]}
                   </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-dim)' }}>
                     ({doneCount}/{stageItems.length})
                   </span>
                 </button>
                 {!isCollapsed && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
                     {stageItems.map((item) => (
-                      <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
-                        <button
-                          onClick={() => cycleChecklistStatus(item)}
-                          disabled={isReadOnly || checklistBusy}
-                          title="Click to change status"
+                      <div
+                        key={item.id}
+                        className="checklist-item-row"
+                        onClick={() => setChecklistOpenItemId(item.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 15, padding: '5px 10px', borderRadius: 6, cursor: 'pointer' }}
+                      >
+                        <span
                           style={{
                             flexShrink: 0,
-                            width: 90,
-                            padding: '2px 0',
-                            fontSize: 11,
+                            width: 108,
+                            padding: '5px 0',
+                            fontSize: 12,
                             fontWeight: 600,
                             textAlign: 'center',
-                            borderRadius: 4,
-                            border: 'none',
+                            borderRadius: 6,
                             color: 'white',
                             background: CHECKLIST_ITEM_STATUS_COLORS[item.status],
-                            cursor: isReadOnly ? 'default' : 'pointer',
-                            opacity: isReadOnly ? 0.85 : 1,
                           }}
                         >
                           {CHECKLIST_ITEM_STATUS_LABELS[item.status]}
-                        </button>
-                        <button
-                          onClick={() => setChecklistOpenItemId(item.id)}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            padding: 0,
-                            font: 'inherit',
-                            fontSize: 14,
-                            textAlign: 'left',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {item.label}
-                        </button>
+                        </span>
+                        <span style={{ fontSize: 15 }}>{item.label}</span>
                         {item.internal && (
                           <span
                             title="Left out of the customer-facing PDF export"
@@ -286,28 +254,23 @@ export default function JobChecklistPage() {
                           </span>
                         )}
                         {(item.comment_count > 0 || item.attachment_count > 0 || item.notes) && (
-                          <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-                            {item.notes && '📝'}
+                          <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>
+                            {item.notes && '🗒️'}
                             {item.comment_count > 0 && ` 💬${item.comment_count}`}
                             {item.attachment_count > 0 && ` 📎${item.attachment_count}`}
                           </span>
                         )}
                         {!isReadOnly && (
                           <button
-                            onClick={() => deleteChecklistItem(item.id)}
-                            disabled={checklistBusy}
-                            style={{
-                              marginLeft: 'auto',
-                              background: 'none',
-                              border: 'none',
-                              padding: 0,
-                              fontSize: 11,
-                              color: 'var(--danger)',
-                              opacity: 0.6,
-                              cursor: 'pointer',
+                            className="btn btn-danger"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteChecklistItem(item.id);
                             }}
+                            disabled={checklistBusy}
+                            style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: 12 }}
                           >
-                            Remove
+                            Delete
                           </button>
                         )}
                       </div>
