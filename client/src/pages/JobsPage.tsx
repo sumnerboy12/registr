@@ -9,7 +9,7 @@ import StatusFilterDropdown, { ALL_STATUSES } from '../components/StatusFilterDr
 import JobTypeFilterDropdown, { ALL_JOB_TYPES } from '../components/JobTypeFilterDropdown';
 import { downloadCsv, labelToKey } from '../lib/csv';
 import { NO_CLIENT_COLOR } from '../lib/colors';
-import ThinkSafeBadge from '../components/ThinkSafeBadge';
+import WarningBadge from '../components/WarningBadge';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
 // the same file round-trips a job exactly — this doubles as backup/restore.
@@ -93,6 +93,11 @@ function savePersistedFilter(key: string, values: string[]) {
 // every app that lists jobs — rostr included — tints a job's row the same
 // way instead of each maintaining its own copy of the colour choice.
 const jobTypeRowTint = (job: Job) => `color-mix(in srgb, ${job.job_type_color} 12%, transparent)`;
+
+// Reasons the WarningBadge next to a job's name should show a tooltip for —
+// currently just the ThinkSafe check, but more checks can push onto this
+// array without either call site (board card, list row) needing to change.
+const jobWarnings = (job: Job) => [!job.thinksafe_site && 'No site configured in ThinkSafe'].filter((w): w is string => !!w);
 
 export default function JobsPage() {
   const { user, isReadOnly, isAdmin } = useAuth();
@@ -434,6 +439,7 @@ export default function JobsPage() {
                         onDragEnd={stopEdgeScroll}
                         onClick={() => navigate(`/jobs/${encodeURIComponent(job.code)}`)}
                         style={{
+                          position: 'relative',
                           cursor: isReadOnly ? 'pointer' : 'grab',
                           padding: 10,
                           borderRadius: 6,
@@ -442,9 +448,11 @@ export default function JobsPage() {
                           opacity: INACTIVE_STATUSES.includes(job.status) ? 0.5 : 1,
                         }}
                       >
-                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span>{job.name}</span>
-                          {job.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
+                        <span style={{ position: 'absolute', top: 8, right: 8 }}>
+                          <WarningBadge reasons={jobWarnings(job)} />
+                        </span>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6, paddingRight: 26 }}>
+                          {job.name}
                         </div>
                         <span
                           style={{
@@ -523,12 +531,8 @@ export default function JobsPage() {
                   <td>{job.code}</td>
                   <td>
                     {job.name}
-                    {job.thinksafe_site && (
-                      <>
-                        {' '}
-                        <ThinkSafeBadge title="Site configured on ThinkSafe" />
-                      </>
-                    )}
+                    {' '}
+                    <WarningBadge reasons={jobWarnings(job)} />
                   </td>
                   <td>
                     <span

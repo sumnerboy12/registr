@@ -154,12 +154,12 @@ server. Leave it blank (or `production`) on the real deployment.
   too). The Jobs screen offers a **List** or **Board** (drag-and-drop
   kanban, one column per status) view, multi-select Status/Type filters
   (remembered per browser), and **Import**/**Export**. A job also shows a
-  **ThinkSafe** badge if that job's code has a site configured in ThinkSafe
-  (Wayman's H&S system) — see "Integrating ThinkSafe" below.
-- **QA Checklist** — each job has its own checklist, opened from a **QA
-  Checklist** card on the job page (click anywhere on the card) which leads
-  to a dedicated full-page view at `/jobs/<code>/checklist` — kept
-  separate from the job page itself so a long checklist doesn't have to
+  **warning icon** (hover for why) if that job's code has no matching site in
+  ThinkSafe (Wayman's H&S system) — see "Integrating ThinkSafe" below.
+- **QA Checklist** — each job has its own checklist, opened via the **QA
+  Checklist** button in the job page's header, which leads to a dedicated
+  full-page view at `/jobs/<code>/checklist` — kept separate from the job
+  page itself so a long checklist doesn't have to
   compete for space with every other job field. Items are grouped into four
   fixed stages (Pre-Start, In Progress, Completion, Warranty) and each can be
   Open, In Progress, Done or Won't Do; a stage auto-collapses once every item
@@ -185,9 +185,9 @@ server. Leave it blank (or `production`) on the real deployment.
   filtered by employment type. **Import**/**Export** work here too; imported
   people default to the **None** login type, since a bulk import is usually
   a contact list, not a batch of new logins. A person also shows a
-  **ThinkSafe** badge if their name matches a user in ThinkSafe — see
-  "Integrating ThinkSafe" below. Every day at 3am, Registr automatically
-  deactivates anyone whose **employment end date** has passed (which also
+  **warning icon** (hover for why) if their name has no matching user in
+  ThinkSafe — see "Integrating ThinkSafe" below. Every day at 3am, Registr
+  automatically deactivates anyone whose **employment end date** has passed (which also
   revokes their SSO access) and, if SMTP is configured, emails every admin
   with an email on file a summary of who — see
   `server/src/lib/employmentCheck.js`; admins can also trigger this check
@@ -273,28 +273,31 @@ fallback if the identity provider is ever unreachable.
 
 ## Integrating ThinkSafe (optional)
 
-Registr can show a badge on any job that has a site configured in ThinkSafe
-(Wayman's H&S system), and on any person who has a matching ThinkSafe user,
-by matching ThinkSafe's records to registr's job codes and people's names.
-ThinkSafe's API is read-only from registr's side — nothing here ever
-creates, updates, or deletes anything in ThinkSafe.
+Registr can flag any job with no matching site in ThinkSafe (Wayman's H&S
+system), and any person with no matching ThinkSafe user, by matching
+ThinkSafe's records against registr's job codes and people's names — an
+exception badge, not a confirmation, so nothing shows for the expected case
+of a match. ThinkSafe's API is read-only from registr's side — nothing here
+ever creates, updates, or deletes anything in ThinkSafe.
 
 1. Set `THINKSAFE_API_URL` (defaults to ThinkSafe's production API,
    `https://thinksafe-go-api-flex.azurewebsites.net/api/v1`, in
    `server/.env.example`) and `THINKSAFE_API_KEY` in `server/.env`. Restart
    the app after saving.
 2. Leave both blank to disable the integration entirely — nothing else
-   breaks, the badges just never show.
+   breaks, the warning icon just never shows for this reason.
 
 Registr fetches ThinkSafe's full site and user lists (there's no per-job or
 per-person endpoint cheap enough to call for every row on the Jobs/People
 lists) every 15 minutes in the background, caches which job codes have a
-site and which names have a user, and shows a **ThinkSafe** badge next to
-any match — see `server/src/lib/thinksafeSync.js`. There's no manual
-refresh in the UI (the badge only ever updates on that 15-minute tick), but
-`GET/POST /api/v1/thinksafe/status` and `/refresh` (see
-`server/src/routes/thinksafe.js`) both still work if you want to trigger or
-check a sync some other way.
+site and which names have a user, and shows a **warning icon** next to any
+job or person with no match — see `server/src/lib/thinksafeSync.js`. The
+warning icon is shared across every exception registr checks for (hover it
+to see which apply — ThinkSafe is currently the only one), so it isn't
+ThinkSafe-specific itself. There's no manual refresh in the UI (ThinkSafe's
+contribution only ever updates on that 15-minute tick), but `GET/POST
+/api/v1/thinksafe/status` and `/refresh` (see `server/src/routes/thinksafe.js`)
+both still work if you want to trigger or check a sync some other way.
 
 Verified against a live key: pagination is offset-based (`limit`/`offset`/
 `returned`/`has_more`, not page numbers), each site's job number comes back

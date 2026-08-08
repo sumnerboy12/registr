@@ -1,7 +1,7 @@
 import type { Client, Job } from '../types';
 import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { NO_CLIENT_COLOR } from '../lib/colors';
-import ThinkSafeBadge from './ThinkSafeBadge';
+import WarningBadge from './WarningBadge';
 
 interface JobHeaderProps {
   job: Job;
@@ -18,16 +18,17 @@ interface JobHeaderProps {
 // job summary — name, then client/status/type/code/value all on one line.
 export default function JobHeader({ job, client, backLabel, onBack, secondaryAction }: JobHeaderProps) {
   const showValue = job.job_type !== 'remedial' && job.value != null;
+  const warnings = [!job.thinksafe_site && 'No site configured in ThinkSafe'].filter((w): w is string => !!w);
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 style={{ fontSize: 20, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span>{job.name}</span>
-          {job.thinksafe_site && <ThinkSafeBadge title="Site configured on ThinkSafe" />}
+          <WarningBadge reasons={warnings} />
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
           {secondaryAction && (
-            <button className="btn" onClick={secondaryAction.onClick}>
+            <button className="btn btn-primary" onClick={secondaryAction.onClick}>
               {secondaryAction.label}
             </button>
           )}

@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext';
 import PersonModal from '../components/PersonModal';
 import ImportModal, { type ImportField } from '../components/ImportModal';
 import AppAccessModal from '../components/AppAccessModal';
-import ThinkSafeBadge from '../components/ThinkSafeBadge';
+import WarningBadge from '../components/WarningBadge';
 import { downloadCsv, labelToKey } from '../lib/csv';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
@@ -154,12 +154,8 @@ export default function PeoplePage() {
                   </td>
                   <td>
                     {person.name}
-                    {person.thinksafe_user && (
-                      <>
-                        {' '}
-                        <ThinkSafeBadge title="Registered on ThinkSafe" />
-                      </>
-                    )}
+                    {' '}
+                    <WarningBadge reasons={[!person.thinksafe_user && 'No matching user in ThinkSafe'].filter((w): w is string => !!w)} />
                   </td>
                   <td>{person.email || '—'}</td>
                   <td>{person.role || '—'}</td>

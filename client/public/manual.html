@@ -603,14 +603,18 @@
 
       <h3>ThinkSafe</h3>
       <p class="dim">
-        A <strong>ThinkSafe</strong> badge next to a job's name means that job's code has a
-        site configured in ThinkSafe (Wayman's H&amp;S system) — registr checks in the
-        background every 15 minutes (this same sync also covers People's own ThinkSafe
-        badge — see <a href="#people">chapter 4</a>); there's no manual refresh in the UI, so
-        a brand-new site can take up to 15 minutes to show up. Read-only: nothing done in
+        A warning icon next to a job's name is an exception flag — hover it to see why; a
+        job with no matching site in ThinkSafe (Wayman's H&amp;S system) is one such reason.
+        Nothing shows when there is a match, since that's the expected case. The icon is
+        shared across every kind of exception registr checks for, so if more than one
+        applies to the same job, its tooltip lists them all. Registr checks ThinkSafe in the
+        background every 15 minutes (this same sync also covers People's own icon — see
+        <a href="#people">chapter 4</a>); there's no manual refresh in the UI, so a brand-new
+        site can take up to 15 minutes for its warning to clear. Read-only: nothing done in
         registr ever changes anything in ThinkSafe. Only shows up at all once whoever manages
-        the server has set <span class="kbd">THINKSAFE_API_URL</span>/
-        <span class="kbd">THINKSAFE_API_KEY</span> — see the README.
+        the server has set
+        <span class="kbd">THINKSAFE_API_URL</span>/<span class="kbd">THINKSAFE_API_KEY</span>
+        — see the README.
       </p>
     </section>
 
@@ -695,12 +699,15 @@
 
       <h3>ThinkSafe</h3>
       <p class="dim">
-        A <strong>ThinkSafe</strong> badge next to a person's name means their name matches a
-        user in ThinkSafe (Wayman's H&amp;S system), checked case-insensitively — registr
-        checks in the background every 15 minutes (the same sync as the Jobs screen's own
-        ThinkSafe badge — see <a href="#jobs">chapter 2</a>); there's no manual refresh in the
-        UI. Read-only: nothing done in registr ever changes anything in ThinkSafe. Only shows
-        up at all once whoever manages the server has set
+        A warning icon next to a person's name is an exception flag — hover it to see why; a
+        person with no matching user in ThinkSafe (Wayman's H&amp;S system), checked
+        case-insensitively, is one such reason. Nothing shows when there is a match, since
+        that's the expected case. The icon is shared across every kind of exception registr
+        checks for, so if more than one applies to the same person, its tooltip lists them
+        all. Registr checks ThinkSafe in the background every 15 minutes (the same sync as
+        the Jobs screen's own icon — see <a href="#jobs">chapter 2</a>); there's no manual
+        refresh in the UI. Read-only: nothing done in registr ever changes anything in
+        ThinkSafe. Only shows up at all once whoever manages the server has set
         <span class="kbd">THINKSAFE_API_URL</span>/<span class="kbd">THINKSAFE_API_KEY</span>
         — see the README.
       </p>
