@@ -153,9 +153,10 @@ export default function PeoplePage() {
                     <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', background: person.color }} />
                   </td>
                   <td>
-                    {person.name}
-                    {' '}
-                    <WarningBadge reasons={[!person.thinksafe_user && 'No matching user in ThinkSafe'].filter((w): w is string => !!w)} />
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span>{person.name}</span>
+                      <WarningBadge reasons={[!person.thinksafe_user && 'No matching user in ThinkSafe'].filter((w): w is string => !!w)} />
+                    </span>
                   </td>
                   <td>{person.email || '—'}</td>
                   <td>{person.role || '—'}</td>

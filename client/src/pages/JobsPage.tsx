@@ -356,7 +356,7 @@ export default function JobsPage() {
           {user?.id != null && (
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
               <input type="checkbox" style={{ width: 'auto' }} checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
-              My Jobs
+              My jobs only
             </label>
           )}
         </div>
@@ -530,9 +530,10 @@ export default function JobsPage() {
                   </td>
                   <td>{job.code}</td>
                   <td>
-                    {job.name}
-                    {' '}
-                    <WarningBadge reasons={jobWarnings(job)} />
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <span>{job.name}</span>
+                      <WarningBadge reasons={jobWarnings(job)} />
+                    </span>
                   </td>
                   <td>
                     <span

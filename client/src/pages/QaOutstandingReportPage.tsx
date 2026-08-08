@@ -58,7 +58,7 @@ export default function QaOutstandingReportPage() {
         {user?.id != null && (
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
             <input type="checkbox" style={{ width: 'auto' }} checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} />
-            My Jobs
+            My jobs only
           </label>
         )}
       </div>

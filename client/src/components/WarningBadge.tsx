@@ -15,6 +15,7 @@ export default function WarningBadge({ reasons }: Props) {
       title={reasons.join('\n')}
       style={{
         display: 'inline-flex',
+        verticalAlign: 'middle',
         color: 'var(--warn)',
         cursor: 'default',
       }}
