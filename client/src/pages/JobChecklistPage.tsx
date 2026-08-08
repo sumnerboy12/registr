@@ -13,6 +13,7 @@ import { useAuth } from '../auth/AuthContext';
 import JobHeader from '../components/JobHeader';
 import ChecklistItemModal from '../components/ChecklistItemModal';
 import AddChecklistItemModal from '../components/AddChecklistItemModal';
+import { downloadQaReportPdf } from '../lib/qaReportPdf';
 
 // Split out of JobDetailPage into its own full-page view — a long checklist
 // competes for space with every other job field, assignment and comment on
@@ -32,6 +33,7 @@ export default function JobChecklistPage() {
 
   const [checklist, setChecklist] = useState<JobChecklistItem[]>([]);
   const [checklistBusy, setChecklistBusy] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
   const [showAddChecklistItem, setShowAddChecklistItem] = useState(false);
   // The item currently open in ChecklistItemModal (its full detail view).
   const [checklistOpenItemId, setChecklistOpenItemId] = useState<number | null>(null);
@@ -135,6 +137,17 @@ export default function JobChecklistPage() {
   if (loading) return <div style={{ padding: 20 }}>Loading…</div>;
   if (error || !job) return <div style={{ padding: 20, color: 'var(--danger)' }}>{error ?? 'Job not found'}</div>;
 
+  const exportPdf = async () => {
+    setPdfGenerating(true);
+    try {
+      await downloadQaReportPdf(job, clientFor(job.client_id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to generate PDF');
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
   return (
     <div style={{ padding: 24, maxWidth: 1000, margin: '0 auto' }}>
       <JobHeader
@@ -153,8 +166,8 @@ export default function JobChecklistPage() {
               : ''}
           </h2>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn" onClick={() => window.open(`/jobs/${job.code}/qa-report`, '_blank')}>
-              Export PDF
+            <button className="btn" onClick={exportPdf} disabled={pdfGenerating}>
+              {pdfGenerating ? 'Generating PDF…' : 'Export PDF'}
             </button>
             {!isReadOnly && (
               <>

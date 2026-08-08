@@ -166,8 +166,10 @@ server. Leave it blank (or `production`) on the real deployment.
   in it is done, and re-expands if an item in it is reopened or a new one is
   added. **Sync template** copies in any admin-maintained template item (see
   **Checklist Templates**, admin only) not already on the job, matched by
-  job type. **Export PDF** opens a print-friendly one-page summary
-  (`/jobs/<code>/qa-report`) suitable for handing to a client or filing.
+  job type. **Export PDF** generates and downloads an actual PDF file in one
+  click, built natively client-side (full colour, status pills, a footer
+  on every page) rather than a screenshot of the page, suitable for handing
+  to a client or filing.
 - **Clients** — the organisations jobs are done for or through. Each has
   a **type** (Main Contractor / Direct / Residential), optional contact and
   accounts/payables details, notes, and a colour (from an 18-colour swatch)

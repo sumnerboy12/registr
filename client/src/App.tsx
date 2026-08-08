@@ -12,7 +12,6 @@ import JobValueReportPage from './pages/JobValueReportPage';
 import QaOutstandingReportPage from './pages/QaOutstandingReportPage';
 import ScheduledReportsPage from './pages/ScheduledReportsPage';
 import ChecklistTemplatesPage from './pages/ChecklistTemplatesPage';
-import JobQaReportPage from './pages/JobQaReportPage';
 import JobChecklistPage from './pages/JobChecklistPage';
 
 function Gate() {
@@ -23,9 +22,6 @@ function Gate() {
 
   return (
     <Routes>
-      {/* Outside <Layout> deliberately — a standalone print view (see
-          JobQaReportPage) has no app chrome to hide for printing. */}
-      <Route path="jobs/:code/qa-report" element={<JobQaReportPage />} />
       <Route element={<Layout />}>
         <Route index element={<JobsPage />} />
         <Route path="jobs/new" element={<JobDetailPage />} />

@@ -311,7 +311,7 @@ export interface JobChecklistItem {
   status_by_name: string | null;
   status_at: string | null;
   notes: string | null;
-  // Excluded from the customer-facing PDF export (JobQaReportPage.tsx) —
+  // Excluded from the customer-facing PDF export (lib/qaReportPdf.tsx) —
   // still shown everywhere else (the job's own Checklist card, the QA
   // Check report).
   internal: boolean;
