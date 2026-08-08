@@ -38,6 +38,7 @@ export function buildQaOutstandingRows({ status, jobType, mine, personId } = {})
     .prepare(
       `SELECT DISTINCT jobs.id, jobs.code, jobs.name, jobs.job_type, jobs.status,
          COALESCE(clients.name, jobs.client_name) AS client_name,
+         clients.color AS client_color,
          (SELECT p.name FROM job_assignments ja JOIN people p ON p.id = ja.person_id
           WHERE ja.job_id = jobs.id AND ja.role = 'project_manager' LIMIT 1) AS pm_name
        FROM jobs

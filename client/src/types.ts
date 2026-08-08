@@ -356,6 +356,7 @@ export interface QaOutstandingJob {
   job_type: JobType;
   status: JobStatus;
   client_name: string | null;
+  client_color: string | null;
   pm_name: string | null;
   items: QaOutstandingItem[];
 }

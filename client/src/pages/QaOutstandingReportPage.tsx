@@ -11,6 +11,7 @@ import {
   JOB_TYPE_LABELS,
 } from '../types';
 import { useAuth } from '../auth/AuthContext';
+import { NO_CLIENT_COLOR } from '../lib/colors';
 
 const STATUSES = Object.keys(JOB_STATUS_LABELS) as JobStatus[];
 const TYPES = Object.keys(JOB_TYPE_LABELS) as JobType[];
@@ -75,16 +76,39 @@ export default function QaOutstandingReportPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {jobs.map((job) => (
             <div key={job.id} className="card" style={{ padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                <Link to={`/jobs/${job.code}`} style={{ fontWeight: 600, color: 'var(--accent)' }}>
-                  {job.code}
-                </Link>
-                <span style={{ fontWeight: 600 }}>{job.name}</span>
-                <span style={{ color: 'var(--text-dim)', fontSize: 13 }}>
-                  {JOB_TYPE_LABELS[job.job_type]} · {JOB_STATUS_LABELS[job.status]}
-                  {job.client_name && <> · {job.client_name}</>}
-                  {job.pm_name && <> · PM: {job.pm_name}</>}
-                </span>
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 16, fontWeight: 600 }}>{job.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '1px 7px',
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.02em',
+                      background: job.client_color ?? NO_CLIENT_COLOR,
+                      color: '#fff',
+                    }}
+                  >
+                    {job.client_name ?? 'No client'}
+                  </span>
+                  <span>&middot;</span>
+                  <span>{JOB_STATUS_LABELS[job.status]}</span>
+                  <span>&middot;</span>
+                  <span>{JOB_TYPE_LABELS[job.job_type]}</span>
+                  <span>&middot;</span>
+                  <Link to={`/jobs/${job.code}`} style={{ color: 'var(--accent)' }}>
+                    {job.code}
+                  </Link>
+                  {job.pm_name && (
+                    <>
+                      <span>&middot;</span>
+                      <span>PM: {job.pm_name}</span>
+                    </>
+                  )}
+                </div>
               </div>
               {CHECKLIST_STAGES.map((stage) => {
                 const stageItems = job.items.filter((i) => i.stage === stage);

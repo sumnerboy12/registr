@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { ChecklistItemAttachment, Client, Job, JobChecklistItem } from '../types';
 import {
@@ -87,9 +87,7 @@ export default function JobQaReportPage() {
           {client?.name ?? job.client_name ?? 'No client'}
         </span>
         <span>·</span>
-        <Link to={`/jobs/${encodeURIComponent(job.code)}`} className="no-print" style={{ color: '#2f8f7a' }}>
-          {job.code}
-        </Link>
+        <span>{job.code}</span>
         {job.site_address && (
           <>
             <span>·</span>

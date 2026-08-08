@@ -15,9 +15,9 @@ interface JobHeaderProps {
 }
 
 // Shared by JobDetailPage and JobChecklistPage so both show the exact same
-// job summary — name, then client/status/type/code/value all on one line.
+// job summary — name, then client/status/type/code/PM all on one line.
 export default function JobHeader({ job, client, backLabel, onBack, secondaryAction }: JobHeaderProps) {
-  const showValue = job.job_type !== 'remedial' && job.value != null;
+  const pmName = job.assignments?.find((a) => a.role === 'project_manager')?.person.name;
   const warnings = [!job.thinksafe_site && 'No site configured in ThinkSafe'].filter((w): w is string => !!w);
   return (
     <div style={{ marginBottom: 16 }}>
@@ -59,10 +59,10 @@ export default function JobHeader({ job, client, backLabel, onBack, secondaryAct
         <span>{JOB_TYPE_LABELS[job.job_type]}</span>
         <span>&middot;</span>
         <span>{job.code}</span>
-        {showValue && (
+        {pmName && (
           <>
             <span>&middot;</span>
-            <span>${job.value!.toLocaleString('en-US')}</span>
+            <span>PM: {pmName}</span>
           </>
         )}
       </div>
