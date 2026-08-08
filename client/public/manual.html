@@ -604,16 +604,17 @@
 
       <h3>ThinkSafe</h3>
       <p class="dim">
-        A warning icon next to a job's name is an exception flag — hover it to see why; a
-        job with no matching site in ThinkSafe (Wayman's H&amp;S system) is one such reason.
-        Nothing shows when there is a match, since that's the expected case. The icon is
-        shared across every kind of exception registr checks for, so if more than one
+        A warning icon next to a job's name is an exception flag — hover it to see why. Two
+        reasons come from ThinkSafe (Wayman's H&amp;S system): a job with no matching site
+        there, or — Contract jobs only — a site with no SSSP (Site Specific Safety Plan)
+        attached yet. Nothing shows when both are fine, since that's the expected case. The
+        icon is shared across every kind of exception registr checks for, so if more than one
         applies to the same job, its tooltip lists them all. Registr checks ThinkSafe in the
         background every 15 minutes (this same sync also covers People's own icon — see
         <a href="#people">chapter 4</a>); there's no manual refresh in the UI, so a brand-new
-        site can take up to 15 minutes for its warning to clear. Read-only: nothing done in
-        registr ever changes anything in ThinkSafe. Only shows up at all once whoever manages
-        the server has set
+        site or SSSP can take up to 15 minutes for its warning to clear. Read-only: nothing
+        done in registr ever changes anything in ThinkSafe. Only shows up at all once whoever
+        manages the server has set
         <span class="kbd">THINKSAFE_API_URL</span>/<span class="kbd">THINKSAFE_API_KEY</span>
         — see the README.
       </p>

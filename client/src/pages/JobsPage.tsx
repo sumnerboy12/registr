@@ -10,6 +10,7 @@ import JobTypeFilterDropdown, { ALL_JOB_TYPES } from '../components/JobTypeFilte
 import { downloadCsv, labelToKey } from '../lib/csv';
 import { NO_CLIENT_COLOR } from '../lib/colors';
 import WarningBadge from '../components/WarningBadge';
+import { jobWarnings } from '../lib/jobWarnings';
 
 // Covers every field in the Export CSV below, so exporting and re-importing
 // the same file round-trips a job exactly — this doubles as backup/restore.
@@ -93,11 +94,6 @@ function savePersistedFilter(key: string, values: string[]) {
 // every app that lists jobs — rostr included — tints a job's row the same
 // way instead of each maintaining its own copy of the colour choice.
 const jobTypeRowTint = (job: Job) => `color-mix(in srgb, ${job.job_type_color} 12%, transparent)`;
-
-// Reasons the WarningBadge next to a job's name should show a tooltip for —
-// currently just the ThinkSafe check, but more checks can push onto this
-// array without either call site (board card, list row) needing to change.
-const jobWarnings = (job: Job) => [!job.thinksafe_site && 'No site configured in ThinkSafe'].filter((w): w is string => !!w);
 
 export default function JobsPage() {
   const { user, isReadOnly, isAdmin } = useAuth();

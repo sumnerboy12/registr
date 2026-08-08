@@ -196,6 +196,10 @@ export interface Job {
   // job's code — see server/src/lib/thinksafeSync.js. Always false if
   // THINKSAFE_API_URL/THINKSAFE_API_KEY aren't set on the server.
   thinksafe_site: boolean;
+  // Whether that ThinkSafe site (if any) has an SSSP document set attached
+  // — only meaningful when thinksafe_site is true, see
+  // server/src/lib/thinksafeSync.js's hasThinkSafeSssp.
+  thinksafe_sssp: boolean;
   // Canonical per-type tint colour, computed server-side (see
   // JOB_TYPE_COLORS in server/src/lib/jobTypes.js) so registr and every
   // downstream app (rostr) tint a job's row identically instead of each

@@ -155,7 +155,9 @@ server. Leave it blank (or `production`) on the real deployment.
   kanban, one column per status) view, multi-select Status/Type filters
   (remembered per browser), and **Import**/**Export**. A job also shows a
   **warning icon** (hover for why) if that job's code has no matching site in
-  ThinkSafe (Wayman's H&S system) — see "Integrating ThinkSafe" below.
+  ThinkSafe (Wayman's H&S system), or — Contract jobs only — has a site
+  with no SSSP (Site Specific Safety Plan) attached — see "Integrating
+  ThinkSafe" below.
 - **QA Checklist** — each job has its own checklist, opened via the **QA
   Checklist** button in the job page's header, which leads to a dedicated
   full-page view at `/jobs/<code>/checklist` — kept separate from the job
@@ -276,11 +278,12 @@ fallback if the identity provider is ever unreachable.
 ## Integrating ThinkSafe (optional)
 
 Registr can flag any job with no matching site in ThinkSafe (Wayman's H&S
-system), and any person with no matching ThinkSafe user, by matching
-ThinkSafe's records against registr's job codes and people's names — an
-exception badge, not a confirmation, so nothing shows for the expected case
-of a match. ThinkSafe's API is read-only from registr's side — nothing here
-ever creates, updates, or deletes anything in ThinkSafe.
+system), any Contract job whose ThinkSafe site has no SSSP (Site Specific
+Safety Plan) attached, and any person with no matching ThinkSafe user, by
+matching ThinkSafe's records against registr's job codes and people's names
+— an exception badge, not a confirmation, so nothing shows for the expected
+case of a match. ThinkSafe's API is read-only from registr's side — nothing
+here ever creates, updates, or deletes anything in ThinkSafe.
 
 1. Set `THINKSAFE_API_URL` (defaults to ThinkSafe's production API,
    `https://thinksafe-go-api-flex.azurewebsites.net/api/v1`, in
@@ -292,14 +295,18 @@ ever creates, updates, or deletes anything in ThinkSafe.
 Registr fetches ThinkSafe's full site and user lists (there's no per-job or
 per-person endpoint cheap enough to call for every row on the Jobs/People
 lists) every 15 minutes in the background, caches which job codes have a
-site and which names have a user, and shows a **warning icon** next to any
-job or person with no match — see `server/src/lib/thinksafeSync.js`. The
-warning icon is shared across every exception registr checks for (hover it
-to see which apply — ThinkSafe is currently the only one), so it isn't
-ThinkSafe-specific itself. There's no manual refresh in the UI (ThinkSafe's
-contribution only ever updates on that 15-minute tick), but `GET/POST
-/api/v1/thinksafe/status` and `/refresh` (see `server/src/routes/thinksafe.js`)
-both still work if you want to trigger or check a sync some other way.
+site, which of those sites have an SSSP, and which names have a user, and
+shows a **warning icon** next to any job or person with no match — see
+`server/src/lib/thinksafeSync.js`. The missing-SSSP check only fires for
+Contract jobs that already have a matching site (a job with no site at all
+just shows the "no site" reason instead — there's nothing to check an SSSP
+against). The warning icon is shared across every exception registr checks
+for (hover it to see which apply — ThinkSafe's two checks are currently the
+only ones), so it isn't ThinkSafe-specific itself. There's no manual
+refresh in the UI (ThinkSafe's contribution only ever updates on that
+15-minute tick), but `GET/POST /api/v1/thinksafe/status` and `/refresh`
+(see `server/src/routes/thinksafe.js`) both still work if you want to
+trigger or check a sync some other way.
 
 Verified against a live key: pagination is offset-based (`limit`/`offset`/
 `returned`/`has_more`, not page numbers), each site's job number comes back

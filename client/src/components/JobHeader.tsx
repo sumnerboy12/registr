@@ -2,6 +2,7 @@ import type { Client, Job } from '../types';
 import { JOB_STATUS_LABELS, JOB_TYPE_LABELS } from '../types';
 import { NO_CLIENT_COLOR } from '../lib/colors';
 import WarningBadge from './WarningBadge';
+import { jobWarnings } from '../lib/jobWarnings';
 
 interface JobHeaderProps {
   job: Job;
@@ -18,7 +19,7 @@ interface JobHeaderProps {
 // job summary — name, then client/status/type/code/PM all on one line.
 export default function JobHeader({ job, client, backLabel, onBack, secondaryAction }: JobHeaderProps) {
   const pmName = job.assignments?.find((a) => a.role === 'project_manager')?.person.name;
-  const warnings = [!job.thinksafe_site && 'No site configured in ThinkSafe'].filter((w): w is string => !!w);
+  const warnings = jobWarnings(job);
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import db from '../db/index.js';
 import { requireAuth, requireWrite } from '../middleware/auth.js';
 import { requireAuthOrApiKey } from '../middleware/apiKey.js';
-import { hasThinkSafeSite } from '../lib/thinksafeSync.js';
+import { hasThinkSafeSite, hasThinkSafeSssp } from '../lib/thinksafeSync.js';
 import { uploadAttachment, attachmentFilePath, uploadChecklistItemAttachment, checklistItemAttachmentFilePath } from '../lib/attachments.js';
 import { CHECKLIST_STAGES } from '../lib/checklistStages.js';
 import { CHECKLIST_ITEM_STATUSES } from '../lib/checklistStatuses.js';
@@ -72,6 +72,11 @@ function listChecklistItems(jobId) {
 function publicJob(row, { includeAssignments } = {}) {
   const job = { ...row };
   job.thinksafe_site = hasThinkSafeSite(row.code);
+  // Only meaningful once a site actually exists — a job with no ThinkSafe
+  // site has no SSSP status of its own to report (see hasThinkSafeSite
+  // above; the client only surfaces this as a separate warning when
+  // thinksafe_site is true, see JobsPage.tsx/JobHeader.tsx's jobWarnings).
+  job.thinksafe_sssp = hasThinkSafeSssp(row.code);
   job.job_type_color = JOB_TYPE_COLORS[row.job_type];
   if (includeAssignments) job.assignments = loadAssignments(row.id);
   return job;
