@@ -3,20 +3,9 @@ import { api } from '../api/client';
 import type { ChecklistItemAttachment, ChecklistItemComment, ChecklistItemStatus, JobChecklistItem } from '../types';
 import { CHECKLIST_ITEM_STATUSES, CHECKLIST_ITEM_STATUS_COLORS, CHECKLIST_ITEM_STATUS_LABELS } from '../types';
 import { formatDateTime, formatRelativeTime, formatFileSize } from '../lib/formatDate';
+import { autoResizeTextarea } from '../lib/autoResize';
 
-// Grows the note field to fit its content (including wrapped lines, not
-// just explicit newlines) up to a reasonable cap, beyond which it scrolls
-// internally rather than taking over the whole modal.
 const NOTE_MAX_HEIGHT = 240;
-function autoResizeNote(el: HTMLTextAreaElement) {
-  el.style.height = 'auto';
-  // box-sizing is border-box (global * rule) but scrollHeight only covers
-  // content+padding, not the border — without adding it back, the set
-  // height comes up a couple px short of the actual content and shows a
-  // needless scrollbar.
-  const borderHeight = el.offsetHeight - el.clientHeight;
-  el.style.height = `${Math.min(el.scrollHeight + borderHeight, NOTE_MAX_HEIGHT)}px`;
-}
 
 interface Props {
   jobId: string;
@@ -241,9 +230,9 @@ export default function ChecklistItemModal({ jobId, item, isReadOnly, currentUse
               rows={2}
               placeholder="Note…"
               onBlur={(e) => saveNotes(e.target.value)}
-              onInput={(e) => autoResizeNote(e.currentTarget)}
+              onInput={(e) => autoResizeTextarea(e.currentTarget, NOTE_MAX_HEIGHT)}
               ref={(el) => {
-                if (el) autoResizeNote(el);
+                if (el) autoResizeTextarea(el, NOTE_MAX_HEIGHT);
               }}
               style={{ resize: 'none', overflowY: 'auto', maxHeight: NOTE_MAX_HEIGHT }}
             />

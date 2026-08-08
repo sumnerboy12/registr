@@ -22,6 +22,9 @@ import { useAuth } from '../auth/AuthContext';
 import JobHeader from '../components/JobHeader';
 import AddAssignmentModal from '../components/AddAssignmentModal';
 import { formatDateTime, formatRelativeTime, formatFileSize } from '../lib/formatDate';
+import { autoResizeTextarea } from '../lib/autoResize';
+
+const NOTE_MAX_HEIGHT = 240;
 
 // jobValue state stays a plain unformatted numeric string ("1234.5") — this
 // only affects how it's displayed while editing. A native number input
@@ -75,6 +78,7 @@ export default function JobDetailPage() {
   const [attachments, setAttachments] = useState<JobAttachment[]>([]);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
 
   // Just the count for the summary card below — the full interactive
   // checklist (statuses, comments, attachments) lives on its own page now
@@ -124,6 +128,13 @@ export default function JobDetailPage() {
     setJobValue(j.value != null ? String(j.value) : '');
     setNotes(j.notes ?? '');
   };
+
+  // Controlled textarea, unlike ChecklistItemModal's uncontrolled one — a
+  // ref+effect keyed on the value covers both the initial load (once
+  // applyJobToForm sets notes) and every subsequent keystroke.
+  useEffect(() => {
+    if (notesRef.current) autoResizeTextarea(notesRef.current, NOTE_MAX_HEIGHT);
+  }, [notes]);
 
   useEffect(() => {
     if (isNew) return;
@@ -482,6 +493,7 @@ export default function JobDetailPage() {
         <div className="field">
           <label>Notes</label>
           <textarea
+            ref={notesRef}
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -489,20 +501,42 @@ export default function JobDetailPage() {
               if (!isNew) patchField({ notes: notes || null });
             }}
             disabled={isReadOnly}
+            style={{ resize: 'none', overflowY: 'auto', maxHeight: NOTE_MAX_HEIGHT }}
           />
         </div>
 
         {error && <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div>}
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
-            {!isNew &&
-              job &&
-              (job.assignments ?? []).map((a) => (
+        {isNew && !isReadOnly && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>
+              {saving ? 'Creating…' : 'Create'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!isNew && job && (
+        <>
+        <div className="card" style={{ padding: '10px 20px 20px', marginTop: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <h2 style={{ fontSize: 16, margin: 0 }}>Assignments</h2>
+            {!isReadOnly && (
+              <button className="btn" onClick={() => setShowAddAssignment(true)}>
+                + Add
+              </button>
+            )}
+          </div>
+
+          {(job.assignments ?? []).length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13 }}>No one assigned yet.</div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {(job.assignments ?? []).map((a) => (
                 <span
                   key={a.id}
                   className="badge"
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', fontSize: 13 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', fontSize: 13 }}
                 >
                   {a.person.email ? (
                     <a href={`mailto:${a.person.email}`} title={`Email ${a.person.name}`} style={{ color: 'inherit', textDecoration: 'none' }}>
@@ -525,24 +559,11 @@ export default function JobDetailPage() {
                   )}
                 </span>
               ))}
-          </div>
-
-          {!isNew && job && !isReadOnly && (
-            <button className="btn" style={{ flexShrink: 0 }} onClick={() => setShowAddAssignment(true)}>
-              Add role
-            </button>
-          )}
-          {isNew && !isReadOnly && (
-            <button className="btn btn-primary" style={{ flexShrink: 0 }} onClick={handleCreate} disabled={saving}>
-              {saving ? 'Creating…' : 'Create'}
-            </button>
+            </div>
           )}
         </div>
-      </div>
 
-      {!isNew && job && (
-        <>
-        <div className="card" style={{ padding: 20, marginTop: 20 }}>
+        <div className="card" style={{ padding: '10px 20px 20px', marginTop: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h2 style={{ fontSize: 16, margin: 0 }}>Attachments</h2>
             {!isReadOnly && (
@@ -608,7 +629,7 @@ export default function JobDetailPage() {
           )}
         </div>
 
-        <div className="card" style={{ padding: 20, marginTop: 20 }}>
+        <div className="card" style={{ padding: '10px 20px 20px', marginTop: 20 }}>
           <h2 style={{ fontSize: 16, marginTop: 0 }}>Comments</h2>
 
           {!isReadOnly && (

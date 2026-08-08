@@ -275,13 +275,21 @@ export default function JobChecklistPage() {
                         )}
                         {!isReadOnly && (
                           <button
-                            className="btn btn-danger"
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteChecklistItem(item.id);
                             }}
                             disabled={checklistBusy}
-                            style={{ marginLeft: 'auto', padding: '4px 8px', fontSize: 12 }}
+                            style={{
+                              marginLeft: 'auto',
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              fontSize: 11,
+                              color: 'var(--danger)',
+                              opacity: 0.6,
+                              cursor: 'pointer',
+                            }}
                           >
                             Delete
                           </button>
